@@ -7,6 +7,9 @@ import { ButtonComponent } from '../../../../../shared/ui/button/button.componen
 import { Account } from '../../../domain/entities/account.entity';
 import { AuthMock, DEMO_ACCOUNTS } from '../../../infrastructure/mock/auth.mock';
 
+/** Mot de passe prérempli des comptes de démonstration (la connexion simulée accepte tout). */
+const DEMO_PASSWORD = 'demo1234';
+
 @Component({
   selector: 'app-sign-in',
   imports: [FormField, AuthPageLayoutComponent, ButtonComponent],
@@ -31,12 +34,18 @@ export class SignInComponent {
       this.error.set(result.error);
       return;
     }
-    this.open(result.account);
+    this.error.set('');
+    this.session.signIn(result.account);
+    void this.router.navigate(['/']);
   }
 
-  protected open(account: Account): void {
+  /** Préremplit le formulaire : la connexion se fait ensuite avec « Se connecter ». */
+  protected fill(account: Account): void {
     this.error.set('');
-    this.session.signIn(account);
-    void this.router.navigate(['/']);
+    this.credentials.set({ ident: account.ident, password: DEMO_PASSWORD });
+  }
+
+  protected isSelected(account: Account): boolean {
+    return this.credentials().ident === account.ident;
   }
 }
