@@ -32,9 +32,11 @@ import { BrandService } from '../../../core/services/brand.service';
           <span class="truncate text-[14.5px] font-semibold tracking-[0.06em] text-white">
             {{ service.appName() }}
           </span>
-          <span class="truncate text-[10.5px] tracking-[0.12em] text-side-muted uppercase">
-            {{ brand.org }}
-          </span>
+          @if (brand.org) {
+            <span class="truncate text-[10.5px] tracking-[0.12em] text-side-muted uppercase">
+              {{ brand.org }}
+            </span>
+          }
         </span>
       } @else {
         <span class="sr-only">{{ service.appName() }}</span>

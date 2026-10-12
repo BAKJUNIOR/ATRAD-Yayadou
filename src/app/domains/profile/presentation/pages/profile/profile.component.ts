@@ -79,7 +79,7 @@ export class ProfileComponent {
       return [];
     }
     const fields = [
-      field('Organisation', this.brand.org()),
+      ...(this.brand.org() ? [field('Organisation', this.brand.org())] : []),
       field('Agence / entité', account.entity.replace(/ \(.*\)$/, '')),
       field('Code', entityCode(account.entity), true),
       field('Parcours', NAVIGATION[account.role].title),

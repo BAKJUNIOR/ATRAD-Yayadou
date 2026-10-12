@@ -293,8 +293,8 @@ export class LogoCouleursComponent implements LeaveAware {
 
   protected async reset(): Promise<void> {
     const confirmed = await this.confirm.ask({
-      title: `Revenir au thème ${BRAND_DEFAULT.appName} par défaut ?`,
-      text: `Le nom, les logos, les couleurs, la police et le rayon des bords reprennent les valeurs ${BRAND_DEFAULT.appName} d'origine, pour tous les profils.`,
+      title: `Revenir au thème ${BRAND_DEFAULT.shortName} par défaut ?`,
+      text: `Le nom, les logos, les couleurs, la police et le rayon des bords reprennent les valeurs ${BRAND_DEFAULT.shortName} d'origine, pour tous les profils.`,
       okLabel: 'Réinitialiser le thème',
       danger: true,
     });
@@ -304,7 +304,7 @@ export class LogoCouleursComponent implements LeaveAware {
     this.brand.reset();
     this.clearEdition();
     this.theme.followBrandDefault();
-    this.toast.success(`Thème ${BRAND_DEFAULT.appName} par défaut rétabli.`);
+    this.toast.success(`Thème ${BRAND_DEFAULT.shortName} par défaut rétabli.`);
   }
 
   /** Appelé par le garde de sortie de la route. */

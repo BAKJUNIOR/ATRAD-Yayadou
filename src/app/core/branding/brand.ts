@@ -47,9 +47,9 @@ export const FONT_QUERY: Partial<Record<BrandFont, string>> = {
 };
 
 export const BRAND_DEFAULT: Brand = {
-  appName: 'ATRAD',
-  shortName: 'ATRAD',
-  org: 'YAYADOU',
+  appName: 'YDXTrace — Démo',
+  shortName: 'YDXTrace',
+  org: '',
   logoFull: '',
   logoIcon: '',
   favicon: '',
@@ -81,7 +81,7 @@ export interface Palette {
 export const PALETTES: Palette[] = [
   {
     id: 'atrad',
-    label: 'ATRAD (défaut)',
+    label: 'Par défaut',
     primary: '#0F6E70',
     primaryDark: '#0A5254',
     accent: '#8CCFD0',
