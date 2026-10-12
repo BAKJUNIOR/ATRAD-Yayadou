@@ -86,10 +86,10 @@ export class AppSidebarComponent {
     this.collapsed() ? 'lg:justify-center lg:px-0' : '',
   );
   protected readonly nestedItemClass = computed(() =>
-    this.collapsed() ? `ps-10 ${this.itemClass()}` : 'ps-10',
+    this.collapsed() ? `ps-11 ${this.itemClass()}` : 'ps-11',
   );
   protected readonly asideClass = computed(() => {
-    const width = this.collapsed() ? 'lg:w-[84px]' : 'lg:w-[280px]';
+    const width = this.collapsed() ? 'lg:w-[92px]' : 'lg:w-[300px]';
     const drawer = this.sidebar.isMobileOpen()
       ? 'translate-x-0 shadow-2xl'
       : '-translate-x-full max-lg:invisible';
