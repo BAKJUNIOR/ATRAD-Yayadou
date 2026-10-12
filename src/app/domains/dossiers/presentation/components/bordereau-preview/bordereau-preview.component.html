@@ -33,8 +33,11 @@
     >
       <header class="flex items-start justify-between gap-6 border-b-2 border-navy pb-5">
         <div class="flex flex-col gap-1">
+          @if (brand.brand().logoFull; as logo) {
+            <img class="h-10 w-[220px] self-start object-contain object-left" [src]="logo" alt="" />
+          }
           <span class="text-[16px] font-semibold tracking-[0.04em] text-heading">
-            {{ appName }} · {{ organisation }}
+            {{ brand.appName() }} · {{ brand.org() }}
           </span>
           <span class="text-[12px] text-ink-muted">Traçabilité des dossiers</span>
         </div>
@@ -136,7 +139,7 @@
         class="flex justify-between gap-4 border-t border-line pt-3 text-[10.5px] text-ink-muted"
       >
         <span>Édité le {{ editedAt }} par {{ editedBy() }}</span>
-        <span>{{ appName }} — document de traçabilité · {{ organisation }}</span>
+        <span>{{ brand.appName() }} — document de traçabilité · {{ brand.org() }}</span>
       </footer>
     </article>
   </div>

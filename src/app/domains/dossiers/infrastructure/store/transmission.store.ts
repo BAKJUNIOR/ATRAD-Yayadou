@@ -13,7 +13,7 @@ import { Etat } from '../../domain/entities/etat.entity';
 import {
   DELAI_PRIORITE,
   ENTITES,
-  ENTITY_SETTINGS,
+  entitySettings,
   entityOf,
   shortEntity,
 } from '../../domain/routing';
@@ -501,6 +501,43 @@ export class TransmissionStore {
     }
   }
 
+  /** Un membre de l'équipe s'attribue un dossier du pool partagé de son entité. */
+  take(id: number, user: string): OperationResult {
+    const dossier = this.state().dossiers.find((candidate) => candidate.id === id);
+    if (!dossier) {
+      return { ok: false, message: 'Dossier introuvable.' };
+    }
+    if (dossier.gest) {
+      return { ok: false, message: `Dossier déjà pris en charge par ${dossier.gest}.` };
+    }
+    if (isLocked(dossier)) {
+      return {
+        ok: false,
+        message: `Dossier ${dossier.status.toLowerCase()} : aucune prise en charge possible.`,
+      };
+    }
+    const settings = entitySettings(dossier.entite);
+    if (settings?.mode !== 'pool') {
+      return {
+        ok: false,
+        message: `L'entité ${shortEntity(dossier.entite)} n'est pas en mode pool : prise en charge impossible.`,
+      };
+    }
+    if (!settings.team.includes(user)) {
+      return {
+        ok: false,
+        message: `${user} ne fait pas partie de l'équipe de ${shortEntity(dossier.entite)}.`,
+      };
+    }
+    const at = nowIso();
+    this.patchDossier(
+      id,
+      { gest: user, gestAt: at, status: dossier.status === 'Reçu' ? 'En cours' : dossier.status },
+      { at, who: user, label: `Pris en charge depuis le pool partagé : ${user}`, tone: 'brand' },
+    );
+    return { ok: true, message: `Vous avez pris en charge ${dossier.ref}.` };
+  }
+
   /** Efface tous les dossiers et états (réinitialisation de la démonstration). */
   reset(): void {
     this.state.set({ ...INITIAL_STATE });
@@ -550,7 +587,7 @@ export class TransmissionStore {
       log: [...dossier.log],
     };
 
-    const settings = ENTITY_SETTINGS[entite];
+    const settings = entitySettings(entite);
     if (settings?.mode === 'disp' || settings?.mode === 'pool') {
       const place = settings.mode === 'disp' ? 'le bac de répartition' : 'le pool de dossiers';
       routed.log.push({

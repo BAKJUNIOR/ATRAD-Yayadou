@@ -22,6 +22,7 @@ export class NavBadgesService {
       mesdossiers: mine.filter((dossier) => !isLocked(dossier)).length,
       retard: mine.filter((dossier) => isLate(dossier, this.traitement.today)).length,
       affectint: unassigned(this.traitement.entityDossiers()).length,
+      pool: unassigned(this.traitement.entityDossiers()).length,
     };
   });
 }

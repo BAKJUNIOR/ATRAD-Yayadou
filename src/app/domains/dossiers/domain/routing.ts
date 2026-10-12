@@ -16,7 +16,7 @@ export const ENTITES: readonly EntiteTraitement[] = [
  * Routage par défaut d'un type de dossier vers son entité de traitement.
  * Deviendra paramétrable par l'administrateur (écran « Routage & affectation »).
  */
-export const DEFAULT_MAPPING: Record<DossierType, string> = {
+const DEFAULT_MAPPING: Record<DossierType, string> = {
   'Ouverture de compte': 'Entité Crédits (ET-007)',
   'Demande de prêt': 'Entité Crédits (ET-007)',
   Réclamation: 'Service Réclamations (ET-020)',
@@ -25,7 +25,7 @@ export const DEFAULT_MAPPING: Record<DossierType, string> = {
 };
 
 export function entityOf(type: DossierType): string {
-  return DEFAULT_MAPPING[type] ?? '';
+  return current.map[type] ?? '';
 }
 
 /** Entité effective d'un dossier : celle du routage réel s'il a eu lieu, sinon celle prévue. */
@@ -50,6 +50,28 @@ export function entitySummary(dossiers: readonly { type: DossierType; entite?: s
 /** Façon dont une entité répartit les dossiers qu'elle reçoit. */
 export type AssignmentMode = 'auto' | 'pool' | 'disp';
 
+/** Modes proposés à l'administrateur, avec leur explication. */
+export const MODES: readonly { id: AssignmentMode; label: string; description: string }[] = [
+  {
+    id: 'auto',
+    label: 'Automatique',
+    description:
+      "À la réception, chaque dossier est attribué à tour de rôle aux gestionnaires de l'équipe.",
+  },
+  {
+    id: 'pool',
+    label: 'Pool partagé',
+    description:
+      "Les dossiers arrivent dans le « Pool de dossiers » de l'entité ; chaque membre de l'équipe se sert (« S'attribuer des dossiers »).",
+  },
+  {
+    id: 'disp',
+    label: 'Via un répartiteur',
+    description:
+      "Les dossiers arrivent dans un bac ; le ou les répartiteurs désignés les attribuent à une personne de l'équipe.",
+  },
+];
+
 export const MODE_LABEL: Record<AssignmentMode, string> = {
   auto: 'Automatique (tour de rôle)',
   pool: 'Pool partagé',
@@ -58,18 +80,17 @@ export const MODE_LABEL: Record<AssignmentMode, string> = {
 
 export interface EntitySettings {
   mode: AssignmentMode;
-  team: readonly string[];
+  team: string[];
   /** Répartiteurs : membres qui attribuent les dossiers en mode « Via un répartiteur ». */
-  dispatchers: readonly string[];
+  dispatchers: string[];
   /** Membres autorisés à rechercher parmi tous les dossiers de l'entité. */
-  searchers: readonly string[];
+  searchers: string[];
 }
 
 /**
  * Paramétrage par défaut des entités (mode de répartition, équipe et droits).
- * Deviendra modifiable par l'administrateur (écran « Routage & affectation »).
  */
-export const ENTITY_SETTINGS: Record<string, EntitySettings> = {
+const DEFAULT_ENTITY_SETTINGS: Record<string, EntitySettings> = {
   'Entité Crédits (ET-007)': {
     mode: 'disp',
     team: ['Fatou Bamba', 'Éric Tanoh', 'Clarisse Yao'],
@@ -96,6 +117,48 @@ export const ENTITY_SETTINGS: Record<string, EntitySettings> = {
   },
 };
 
+/** Gestionnaires pouvant être rattachés à une entité. */
+export const ALL_GESTIONNAIRES: readonly string[] = [
+  'Fatou Bamba',
+  'Éric Tanoh',
+  'Clarisse Yao',
+  'Ismaël Ouédraogo',
+];
+
+/** Paramétrage du routage : entité de chaque type de dossier, et réglages de chaque entité. */
+export interface RoutingConfig {
+  map: Record<DossierType, string>;
+  ent: Record<string, EntitySettings>;
+}
+
+export function defaultRouting(): RoutingConfig {
+  return structuredClone({ map: DEFAULT_MAPPING, ent: DEFAULT_ENTITY_SETTINGS });
+}
+
+// Paramétrage en vigueur. `RoutingStore` le remplace par celui de l'administrateur ; les
+// fonctions de ce fichier le lisent pour rester utilisables hors injection.
+let current: RoutingConfig = defaultRouting();
+
+export function setRoutingConfig(config: RoutingConfig): void {
+  current = config;
+}
+
+export function entitySettings(entite: string): EntitySettings | undefined {
+  return current.ent[entite];
+}
+
+/** Droits d'un membre, tels qu'affichés à l'administrateur : `Traiter · Affecter`. */
+export function rightsOf(user: string, settings: EntitySettings): string[] {
+  const rights = ['Traiter'];
+  if (settings.mode === 'pool') {
+    rights.push("S'attribuer");
+  }
+  if (settings.mode === 'disp' && settings.dispatchers.includes(user)) {
+    rights.push('Affecter');
+  }
+  return rights;
+}
+
 /** Fonctions d'un membre dans une entité. */
 export interface MemberFunctions {
   traiter: boolean;
@@ -110,7 +173,7 @@ export interface MemberFunctions {
 export type MemberFunction = keyof MemberFunctions;
 
 export function functionsOf(user: string, entite: string): MemberFunctions {
-  const settings = ENTITY_SETTINGS[entite];
+  const settings = current.ent[entite];
   if (!settings?.team.includes(user)) {
     return { traiter: false, pool: false, affecter: false, rechercher: false };
   }

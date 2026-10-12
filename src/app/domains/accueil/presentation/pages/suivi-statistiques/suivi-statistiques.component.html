@@ -148,7 +148,7 @@
     <dl
       class="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-x-6 gap-y-1.5 text-[12.5px]"
     >
-      @for (rule of rules; track rule.type) {
+      @for (rule of rules(); track rule.type) {
         <div class="flex justify-between gap-3 border-b border-white/8 py-1">
           <dt>{{ rule.type }}</dt>
           <dd class="text-white">{{ rule.entite }}</dd>

@@ -3,6 +3,7 @@ import { formatStamp } from '../../../../../core/utils/date.util';
 import { Priorite } from '../../../../dossiers/domain/dossier-catalog';
 import { RoutedDossier } from '../../../../dossiers/domain/entities/dossier.entity';
 import { ENTITES } from '../../../../dossiers/domain/routing';
+import { RoutingStore } from '../../../../dossiers/infrastructure/store/routing.store';
 import { TransmissionStore } from '../../../../dossiers/infrastructure/store/transmission.store';
 import {
   isUnassigned,
@@ -25,9 +26,13 @@ const PRIORITY_TEXT: Record<Priorite, string> = {
 })
 export class SuiviStatistiquesComponent {
   private readonly store = inject(TransmissionStore);
+  private readonly routing = inject(RoutingStore);
 
   protected readonly entites = ENTITES;
-  protected readonly rules = routingRules();
+  protected readonly rules = computed(() => {
+    this.routing.config();
+    return routingRules();
+  });
   protected readonly formatStamp = formatStamp;
   protected readonly priorityText = PRIORITY_TEXT;
 

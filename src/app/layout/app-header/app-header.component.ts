@@ -3,7 +3,8 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { NAVIGATION } from '../../core/navigation/navigation';
 import { DemoClock } from '../../core/services/demo-clock.service';
-import { APP_NAME, PageTitleStrategy } from '../../core/services/page-title.strategy';
+import { BrandService } from '../../core/services/brand.service';
+import { PageTitleStrategy } from '../../core/services/page-title.strategy';
 import { SessionService } from '../../core/services/session.service';
 import { SidebarService } from '../../core/services/sidebar.service';
 import { initialsOf } from '../../core/utils/text.util';
@@ -38,7 +39,7 @@ export class AppHeaderComponent {
   protected readonly sidebar = inject(SidebarService);
   protected readonly notifications = inject(NotificationsService);
 
-  protected readonly appName = APP_NAME;
+  protected readonly appName = inject(BrandService).appName;
   protected readonly pageTitle = inject(PageTitleStrategy).pageTitle;
   protected readonly account = this.session.account;
 

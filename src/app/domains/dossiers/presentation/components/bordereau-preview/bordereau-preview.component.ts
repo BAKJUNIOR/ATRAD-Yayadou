@@ -1,6 +1,6 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { Component, computed, inject } from '@angular/core';
-import { APP_NAME } from '../../../../../core/services/page-title.strategy';
+import { BrandService } from '../../../../../core/services/brand.service';
 import { SessionService } from '../../../../../core/services/session.service';
 import { ToastService } from '../../../../../core/services/toast.service';
 import { formatStamp, nowIso } from '../../../../../core/utils/date.util';
@@ -23,8 +23,7 @@ export class BordereauPreviewComponent {
   private readonly etatRef = inject<string>(DIALOG_DATA);
   protected readonly dialogRef = inject<DialogRef<void>>(DialogRef);
 
-  protected readonly appName = APP_NAME;
-  protected readonly organisation = 'YAYADOU';
+  protected readonly brand = inject(BrandService);
   protected readonly editedAt = formatStamp(nowIso());
   protected readonly formatStamp = formatStamp;
 

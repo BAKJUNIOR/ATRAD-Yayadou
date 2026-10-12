@@ -1,0 +1,434 @@
+<div class="flex animate-enter flex-col gap-[18px]">
+  <p
+    class="flex items-start gap-3 rounded-brand border border-info-line bg-info-bg px-4 py-[13px] text-[13px] leading-normal text-info"
+  >
+    <span
+      class="mt-px flex size-5 flex-none items-center justify-center rounded-full bg-info text-[12px] font-bold text-card"
+      aria-hidden="true"
+    >
+      i
+    </span>
+    <span>
+      Un changement s'applique aux prochaines réceptions. Les dossiers déjà routés ne sont pas
+      modifiés.
+    </span>
+  </p>
+
+  <div class="panel flex flex-wrap gap-1 p-1.5" role="tablist">
+    <button
+      type="button"
+      role="tab"
+      class="flex min-h-[34px] items-center gap-2 rounded-control px-4 py-2 text-[13px] leading-[1.3] whitespace-nowrap transition-colors"
+      [class]="
+        tab() === 'map'
+          ? 'bg-brand font-semibold text-white hover:bg-brand-dark'
+          : 'font-medium text-ink-secondary hover:bg-soft'
+      "
+      [attr.aria-selected]="tab() === 'map'"
+      (click)="pickTab('map')"
+    >
+      Type de dossier → Entité de traitement
+    </button>
+    <button
+      type="button"
+      role="tab"
+      class="flex min-h-[34px] items-center gap-2 rounded-control px-4 py-2 text-[13px] leading-[1.3] whitespace-nowrap transition-colors"
+      [class]="
+        tab() === 'rep'
+          ? 'bg-brand font-semibold text-white hover:bg-brand-dark'
+          : 'font-medium text-ink-secondary hover:bg-soft'
+      "
+      [attr.aria-selected]="tab() === 'rep'"
+      (click)="pickTab('rep')"
+    >
+      Répartition interne par entité
+    </button>
+  </div>
+
+  @if (tab() === 'map') {
+    <section class="panel overflow-hidden" aria-labelledby="map-title">
+      <header class="flex flex-col gap-[3px] border-b border-line px-5 py-4">
+        <h2 id="map-title" class="text-[14.5px] font-semibold tracking-[-0.01em] text-ink">
+          Type de dossier → Entité de traitement
+        </h2>
+        <span class="text-[12.5px] text-ink-muted">
+          Un type de dossier est rattaché à une seule entité. Modifiez une ligne à la fois : chaque
+          enregistrement ne concerne que la ligne modifiée.
+        </span>
+      </header>
+      <table class="grid-table text-[13.5px]">
+        <thead>
+          <tr class="map-grid grid-head py-2.5">
+            <th scope="col">Type de dossier</th>
+            <th scope="col">Entité de traitement</th>
+            <th scope="col" class="text-end!">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of typeRows(); track row.type) {
+            <tr
+              class="map-grid items-center border-b border-soft px-5 py-3 last:border-b-0"
+              [class]="
+                row.editing
+                  ? 'bg-brand-tint-soft ring-1 ring-brand ring-inset'
+                  : row.locked
+                    ? 'opacity-55'
+                    : ''
+              "
+            >
+              <td class="font-medium text-ink">{{ row.type }}</td>
+              <td>
+                @if (row.editing) {
+                  <div class="flex min-w-0 flex-col gap-[5px]">
+                    <select
+                      class="w-full min-w-0 rounded-control border border-brand bg-card px-[11px] py-[9px] text-[13px] text-ink ring-3 ring-brand/16 outline-none"
+                      [attr.aria-label]="'Entité de traitement pour ' + row.type"
+                      (change)="onMapValue($event)"
+                    >
+                      @for (entite of entites; track entite.name) {
+                        <option [value]="entite.name" [selected]="entite.name === mapEdit()?.value">
+                          {{ entite.name }}
+                        </option>
+                      }
+                    </select>
+                    @if (row.changed) {
+                      <span class="text-[12px] text-ink-muted">Actuellement : {{ row.value }}</span>
+                    }
+                    @if (row.error) {
+                      <span class="text-[12px] font-medium text-danger" role="alert">
+                        {{ row.error }}
+                      </span>
+                    }
+                  </div>
+                } @else {
+                  <span
+                    class="inline-flex max-w-full items-center gap-[7px] truncate rounded-full bg-soft px-2.5 py-1 text-[13px] whitespace-nowrap text-ink"
+                  >
+                    <span class="size-[7px] flex-none rounded-full bg-brand"></span>
+                    {{ row.value }}
+                  </span>
+                }
+              </td>
+              <td class="flex flex-wrap justify-end gap-1.5">
+                @if (row.editing) {
+                  <button
+                    type="button"
+                    class="rounded-control px-3 py-[7px] text-[12.5px] whitespace-nowrap text-ink-muted hover:bg-soft hover:text-ink"
+                    (click)="mapEdit.set(null)"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-primary px-3.5 py-[7px] text-[12.5px]"
+                    [disabled]="!row.changed || !!row.error"
+                    [attr.title]="
+                      row.error || (row.changed ? null : 'Aucune modification à enregistrer')
+                    "
+                    (click)="saveMapEdit()"
+                  >
+                    Enregistrer
+                  </button>
+                } @else {
+                  <button
+                    type="button"
+                    class="btn-outline gap-1.5 px-3 py-[7px] text-[12.5px] font-medium disabled:opacity-45"
+                    [disabled]="row.locked"
+                    [attr.title]="
+                      row.locked
+                        ? 'Terminez d\'abord la modification en cours (Enregistrer ou Annuler).'
+                        : 'Modifier'
+                    "
+                    (click)="startMapEdit(row.type)"
+                  >
+                    <app-icon name="pencil" [size]="13" [strokeWidth]="2" />
+                    Modifier
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  } @else {
+    @let detail = this.detail();
+
+    <div class="flex flex-col gap-4">
+      <div class="flex flex-col gap-[3px]">
+        <h2 class="text-[14.5px] font-semibold tracking-[-0.01em] text-ink">
+          Répartition interne par entité
+        </h2>
+        <span class="text-[12.5px] text-pretty text-ink-muted">
+          Choisissez une entité à gauche, réglez son mode puis son équipe. Chaque enregistrement ne
+          concerne que l'entité affichée.
+        </span>
+      </div>
+      <div class="flex flex-wrap items-start gap-4">
+        <nav
+          class="flex max-w-[300px] min-w-0 flex-[1_1_220px] flex-col gap-1.5"
+          aria-label="Entités"
+        >
+          @for (item of entityList(); track item.name) {
+            <button
+              type="button"
+              class="flex flex-col gap-[7px] rounded-brand border px-3.5 py-3 text-start transition-colors hover:border-brand"
+              [class]="
+                item.selected
+                  ? 'border-brand bg-brand-tint-soft ring-3 ring-brand/12'
+                  : 'border-line bg-card'
+              "
+              [attr.aria-current]="item.selected"
+              (click)="selectEntite(item.name)"
+            >
+              <span class="flex items-baseline justify-between gap-2">
+                <span class="text-[13.5px] font-semibold text-ink">{{ item.short }}</span>
+                <span class="font-mono text-[11px] text-ink-muted">{{ item.code }}</span>
+              </span>
+              <span class="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+                <span
+                  class="rounded-full bg-soft px-2 py-0.5 text-[11.5px] font-medium whitespace-nowrap text-ink-secondary"
+                >
+                  {{ item.mode }}
+                </span>
+                <span class="text-[11.5px] whitespace-nowrap text-ink-muted">{{ item.team }}</span>
+              </span>
+              @if (item.note) {
+                <span class="text-[11.5px] leading-[1.35]" [class]="item.noteClass">{{
+                  item.note
+                }}</span>
+              }
+            </button>
+          }
+        </nav>
+
+        <section class="panel min-w-0 flex-[999_1_440px]" aria-labelledby="entity-title">
+          <header class="flex flex-col gap-2 border-b border-line px-5 py-4">
+            <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+              <h3 id="entity-title" class="text-[15px] font-semibold text-ink">{{ entite() }}</h3>
+              <span
+                class="rounded-full px-2.5 py-[3px] text-[11.5px] font-semibold whitespace-nowrap"
+                [class]="dirty() ? 'bg-warning-bg text-warning' : 'bg-success-bg text-success'"
+              >
+                {{ dirty() ? 'Modifications non enregistrées' : 'Enregistré' }}
+              </span>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="text-[12px] text-ink-muted">Reçoit :</span>
+              @for (type of detail.types; track type) {
+                <span
+                  class="rounded-full border border-line px-2 py-0.5 text-[11.5px] whitespace-nowrap text-ink-secondary"
+                >
+                  {{ type }}
+                </span>
+              } @empty {
+                <span class="text-[12px] text-ink-faint">
+                  aucun type rattaché — l'entité ne recevra aucun dossier
+                </span>
+              }
+            </div>
+          </header>
+
+          <div class="flex flex-col gap-[22px] px-5 py-[18px]">
+            <fieldset class="flex flex-col gap-2">
+              <legend class="eyebrow mb-2 font-medium tracking-[0.07em]">
+                1 · Mode de répartition
+              </legend>
+              <div class="grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-2">
+                @for (mode of modes; track mode.id) {
+                  @let on = detail.settings.mode === mode.id;
+                  <button
+                    type="button"
+                    role="radio"
+                    class="flex flex-col gap-1.5 rounded-[calc(var(--radius-brand)*0.9)] border px-3 py-[11px] text-start transition-colors hover:border-brand"
+                    [class]="on ? 'border-brand bg-brand-tint-soft' : 'border-line bg-card'"
+                    [attr.aria-checked]="on"
+                    (click)="setMode(mode.id)"
+                  >
+                    <span class="flex items-center gap-2">
+                      <span
+                        class="size-4 flex-none rounded-full bg-card ring-inset"
+                        [class]="on ? 'ring-4 ring-brand' : 'ring-[1.5px] ring-line-strong'"
+                      ></span>
+                      <span class="text-[13px] font-semibold text-ink">{{ mode.label }}</span>
+                    </span>
+                    <span class="text-[12px] leading-[1.45] text-pretty text-ink-muted">
+                      {{ mode.description }}
+                    </span>
+                  </button>
+                }
+              </div>
+            </fieldset>
+
+            <div class="flex flex-col gap-2.5">
+              <div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1.5">
+                <span class="eyebrow font-medium tracking-[0.07em]">2 · Équipe et droits</span>
+                <span class="text-[12px] whitespace-nowrap text-ink-muted">{{
+                  detail.teamLabel
+                }}</span>
+              </div>
+              <span class="text-[12px] leading-[1.45] text-pretty text-ink-muted">
+                Le mode et l'équipe déterminent les droits : Traiter pour tous, S'attribuer en mode
+                pool, Affecter pour les répartiteurs.
+              </span>
+              @if (detail.isDisp) {
+                <p
+                  class="flex flex-col gap-0.5 rounded-control border px-3 py-2.5 text-[12.5px] leading-[1.45] text-ink"
+                  [class]="
+                    detail.settings.dispatchers.length
+                      ? 'border-info-line bg-info-bg'
+                      : 'border-danger bg-danger-bg'
+                  "
+                >
+                  <strong class="font-semibold">
+                    Qui répartit ?
+                    <span
+                      class="font-medium"
+                      [class]="detail.settings.dispatchers.length ? 'text-success' : 'text-danger'"
+                    >
+                      · {{ detail.dispatcherCount }}
+                    </span>
+                  </strong>
+                  <span class="text-ink-secondary">
+                    Cochez au moins une personne dans la colonne « Répartiteur ». Ces personnes
+                    verront le menu Affectation des dossiers.
+                  </span>
+                </p>
+              }
+              <div
+                class="overflow-x-auto rounded-[calc(var(--radius-brand)*0.9)] border border-line"
+              >
+                <table class="grid-table text-[13px]" [class]="detail.gridClass">
+                  <thead>
+                    <tr
+                      class="items-center border-b border-line bg-subtle px-3.5 py-[9px] text-[11px] font-medium tracking-[0.07em] text-ink-muted uppercase"
+                      [class]="detail.gridClass"
+                    >
+                      <th scope="col" class="font-medium!">Membre</th>
+                      @if (detail.isDisp) {
+                        <th scope="col" class="text-center! font-medium!">Répartiteur</th>
+                      }
+                      <th scope="col" class="font-medium!">Droits obtenus</th>
+                      <th scope="col" class="text-center! font-medium!">Rechercher</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (member of detail.members; track member.name) {
+                      <tr
+                        class="items-center border-b border-soft px-3.5 py-2.5 last:border-b-0"
+                        [class]="[detail.gridClass, member.inTeam ? '' : 'bg-subtle'].join(' ')"
+                      >
+                        <td>
+                          <label class="flex min-w-0 cursor-pointer items-center gap-2.5">
+                            <input
+                              type="checkbox"
+                              class="size-4 flex-none accent-brand"
+                              [checked]="member.inTeam"
+                              (change)="toggleMember(member.name)"
+                            />
+                            <span
+                              class="truncate text-[13px] font-medium"
+                              [class]="member.inTeam ? 'text-ink' : 'text-ink-muted'"
+                            >
+                              {{ member.name }}
+                            </span>
+                          </label>
+                        </td>
+                        @if (detail.isDisp) {
+                          <td class="flex justify-center">
+                            <input
+                              type="checkbox"
+                              class="size-4 accent-brand"
+                              [attr.aria-label]="'Répartiteur — ' + member.name"
+                              [attr.title]="
+                                member.inTeam
+                                  ? 'Désigner comme répartiteur'
+                                  : 'Ajoutez d\'abord ' + member.name + ' à l\'équipe'
+                              "
+                              [checked]="member.dispatcher"
+                              [disabled]="!member.inTeam"
+                              (change)="toggleDispatcher(member.name)"
+                            />
+                          </td>
+                        }
+                        <td class="flex flex-wrap gap-1">
+                          @for (right of member.rights; track right) {
+                            <span
+                              class="rounded-full bg-brand-tint-soft px-2 py-0.5 text-[11.5px] font-medium whitespace-nowrap text-brand-ink"
+                            >
+                              {{ right }}
+                            </span>
+                          } @empty {
+                            <span class="text-[12px] text-ink-faint">Hors équipe</span>
+                          }
+                        </td>
+                        <td class="flex justify-center">
+                          <input
+                            type="checkbox"
+                            class="size-4 accent-brand"
+                            [attr.aria-label]="
+                              'Peut rechercher tous les dossiers de l\'entité — ' + member.name
+                            "
+                            [checked]="member.searcher"
+                            [disabled]="!member.inTeam"
+                            (change)="toggleSearcher(member.name)"
+                          />
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              <span class="text-[11.5px] leading-[1.45] text-ink-muted">
+                « Rechercher » : peut rechercher tous les dossiers de l'entité (menu Rechercher des
+                dossiers). Décoché par défaut.
+              </span>
+            </div>
+          </div>
+
+          <footer
+            class="sticky bottom-0 flex flex-wrap items-center justify-between gap-x-3.5 gap-y-2.5 rounded-b-panel border-t border-line bg-card px-5 py-3"
+          >
+            @if (detail.error) {
+              <span
+                class="flex-[1_1_220px] text-[12.5px] leading-[1.4] font-medium text-danger"
+                role="alert"
+              >
+                {{ detail.error }}
+              </span>
+            } @else {
+              <span class="flex-[1_1_220px] text-[12.5px] leading-[1.4] text-ink-muted">
+                {{
+                  dirty()
+                    ? "Les droits seront appliqués dès l'enregistrement."
+                    : 'Aucune modification en cours.'
+                }}
+              </span>
+            }
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class="btn-outline px-3.5 py-2 text-[12.5px] disabled:opacity-50"
+                [disabled]="!dirty()"
+                (click)="cancelEntEdit()"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                class="btn-primary px-4 py-2 text-[12.5px]"
+                [disabled]="!dirty() || !!detail.error"
+                [attr.title]="
+                  detail.error || (dirty() ? null : 'Aucune modification à enregistrer')
+                "
+                (click)="saveEntEdit()"
+              >
+                Enregistrer cette entité
+              </button>
+            </div>
+          </footer>
+        </section>
+      </div>
+    </div>
+  }
+</div>
