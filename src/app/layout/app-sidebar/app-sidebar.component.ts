@@ -2,10 +2,18 @@ import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { NAVIGATION } from '../../core/navigation/navigation';
+import { ConfirmService } from '../../core/services/confirm.service';
+import { DemoClock } from '../../core/services/demo-clock.service';
+import { StorageService } from '../../core/services/storage.service';
+import { ThemeService } from '../../core/services/theme.service';
+import { ToastService } from '../../core/services/toast.service';
+import { formatDate } from '../../core/utils/date.util';
 import { SessionService } from '../../core/services/session.service';
 import { SidebarService } from '../../core/services/sidebar.service';
 import { initialsOf } from '../../core/utils/text.util';
 import { ENTITES } from '../../domains/dossiers/domain/routing';
+import { PieceFileStore } from '../../domains/dossiers/infrastructure/store/piece-file.store';
+import { TransmissionStore } from '../../domains/dossiers/infrastructure/store/transmission.store';
 import { NavBadgesService } from '../../domains/notifications/nav-badges.service';
 import { TraitementContext } from '../../domains/traitement/presentation/traitement-context.service';
 import { BrandMarkComponent } from '../../shared/ui/brand-mark/brand-mark.component';
@@ -20,6 +28,13 @@ export class AppSidebarComponent {
   private readonly session = inject(SessionService);
   private readonly router = inject(Router);
   protected readonly sidebar = inject(SidebarService);
+  private readonly clock = inject(DemoClock);
+  private readonly store = inject(TransmissionStore);
+  private readonly files = inject(PieceFileStore);
+  private readonly storage = inject(StorageService);
+  private readonly theme = inject(ThemeService);
+  private readonly toast = inject(ToastService);
+  private readonly confirm = inject(ConfirmService);
   protected readonly badges = inject(NavBadgesService).counts;
 
   protected readonly account = this.session.account;
@@ -89,6 +104,36 @@ export class AppSidebarComponent {
       }
       return next;
     });
+  }
+
+  /** `Date de démo : 18/10/2026 (+6 j)` */
+  protected readonly demoDateLabel = computed(() => {
+    const offset = this.clock.offset();
+    return `Date de démo : ${formatDate(this.clock.today())}${offset ? ` (+${offset} j)` : ''}`;
+  });
+
+  protected advanceDay(): void {
+    this.clock.advance();
+    this.toast.info(`Date de démo : ${formatDate(this.clock.today())} — retards recalculés.`);
+  }
+
+  protected async resetDemo(): Promise<void> {
+    const confirmed = await this.confirm.ask({
+      title: 'Réinitialiser les données de démo ?',
+      text: 'Tous les dossiers et états créés pendant cette démonstration seront effacés.',
+      okLabel: 'Réinitialiser',
+      danger: true,
+    });
+    if (!confirmed) {
+      return;
+    }
+    this.store.reset();
+    void this.files.clear();
+    this.clock.reset();
+    this.storage.remove('atrad_notif_read_v1');
+    this.theme.setTheme('light');
+    await this.router.navigate(['/']);
+    this.toast.info('Données de démo réinitialisées.');
   }
 
   protected closeDrawer(): void {

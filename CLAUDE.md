@@ -119,3 +119,9 @@ src/app/
 - `TraitementContext` porte l'entité, le membre incarné (« Voir en tant que », démonstration) et son portefeuille. `DossierActionsService` ouvre le dialogue d'une action puis l'applique.
 - Écrans : `mes-dossiers`, `recherche`, `retard-clotures` (même composant, portée donnée par la route), `dossiers/:ref`, `affectation`. Délais et filtres : `domains/traitement/domain/portfolio.ts`.
 - Menus contextuels : `@angular/cdk/menu` avec la classe `menu-item`.
+
+## Parcours pilotage et date de démonstration
+
+- Indicateurs : fonctions pures de `domains/pilotage/domain/indicators.ts` (respect des délais, périodes, classements), affichées par `tableau-de-bord`, `delais`, `agences`, `rapports`.
+- `DemoClock` (`core/services`) décale la date du jour (« Avancer la date de démo ») pour faire apparaître les retards. Toute date du jour passe par `core/utils/date.util.ts` (`nowIso`, `todayIsoDate`, `isoDateInDays`) ou par `clock.today()` dans un `computed` : ne pas appeler `new Date()` directement.
+- « Réinitialiser les données de démo » vide `TransmissionStore`, les pièces jointes et la date de démonstration.

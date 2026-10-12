@@ -1,0 +1,178 @@
+@let scoped = this.scoped();
+
+<div class="flex animate-enter flex-col gap-[18px]">
+  <section class="panel flex flex-wrap items-end gap-3.5 px-5 py-4">
+    <label class="form-label min-w-[190px] flex-1 gap-1.5 text-[12.5px]">
+      Agence
+      <select class="form-control py-2.5" (change)="onAgence($event)">
+        <option value="" [selected]="!agence()">Toutes les agences</option>
+        @for (option of agences(); track option) {
+          <option [value]="option" [selected]="option === agence()">{{ option }}</option>
+        }
+      </select>
+    </label>
+    <label class="form-label min-w-[190px] flex-1 gap-1.5 text-[12.5px]">
+      Période
+      <select class="form-control py-2.5" (change)="onPeriod($event)">
+        @for (period of periodOptions(); track period.id) {
+          <option [value]="period.id" [selected]="period.id === periodId()">
+            {{ period.label }}
+          </option>
+        }
+      </select>
+    </label>
+    <label class="form-label min-w-[190px] flex-1 gap-1.5 text-[12.5px]">
+      Type de dossier
+      <select class="form-control py-2.5" (change)="onType($event)">
+        <option value="" [selected]="!type()">Tous les types</option>
+        @for (option of types; track option) {
+          <option [value]="option" [selected]="option === type()">{{ option }}</option>
+        }
+      </select>
+    </label>
+    <div class="flex items-center gap-2.5">
+      <button type="button" class="btn-outline px-3.5 py-2.5 text-[13px]" (click)="reset()">
+        Réinitialiser
+      </button>
+      <span class="text-[12px] whitespace-nowrap text-ink-muted" aria-live="polite">
+        {{ scoped.length }} dossier(s) sur le périmètre
+      </span>
+    </div>
+  </section>
+
+  <div class="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3.5">
+    @for (card of cards(); track card.label) {
+      <app-kpi-card
+        [label]="card.label"
+        [value]="card.value"
+        [hint]="card.hint"
+        [tone]="card.tone"
+        [bar]="card.bar"
+      />
+    }
+  </div>
+
+  <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,330px),1fr))] items-start gap-[18px]">
+    <section class="panel px-5 py-[18px]" aria-labelledby="status-title">
+      <div class="mb-4 flex items-baseline justify-between gap-3">
+        <h2 id="status-title" class="text-[14.5px] font-semibold tracking-[-0.01em] text-ink">
+          Répartition par statut
+        </h2>
+        <span class="text-[12px] text-ink-muted">{{ scoped.length }} dossier(s)</span>
+      </div>
+      <ul class="flex flex-col gap-[13px]">
+        @for (entry of statuses(); track entry.label) {
+          <li class="flex flex-col gap-1.5" [class]="entry.modifier">
+            <div class="flex items-baseline justify-between gap-3">
+              <span class="flex items-center gap-2 text-[13px] text-ink-secondary">
+                <span class="size-[9px] flex-none rounded-[2px] bg-(--status-fg)"></span>
+                {{ entry.label }}
+              </span>
+              <span class="font-mono text-[12.5px] text-ink">
+                {{ entry.count }} · {{ entry.share }} %
+              </span>
+            </div>
+            <div class="h-[9px] overflow-hidden rounded-[calc(var(--radius-brand)*0.5)] bg-soft">
+              <div
+                class="h-[9px] rounded-[calc(var(--radius-brand)*0.5)] bg-(--status-fg)"
+                [style.width.%]="entry.share"
+              ></div>
+            </div>
+          </li>
+        }
+      </ul>
+    </section>
+
+    <section class="panel px-5 py-[18px]" aria-labelledby="volume-title">
+      <h2 id="volume-title" class="mb-4 text-[14.5px] font-semibold tracking-[-0.01em] text-ink">
+        Volume par type de dossier
+      </h2>
+      <ul class="flex flex-col gap-[13px]">
+        @for (entry of volumes(); track entry.label) {
+          <li class="flex flex-col gap-1.5">
+            <div class="flex items-baseline justify-between gap-3">
+              <span class="text-[13px] text-ink-secondary">{{ entry.label }}</span>
+              <span class="font-mono text-[12.5px] text-ink">{{ entry.count }}</span>
+            </div>
+            <div class="h-[9px] overflow-hidden rounded-[calc(var(--radius-brand)*0.5)] bg-soft">
+              <div
+                class="h-[9px] rounded-[calc(var(--radius-brand)*0.5)] bg-brand"
+                [style.width.%]="entry.share"
+              ></div>
+            </div>
+          </li>
+        }
+      </ul>
+      <div class="mt-4 flex justify-between gap-3 border-t border-soft pt-3.5 text-[12.5px]">
+        <span class="text-ink-muted">Délai moyen de traitement</span>
+        <span class="font-mono font-semibold text-heading">{{ averageDelay() }}</span>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel overflow-hidden" aria-labelledby="performance-title">
+    <header
+      class="flex flex-wrap items-baseline justify-between gap-2.5 border-b border-line px-5 py-4"
+    >
+      <h2 id="performance-title" class="text-[14.5px] font-semibold tracking-[-0.01em] text-ink">
+        Performance par agence d'origine
+      </h2>
+      <span class="text-[12px] text-ink-muted"
+        >Objectif de respect des délais : {{ target }} %</span
+      >
+    </header>
+    @if (scoped.length) {
+      <div class="overflow-x-auto">
+        <table class="grid-table min-w-[760px] text-[13px]">
+          <thead>
+            <tr class="perf-grid grid-head">
+              <th scope="col">Agence</th>
+              <th scope="col">Dossiers</th>
+              <th scope="col">En cours</th>
+              <th scope="col">En retard</th>
+              <th scope="col">Respect des délais</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of performance(); track row.agence) {
+              <tr
+                class="perf-grid items-center border-b border-soft px-5 py-[13px] last:border-b-0"
+              >
+                <td class="truncate text-ink">{{ row.agence }}</td>
+                <td class="font-mono text-[12.5px] text-ink">{{ row.total }}</td>
+                <td class="font-mono text-[12.5px] text-warning">{{ row.ongoing }}</td>
+                <td
+                  class="font-mono text-[12.5px]"
+                  [class]="row.late ? 'text-danger' : 'text-ink-muted'"
+                >
+                  {{ row.late }}
+                </td>
+                <td class="flex items-center gap-[9px]">
+                  <span
+                    class="h-[7px] flex-1 overflow-hidden rounded-[calc(var(--radius-brand)*0.5)] bg-soft"
+                  >
+                    <span
+                      class="block h-[7px] rounded-[calc(var(--radius-brand)*0.5)]"
+                      [class]="toneBar[row.tone]"
+                      [style.width.%]="row.rate ?? 0"
+                    ></span>
+                  </span>
+                  <span
+                    class="font-mono text-[12.5px] whitespace-nowrap"
+                    [class]="toneText[row.tone]"
+                  >
+                    {{ row.rate === null ? '—' : row.rate + ' %' }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <p class="px-5 py-10 text-center text-[13.5px] text-ink-muted">
+        Aucun dossier sur ce périmètre. Élargissez les filtres.
+      </p>
+    }
+  </section>
+</div>

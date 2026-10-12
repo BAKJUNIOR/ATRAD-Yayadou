@@ -25,6 +25,10 @@ export class PieceFileStore {
     return this.run('readwrite', (store) => store.delete(id)).then(() => undefined);
   }
 
+  clear(): Promise<void> {
+    return this.run('readwrite', (store) => store.clear()).then(() => undefined);
+  }
+
   private open(): Promise<IDBDatabase> {
     this.database ??= new Promise((resolve, reject) => {
       const request = indexedDB.open(DB_NAME, 1);

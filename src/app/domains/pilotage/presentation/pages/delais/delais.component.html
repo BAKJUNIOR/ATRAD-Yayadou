@@ -1,0 +1,119 @@
+@let result = sla();
+
+<div class="flex animate-enter flex-col gap-[18px]">
+  <div class="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3.5">
+    <app-kpi-card
+      label="Respect des délais (global)"
+      [value]="result.rate + ' %'"
+      [hint]="'objectif ' + target + ' %'"
+      [tone]="result.rate >= target ? 'success' : 'danger'"
+    />
+    <app-kpi-card
+      label="Dossiers en retard"
+      tone="danger"
+      [value]="'' + late().length"
+      [hint]="'sur ' + total() + ' dossiers actifs'"
+    />
+    <app-kpi-card
+      label="Traités dans les délais"
+      hint="validés ou clôturés"
+      tone="success"
+      [value]="result.onTime.length + ' / ' + result.treated.length"
+    />
+  </div>
+
+  <section class="panel overflow-hidden" aria-labelledby="late-title">
+    <header class="border-b border-line px-5 py-4">
+      <h2 id="late-title" class="mb-[3px] text-[15px] font-semibold text-ink">
+        Dossiers en retard
+      </h2>
+      <p class="text-[12.5px] text-ink-muted">
+        Triés par nombre de jours de dépassement, du plus critique au moins critique.
+      </p>
+    </header>
+    @if (late().length) {
+      <div class="overflow-x-auto">
+        <table class="grid-table min-w-[860px] text-[13px]">
+          <thead>
+            <tr class="late-grid grid-head">
+              <th scope="col">Référence</th>
+              <th scope="col">Client</th>
+              <th scope="col">Agence</th>
+              <th scope="col">Type</th>
+              <th scope="col">Retard</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of late(); track row.dossier.id) {
+              <tr
+                class="late-grid items-center border-b border-soft px-5 py-[13px] last:border-b-0"
+              >
+                <td class="font-mono text-[12.5px] whitespace-nowrap text-brand-ink">
+                  {{ row.dossier.ref }}
+                </td>
+                <td class="truncate text-ink">{{ row.dossier.client }}</td>
+                <td class="truncate text-ink-muted">{{ row.dossier.agence }}</td>
+                <td class="truncate text-ink-muted">{{ row.dossier.type }}</td>
+                <td class="font-mono text-[12.5px] font-semibold text-danger">{{ row.days }} j</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <p class="px-5 py-10 text-center text-[13.5px] text-ink-muted">
+        Aucun dossier en retard actuellement.
+      </p>
+    }
+  </section>
+
+  <section class="panel overflow-hidden" aria-labelledby="ranking-title">
+    <header class="border-b border-line px-5 py-4">
+      <h2 id="ranking-title" class="text-[15px] font-semibold text-ink">
+        Classement des agences par respect des délais
+      </h2>
+    </header>
+    <div class="overflow-x-auto">
+      <table class="grid-table min-w-[760px] text-[13px]">
+        <thead>
+          <tr class="ranking-grid grid-head">
+            <th scope="col">#</th>
+            <th scope="col">Agence</th>
+            <th scope="col">Dossiers</th>
+            <th scope="col">En retard</th>
+            <th scope="col">Respect des délais</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of ranking(); track row.agence) {
+            <tr
+              class="ranking-grid items-center border-b border-soft px-5 py-[13px] last:border-b-0"
+            >
+              <td class="font-mono text-[12.5px] text-ink-muted">{{ row.rank }}</td>
+              <td class="truncate text-ink">{{ row.agence }}</td>
+              <td class="font-mono text-[12.5px] text-ink">{{ row.total }}</td>
+              <td class="font-mono text-[12.5px] text-danger">{{ row.late }}</td>
+              <td class="flex items-center gap-[9px]">
+                <span
+                  class="h-[7px] flex-1 overflow-hidden rounded-[calc(var(--radius-brand)*0.5)] bg-soft"
+                >
+                  <span
+                    class="block h-[7px] rounded-[calc(var(--radius-brand)*0.5)]"
+                    [class]="toneBar[row.tone]"
+                    [style.width.%]="row.rate"
+                  ></span>
+                </span>
+                <span
+                  class="font-mono text-[12.5px] whitespace-nowrap"
+                  [class]="toneText[row.tone]"
+                >
+                  {{ row.rate }} %
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

@@ -1,14 +1,32 @@
 const pad = (value: number): string => String(value).padStart(2, '0');
 
+/** Décalage de la date de démonstration, en jours (voir `DemoClock`). */
+let dayOffset = 0;
+
+export function setDayOffset(days: number): void {
+  dayOffset = days;
+}
+
+/** Instant courant, décalé de la date de démonstration. */
+function now(): Date {
+  const date = new Date();
+  date.setDate(date.getDate() + dayOffset);
+  return date;
+}
+
 /** Horodatage courant, au format ISO 8601 (celui que renverra l'API). */
 export function nowIso(): string {
-  return new Date().toISOString();
+  return now().toISOString();
 }
 
 /** Date locale du jour au format `yyyy-MM-dd`, comparable aux valeurs d'un `<input type="date">`. */
 export function todayIsoDate(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  return toIsoDate(now());
+}
+
+/** Date locale au format `yyyy-MM-dd`. */
+export function toIsoDate(date: Date): string {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
 /** `17/09/2026` */
@@ -47,7 +65,7 @@ export function formatStamp(iso: string): string {
 
 /** Date locale au format `yyyy-MM-dd`, décalée de `days` jours. */
 export function isoDateInDays(days: number): string {
-  const date = new Date();
+  const date = now();
   date.setDate(date.getDate() + days);
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  return toIsoDate(date);
 }

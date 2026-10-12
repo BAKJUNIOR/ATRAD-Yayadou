@@ -744,3 +744,19 @@ html.dark {
     @apply rounded-control border border-danger-line bg-card px-4 py-[11px] text-start text-[13px] font-semibold text-danger transition-colors enabled:hover:bg-danger-bg disabled:border-line disabled:text-ink-faint disabled:opacity-45;
   }
 }
+
+.perf-grid {
+  grid-template-columns: minmax(180px, 1.4fr) 110px 110px 110px 150px;
+}
+
+.late-grid {
+  grid-template-columns: 120px minmax(180px, 1.2fr) minmax(160px, 1fr) minmax(150px, 1fr) 130px;
+}
+
+.ranking-grid {
+  grid-template-columns: 40px minmax(180px, 1.4fr) 110px 110px 150px;
+}
+
+.agences-grid {
+  grid-template-columns: minmax(190px, 1.4fr) 140px 150px 160px;
+}

@@ -1,6 +1,6 @@
 import { Service, computed, inject } from '@angular/core';
 import { SessionService } from '../../../core/services/session.service';
-import { todayIsoDate } from '../../../core/utils/date.util';
+import { DemoClock } from '../../../core/services/demo-clock.service';
 import { entityCode } from '../../../core/utils/text.util';
 import {
   ENTITES,
@@ -21,7 +21,12 @@ export class TraitementContext {
   private readonly session = inject(SessionService);
   private readonly store = inject(TransmissionStore);
 
-  readonly today = todayIsoDate();
+  private readonly clock = inject(DemoClock);
+
+  /** Date du jour (`yyyy-MM-dd`) ; suit la date de démonstration. */
+  get today(): string {
+    return this.clock.today();
+  }
 
   /** Entité de l'agent ; à défaut de correspondance, la première du référentiel. */
   readonly entite = computed(() => {
