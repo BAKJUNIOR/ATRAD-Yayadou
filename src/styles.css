@@ -627,3 +627,90 @@ html.dark {
     @apply inline-flex items-center justify-center gap-1.5 rounded-control border border-line-strong bg-card px-[15px] py-[11px] text-[13.5px] whitespace-nowrap text-ink-secondary transition-colors hover:border-brand hover:text-brand-ink active:translate-y-px;
   }
 }
+
+/*
+  Tableaux en grille : les colonnes sont fixées par un modificateur (ex. `.etats-grid`) appliqué à
+  chaque ligne, comme dans le prototype, tout en gardant la sémantique <table>.
+*/
+.grid-table,
+.grid-table thead,
+.grid-table tbody {
+  display: block;
+}
+
+.grid-table tr {
+  display: grid;
+  gap: 12px;
+}
+
+.grid-table th,
+.grid-table td {
+  min-width: 0;
+  padding: 0;
+  text-align: start;
+}
+
+.grid-head {
+  align-items: center;
+  padding: 11px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.grid-head th {
+  font-weight: 500;
+}
+
+.etats-grid {
+  grid-template-columns: 140px minmax(150px, 1fr) minmax(140px, 1fr) 90px 150px 130px;
+}
+
+.pointage-grid {
+  grid-template-columns:
+    22px 120px minmax(140px, 1.3fr) minmax(120px, 1fr) minmax(100px, 0.8fr)
+    minmax(110px, 0.9fr) 84px 118px 20px;
+}
+
+.routage-grid {
+  grid-template-columns: 120px minmax(170px, 1.3fr) minmax(140px, 1fr) 130px 150px 90px 200px;
+}
+
+.retours-grid {
+  grid-template-columns:
+    36px 104px minmax(160px, 1.2fr) minmax(120px, 1fr) 110px minmax(160px, 1.3fr)
+    minmax(150px, 1.2fr) 120px;
+}
+
+/* Pastille teintée par `--tone` (pointage de réception). */
+.tone-pill {
+  border: 1px solid color-mix(in srgb, var(--tone) 30%, transparent);
+  background: color-mix(in srgb, var(--tone) 12%, transparent);
+  color: var(--tone);
+}
+
+.tone-pill-dot {
+  background: var(--tone);
+}
+
+.tone-success {
+  --tone: var(--success);
+}
+
+.tone-danger {
+  --tone: var(--danger);
+}
+
+.tone-warning {
+  --tone: var(--warning);
+}
+
+@layer components {
+  .chip-button {
+    @apply rounded-[calc(var(--radius-brand)*0.7)] border border-line-strong bg-card px-2.5 py-1.5 text-[12.5px] whitespace-nowrap text-ink-secondary transition-colors hover:border-brand hover:text-brand-ink;
+  }
+}

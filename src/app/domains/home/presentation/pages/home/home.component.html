@@ -1,15 +1,15 @@
 @if (dashboard(); as dashboard) {
-  <div class="flex animate-enter flex-col gap-5">
+  <div class="flex animate-enter flex-col gap-[22px] px-0 pt-0.5">
     <div class="flex flex-wrap items-end justify-between gap-5">
-      <div class="flex flex-col gap-1">
+      <div class="flex flex-col gap-[5px]">
         <h1 class="text-[25px] font-semibold tracking-[-0.015em] text-ink">
           {{ dashboard.greeting }}
         </h1>
         <p class="text-[13.5px] text-pretty text-ink-muted">{{ dashboard.subline }}</p>
       </div>
-      <a appButton [routerLink]="primaryPath()">
+      <a class="btn-primary" [routerLink]="primaryPath()">
+        <app-icon [name]="primaryIcon()" [size]="16" [strokeWidth]="2.2" />
         {{ dashboard.primaryLabel }}
-        <app-icon name="arrow-right" [size]="16" [strokeWidth]="2.2" />
       </a>
     </div>
 
@@ -24,11 +24,10 @@
       }
     </div>
 
-    <div class="grid items-start gap-[18px] xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-      <section
-        class="overflow-hidden rounded-panel border border-line bg-card shadow-card"
-        aria-labelledby="home-list-title"
-      >
+    <div
+      class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,340px),1fr))] items-start gap-[18px]"
+    >
+      <section class="panel overflow-hidden" aria-labelledby="home-list-title">
         <div
           class="flex items-center justify-between gap-3 border-b border-line px-[18px] py-[15px]"
         >
@@ -47,8 +46,8 @@
             <li
               class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-soft px-[18px] py-[13px] last:border-b-0"
             >
-              <div class="flex min-w-0 flex-col gap-0.5">
-                <div class="flex items-center gap-2">
+              <div class="flex min-w-0 flex-col gap-[3px]">
+                <div class="flex items-center gap-[9px]">
                   <span
                     class="flex-none font-mono text-[12.5px] font-medium whitespace-nowrap text-heading"
                   >
@@ -58,39 +57,97 @@
                 </div>
                 <span class="text-[11.5px] text-ink-muted">{{ row.meta }}</span>
               </div>
-              <app-status-badge [status]="row.status" />
+              <div class="flex items-center justify-end gap-2.5">
+                <app-status-badge [status]="row.status" />
+                @if (row.actions; as actions) {
+                  <select
+                    class="w-full max-w-[180px] rounded-[calc(var(--radius-brand)*0.7)] border border-line-strong bg-card px-[9px] py-[7px] text-[12.5px] font-medium text-heading outline-none focus:border-brand focus:ring-3 focus:ring-brand/16"
+                    [attr.aria-label]="'Actions sur ' + row.ref"
+                    (change)="runAction(actions, $event)"
+                  >
+                    <option value="">Actions…</option>
+                    @for (action of actions; track action.id) {
+                      <option
+                        [value]="action.id"
+                        [disabled]="!!action.disabledReason"
+                        [attr.title]="action.disabledReason || null"
+                      >
+                        {{ action.label
+                        }}{{ action.disabledReason ? ' (' + action.disabledReason + ')' : '' }}
+                      </option>
+                    }
+                  </select>
+                }
+              </div>
+            </li>
+          } @empty {
+            <li class="px-[18px] py-7 text-center text-[13px] text-ink-muted">
+              Aucun élément pour le moment.
             </li>
           }
         </ul>
       </section>
 
-      <section
-        class="rounded-panel border border-line bg-card shadow-card"
-        aria-labelledby="home-lifecycle-title"
-      >
-        <h2
-          id="home-lifecycle-title"
-          class="border-b border-line px-[18px] py-[15px] text-[14.5px] font-semibold tracking-[-0.01em] text-ink"
-        >
-          Cycle de vie d'un dossier
-        </h2>
-        <ol class="flex flex-col gap-4 px-[18px] py-4">
-          @for (step of lifecycle; track step.title; let index = $index) {
-            <li class="flex gap-3">
-              <span
-                class="flex size-6 flex-none items-center justify-center rounded-full border border-brand-tint-line bg-brand-tint font-mono text-[11.5px] font-semibold text-brand-ink"
-                aria-hidden="true"
+      <div class="flex flex-col gap-[18px]">
+        <section class="panel p-[18px]" aria-labelledby="home-lifecycle-title">
+          <h2
+            id="home-lifecycle-title"
+            class="mb-3.5 text-[14.5px] font-semibold tracking-[-0.01em] text-ink"
+          >
+            Cycle de vie d'un dossier
+          </h2>
+          <ol class="flex flex-col">
+            @for (step of lifecycle; track step.title; let index = $index; let first = $first) {
+              <li class="grid grid-cols-[26px_minmax(0,1fr)] gap-3">
+                <div class="flex flex-col items-center">
+                  <span
+                    class="flex size-[26px] flex-none items-center justify-center rounded-full border text-[11.5px] font-semibold"
+                    [class]="
+                      first
+                        ? 'border-brand-tint-line bg-brand-tint text-brand-ink'
+                        : 'border-line bg-subtle text-ink-muted'
+                    "
+                    aria-hidden="true"
+                  >
+                    {{ index + 1 }}
+                  </span>
+                  <span class="min-h-3.5 w-px flex-1 bg-line"></span>
+                </div>
+                <div class="flex flex-col gap-0.5 pb-3.5">
+                  <span class="text-[13px] font-medium text-ink">{{ step.title }}</span>
+                  <span class="text-[11.5px] text-pretty text-ink-muted">{{
+                    step.description
+                  }}</span>
+                </div>
+              </li>
+            }
+          </ol>
+        </section>
+
+        <section class="flex flex-col gap-2.5 rounded-brand bg-navy p-[18px] text-side">
+          <h2 class="text-[14px] font-semibold text-white">Changer de rôle</h2>
+          <p class="text-[12px] text-side-muted">
+            Pour la démonstration, basculez d'un profil à l'autre sans vous reconnecter.
+          </p>
+          <div class="flex flex-wrap gap-[7px] pt-1">
+            @for (account of demoAccounts; track account.ident) {
+              <button
+                type="button"
+                class="rounded-full border px-[11px] py-1.5 text-[12px] transition-colors hover:bg-white/14"
+                [class]="
+                  account.role === role()
+                    ? 'border-brand-mid bg-brand-mid text-brand-on-mid hover:bg-brand-mid'
+                    : 'border-white/20 text-side'
+                "
+                [attr.aria-pressed]="account.role === role()"
+                (click)="switchTo(account)"
               >
-                {{ index + 1 }}
-              </span>
-              <div class="flex min-w-0 flex-col gap-0.5">
-                <span class="text-[13px] font-medium text-ink">{{ step.title }}</span>
-                <span class="text-[12px] text-pretty text-ink-muted">{{ step.description }}</span>
-              </div>
-            </li>
-          }
-        </ol>
-      </section>
+                {{ roleShort[account.role] }}
+              </button>
+            }
+          </div>
+        </section>
+      </div>
     </div>
   </div>
 }

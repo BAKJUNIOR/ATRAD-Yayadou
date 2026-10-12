@@ -1,6 +1,7 @@
 import { Service, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Account, isRole } from '../../domains/auth/domain/entities/account.entity';
+import { ConfirmService } from './confirm.service';
 import { StorageService } from './storage.service';
 
 const SESSION_KEY = 'atrad_session_v1';
@@ -14,6 +15,7 @@ const SESSION_KEY = 'atrad_session_v1';
 export class SessionService {
   private readonly storage = inject(StorageService);
   private readonly router = inject(Router);
+  private readonly confirm = inject(ConfirmService);
 
   private readonly current = signal<Account | null>(this.readStoredAccount());
 
@@ -39,10 +41,19 @@ export class SessionService {
   }
 
   /**
-   * Renvoie à la page de connexion puis déconnecte. La session n'est fermée qu'une fois l'écran
+   * Après confirmation, renvoie à la page de connexion puis déconnecte. La session n'est fermée qu'une fois l'écran
    * courant quitté : il peut refuser de l'être si une saisie n'est pas enregistrée.
    */
   async signOutAndLeave(): Promise<void> {
+    const confirmed = await this.confirm.ask({
+      title: 'Se déconnecter ?',
+      text: `Vous allez quitter la session de ${this.current()?.name ?? ''}. Les données de démo restent enregistrées sur ce poste.`,
+      okLabel: 'Se déconnecter',
+      danger: true,
+    });
+    if (!confirmed) {
+      return;
+    }
     this.leaving = true;
     const left = await this.router.navigate(['/signin']);
     this.leaving = false;

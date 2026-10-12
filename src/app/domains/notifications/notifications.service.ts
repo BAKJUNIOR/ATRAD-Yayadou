@@ -3,6 +3,7 @@ import { SessionService } from '../../core/services/session.service';
 import { StorageService } from '../../core/services/storage.service';
 import { formatDateTime } from '../../core/utils/date.util';
 import { entityCode } from '../../core/utils/text.util';
+import { pendingEtats, pendingReturns, remainingCount } from '../accueil/domain/reception';
 import { TransmissionStore } from '../dossiers/infrastructure/store/transmission.store';
 
 const READ_KEY = 'atrad_notif_read_v1';
@@ -21,7 +22,7 @@ export interface AppNotification {
 
 /**
  * Notifications de l'utilisateur connecté, déduites de l'état des dossiers.
- * Seul le profil agence en reçoit pour l'instant ; les autres seront ajoutés avec leurs parcours.
+ * Profils couverts : agence et accueil ; les autres seront ajoutés avec leurs parcours.
  */
 @Service()
 export class NotificationsService {
@@ -35,9 +36,47 @@ export class NotificationsService {
 
   readonly items = computed<AppNotification[]>(() => {
     const account = this.session.account();
-    if (account?.role !== 'agence') {
+    if (!account) {
       return [];
     }
+    const found =
+      account.role === 'agence'
+        ? this.forAgence(account.entity)
+        : account.role === 'accueil'
+          ? this.forAccueil()
+          : [];
+    const read = this.readMap();
+    return found.map((item) => ({ ...item, read: !!read[this.key(account.role, item.id)] }));
+  });
+
+  readonly unreadCount = computed(() => this.items().filter((item) => !item.read).length);
+
+  private forAccueil(): Omit<AppNotification, 'read'>[] {
+    const found: Omit<AppNotification, 'read'>[] = [];
+    const pending = pendingEtats(this.store.etats());
+    if (pending.length) {
+      found.push({
+        id: `pend:${pending.map((etat) => etat.ref + remainingCount(etat)).join(',')}`,
+        label: `${pending.length} état(s) de transmission reçu(s) à réceptionner`,
+        meta: pending.map((etat) => etat.ref).join(', '),
+        path: '/accueil-central/etats-recus',
+        tone: 'warn',
+      });
+    }
+    const returns = pendingReturns(this.store.dossiers());
+    if (returns.length) {
+      found.push({
+        id: `ret:${returns.map((dossier) => dossier.ref).join(',')}`,
+        label: `${returns.length} dossier(s) retourné(s) à traiter`,
+        meta: "Renvoi à l'agence en attente",
+        path: '/accueil-central/dossiers-retournes',
+        tone: 'danger',
+      });
+    }
+    return found;
+  }
+
+  private forAgence(entity: string): Omit<AppNotification, 'read'>[] {
     const found: Omit<AppNotification, 'read'>[] = [];
     const draft = this.store.draft();
     if (draft.length) {
@@ -50,7 +89,7 @@ export class NotificationsService {
       });
     }
 
-    const mine = this.store.etats().filter((etat) => etat.code === entityCode(account.entity));
+    const mine = this.store.etats().filter((etat) => etat.code === entityCode(entity));
     const waiting = mine.filter((etat) => !etat.receivedAt);
     if (waiting.length) {
       const refs = waiting.map((etat) => etat.ref).join(', ');
@@ -76,11 +115,8 @@ export class NotificationsService {
       }
     }
 
-    const read = this.readMap();
-    return found.map((item) => ({ ...item, read: !!read[this.key(account.role, item.id)] }));
-  });
-
-  readonly unreadCount = computed(() => this.items().filter((item) => !item.read).length);
+    return found;
+  }
 
   markRead(id: string): void {
     this.mark([id]);

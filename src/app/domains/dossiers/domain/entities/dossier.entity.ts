@@ -71,3 +71,34 @@ export interface EtatDossier extends Dossier {
   /** Entité de traitement réelle, renseignée au routage. */
   entite?: string;
 }
+
+/**
+ * Dossier réceptionné par l'Accueil et routé vers son entité de traitement.
+ * Il vit désormais indépendamment de l'état qui l'a transmis.
+ */
+export interface RoutedDossier extends Dossier {
+  status: Status;
+  /** Agence émettrice avec son code : `Agence Plateau (AG-014)`. */
+  agence: string;
+  /** Référence de l'état d'origine. */
+  etat: string;
+  entite: string;
+  /** Date du routage vers l'entité. */
+  affecte: string;
+  affectedBy: string;
+  /** Échéance de traitement (`yyyy-MM-dd`), déduite de la priorité. */
+  echeanceIso: string;
+  delai: string;
+  /** Gestionnaire en charge ; vide tant que le dossier n'est pas pris en charge. */
+  gest: string;
+  gestAt: string;
+  // Retour vers l'agence, renseigné par l'entité de traitement puis par l'Accueil.
+  rejectedAt?: string;
+  rejectedBy?: string;
+  rejectReason?: string;
+  /** Le retour est motivé par des documents manquants (et non par une non-éligibilité). */
+  docsRetAt?: string;
+  complements?: string;
+  renvoyeAt?: string;
+  renvoyeBy?: string;
+}

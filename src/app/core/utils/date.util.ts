@@ -39,3 +39,15 @@ export function isoDateToFr(isoDate: string): string {
   const parts = isoDate.split('-');
   return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : isoDate;
 }
+
+/** `17/09/2026 09:12` — forme compacte des tableaux et des historiques. */
+export function formatStamp(iso: string): string {
+  return iso ? `${formatDate(iso)} ${formatTime(iso)}` : '—';
+}
+
+/** Date locale au format `yyyy-MM-dd`, décalée de `days` jours. */
+export function isoDateInDays(days: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}

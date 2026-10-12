@@ -1,0 +1,230 @@
+@let criteria = this.criteria();
+@let results = search.results();
+
+<section class="panel animate-enter overflow-hidden">
+  <div class="flex flex-col gap-3.5 border-b border-line px-[22px] pt-5 pb-4">
+    <div class="flex flex-wrap items-baseline justify-between gap-2.5">
+      <label for="etat-ref-search" class="text-[14.5px] font-semibold tracking-[-0.01em] text-ink">
+        Rechercher un état par sa référence
+      </label>
+      <span
+        class="rounded-full border border-warning-line bg-warning-bg px-2.5 py-1 text-[12px] font-semibold whitespace-nowrap text-warning"
+      >
+        {{ pendingCount() }} en attente de réception
+      </span>
+    </div>
+
+    <form class="flex items-stretch gap-2.5" (submit)="submit($event)">
+      <div class="group relative flex min-w-0 flex-1">
+        <span
+          class="pointer-events-none absolute start-[17px] top-1/2 flex -translate-y-1/2 text-ink-faint transition-colors group-focus-within:text-brand-ink"
+        >
+          <app-icon name="search" [size]="19" [strokeWidth]="2" />
+        </span>
+        <input
+          id="etat-ref-search"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="Ex. ET-2026-0401"
+          class="h-[52px] min-w-0 flex-1 rounded-panel border border-line-strong bg-card ps-12 pe-4 font-mono text-[15.5px] text-ink shadow-[0_1px_2px_rgba(16,24,40,0.05),0_2px_8px_-4px_rgba(16,24,40,0.08)] outline-none placeholder:text-ink-faint focus:border-brand focus:ring-4 focus:ring-brand/16"
+          [value]="criteria.ref"
+          (input)="onText('ref', $event)"
+        />
+      </div>
+      <button
+        type="submit"
+        class="h-[52px] flex-none rounded-panel bg-brand px-[22px] text-[14px] font-semibold whitespace-nowrap text-white transition hover:bg-brand-dark hover:shadow-[0_4px_12px_-4px_color-mix(in_srgb,var(--brand-primary)_45%,transparent)]"
+      >
+        Rechercher
+      </button>
+    </form>
+
+    <div class="flex flex-wrap items-center justify-between gap-2.5">
+      <button
+        type="button"
+        class="-ms-2 inline-flex items-center gap-2 rounded-control py-1.5 ps-2 pe-2.5 text-[13px] font-medium text-ink-secondary transition-colors hover:bg-soft hover:text-brand-ink"
+        aria-controls="etat-advanced-criteria"
+        [attr.aria-expanded]="search.advancedOpen()"
+        (click)="search.advancedOpen.set(!search.advancedOpen())"
+      >
+        <app-icon name="settings" [size]="15" [strokeWidth]="2" />
+        <span class="whitespace-nowrap">Plus de critères</span>
+        @if (search.draftAdvancedCount(); as count) {
+          <span
+            class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1.5 text-[11.5px] font-semibold text-white"
+          >
+            {{ count }}
+          </span>
+        }
+        <app-icon
+          name="chevron-down"
+          class="transition-transform duration-200"
+          [class.rotate-180]="search.advancedOpen()"
+          [size]="13"
+          [strokeWidth]="2.4"
+        />
+      </button>
+      <span class="text-[12px] whitespace-nowrap text-ink-muted">
+        Saisie partielle acceptée, ex. « 0401 »
+      </span>
+    </div>
+  </div>
+
+  @if (search.advancedOpen()) {
+    <div
+      id="etat-advanced-criteria"
+      class="animate-enter border-b border-line bg-subtle px-[22px] pt-[18px] pb-5"
+    >
+      <div
+        class="grid grid-cols-[repeat(auto-fill,minmax(min(100%,200px),1fr))] items-end gap-x-4 gap-y-3.5"
+      >
+        <label class="form-label gap-1.5 text-[12.5px]">
+          N° client
+          <input
+            class="form-control font-mono text-[13px]"
+            placeholder="12 chiffres"
+            [value]="criteria.num"
+            (input)="onText('num', $event)"
+          />
+        </label>
+        <label class="form-label gap-1.5 text-[12.5px]">
+          Prénom du client
+          <input
+            class="form-control text-[13px]"
+            placeholder="Ex. Mariam"
+            [value]="criteria.prenom"
+            (input)="onText('prenom', $event)"
+          />
+        </label>
+        <label class="form-label gap-1.5 text-[12.5px]">
+          N° de compte
+          <input
+            class="form-control font-mono text-[13px]"
+            placeholder="CPT-…"
+            [value]="criteria.compte"
+            (input)="onText('compte', $event)"
+          />
+        </label>
+        <label class="form-label gap-1.5 text-[12.5px]">
+          Agence émettrice
+          <select class="form-control text-[13px]" (change)="onSelect('agence', $event)">
+            <option value="" [selected]="!criteria.agence">Toutes les agences</option>
+            @for (agence of agences(); track agence) {
+              <option [value]="agence" [selected]="agence === criteria.agence">{{ agence }}</option>
+            }
+          </select>
+        </label>
+        <label class="form-label gap-1.5 text-[12.5px]">
+          Type de dossier
+          <select class="form-control text-[13px]" (change)="onSelect('type', $event)">
+            <option value="" [selected]="!criteria.type">Tous les types</option>
+            @for (type of types; track type) {
+              <option [value]="type" [selected]="type === criteria.type">{{ type }}</option>
+            }
+          </select>
+        </label>
+        <label class="form-label gap-1.5 text-[12.5px]">
+          Statut
+          <select class="form-control text-[13px]" (change)="onStatut($event)">
+            <option value="" [selected]="!criteria.statut">Tous les statuts</option>
+            @for (statut of statuts; track statut) {
+              <option [value]="statut" [selected]="statut === criteria.statut">{{ statut }}</option>
+            }
+          </select>
+        </label>
+      </div>
+    </div>
+  }
+
+  @if (!search.active()) {
+    <div class="flex flex-col items-center gap-2.5 px-5 py-11 text-center">
+      <span
+        class="flex size-[46px] items-center justify-center rounded-full bg-brand-tint-soft text-brand-ink"
+      >
+        <app-icon name="search" [size]="20" [strokeWidth]="2" />
+      </span>
+      <span class="text-[14px] font-semibold text-ink">Lancez une recherche</span>
+      <span class="max-w-[420px] text-[13px] text-pretty text-ink-muted">
+        Saisissez la référence de l'état ou ouvrez « Plus de critères ». Les résultats s'afficheront
+        ici.
+      </span>
+    </div>
+  } @else if (results.length) {
+    <div
+      class="flex flex-wrap items-center gap-x-3.5 gap-y-1.5 border-b border-line px-[22px] py-[11px] text-[12.5px] text-ink-muted"
+    >
+      <span class="whitespace-nowrap" aria-live="polite">
+        <strong class="font-semibold text-ink">{{ results.length }}</strong> état(s) trouvé(s)
+      </span>
+      <span class="whitespace-nowrap text-ink-faint">· du plus récent au plus ancien</span>
+      <button
+        type="button"
+        class="text-[12.5px] font-medium whitespace-nowrap text-brand-ink hover:underline"
+        (click)="search.reset()"
+      >
+        Effacer la recherche
+      </button>
+    </div>
+    @if (results.length > 1) {
+      <p class="border-b border-line px-[22px] py-2.5 text-[12.5px] text-ink-muted">
+        Plusieurs états correspondent : cliquez sur une ligne pour ouvrir l'état.
+      </p>
+    }
+    <div class="overflow-x-auto">
+      <table class="grid-table min-w-[900px] text-[13px]">
+        <thead>
+          <tr class="etats-grid grid-head">
+            <th scope="col">Référence</th>
+            <th scope="col">Agence</th>
+            <th scope="col">Type</th>
+            <th scope="col">Dossiers</th>
+            <th scope="col">Transmis le</th>
+            <th scope="col">Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (etat of results; track etat.ref) {
+            <tr
+              class="etats-grid cursor-pointer items-center border-b border-soft px-5 py-[13px] transition-colors hover:bg-brand-tint-soft"
+              (click)="open(etat.ref)"
+            >
+              <td>
+                <button
+                  type="button"
+                  class="font-mono text-[12.5px] font-medium whitespace-nowrap text-heading hover:underline"
+                  [attr.aria-label]="'Ouvrir l\'état ' + etat.ref"
+                  (click)="open(etat.ref); $event.stopPropagation()"
+                >
+                  {{ etat.ref }}
+                </button>
+              </td>
+              <td class="flex min-w-0 flex-col gap-0.5">
+                <span class="truncate text-ink">{{ etat.agence }}</span>
+                <span class="font-mono text-[11.5px] whitespace-nowrap text-ink-muted">
+                  {{ etat.code }}
+                </span>
+              </td>
+              <td class="truncate text-[12.5px] text-ink-secondary">{{ etat.type }}</td>
+              <td class="font-mono text-[12.5px] text-ink">{{ etat.dossiers.length }}</td>
+              <td class="font-mono text-[12px] whitespace-nowrap text-ink-muted">
+                {{ formatStamp(etat.sentAt) }}
+              </td>
+              <td><app-status-badge [status]="etat.status" /></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <div class="flex flex-col items-center gap-3 px-5 py-10 text-center">
+      <span class="text-[14px] text-ink-secondary">{{ noResultMessage() }}</span>
+      <button
+        type="button"
+        class="rounded-control border border-line-strong bg-card px-3.5 py-2 text-[13px] font-medium text-heading transition-colors hover:border-brand hover:text-brand-ink"
+        (click)="search.clearNoResult()"
+      >
+        {{ search.applied().ref ? 'Effacer la recherche' : 'Réinitialiser les critères' }}
+      </button>
+    </div>
+  }
+</section>

@@ -1,0 +1,159 @@
+<div class="flex animate-enter flex-col gap-[18px]">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <p class="max-w-[640px] text-[13px] leading-[1.55] text-pretty text-ink-muted">
+      Dès la réception d'un état, chaque dossier est routé automatiquement vers l'entité rattachée à
+      son type. Cette vue indique où déposer physiquement chaque dossier. Elle est en lecture seule.
+    </p>
+    <div class="flex flex-wrap items-center gap-2">
+      <select
+        class="rounded-control border border-line-strong bg-card px-2.5 py-2 text-[13px] text-ink outline-none focus:border-brand focus:ring-3 focus:ring-brand/16"
+        aria-label="Entité de traitement"
+        (change)="onEntite($event)"
+      >
+        <option value="" [selected]="!entite()">Toutes les entités</option>
+        @for (option of entites; track option.name) {
+          <option [value]="option.name" [selected]="option.name === entite()">
+            {{ option.name }}
+          </option>
+        }
+      </select>
+      <input
+        class="w-[220px] rounded-control border border-line-strong bg-card px-[11px] py-2 text-[13px] text-ink outline-none placeholder:text-ink-faint focus:border-brand focus:ring-3 focus:ring-brand/16"
+        placeholder="Dossier, client, état…"
+        aria-label="Filtrer par dossier, client ou état"
+        [value]="query()"
+        (input)="onQuery($event)"
+      />
+      <button
+        type="button"
+        class="rounded-control border px-3 py-2 text-[12.5px] font-medium whitespace-nowrap transition-colors"
+        [class]="
+          pendingOnly()
+            ? 'border-brand bg-brand text-white'
+            : 'border-line-strong bg-card text-ink-secondary'
+        "
+        [attr.aria-pressed]="pendingOnly()"
+        (click)="pendingOnly.set(!pendingOnly())"
+      >
+        Non pris en charge uniquement
+      </button>
+    </div>
+  </div>
+
+  <dl class="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-3">
+    @for (kpi of kpis(); track kpi.label) {
+      <div class="panel flex flex-col gap-1.5 px-4 py-3.5">
+        <dt class="text-[12px] font-medium text-ink-muted">{{ kpi.label }}</dt>
+        <dd
+          class="text-[24px] font-semibold tracking-[-0.02em] tabular-nums"
+          [class]="kpi.textClass"
+        >
+          {{ kpi.value }}
+        </dd>
+        <dd class="text-[11.5px] text-ink-muted">{{ kpi.hint }}</dd>
+      </div>
+    }
+  </dl>
+
+  @if (empty()) {
+    <p
+      class="rounded-panel border border-line bg-card px-5 py-9 text-center text-[13.5px] text-ink-muted"
+    >
+      Aucun dossier réceptionné pour l'instant. Confirmez la réception d'un état depuis « États
+      reçus ».
+    </p>
+  }
+
+  @for (group of groups(); track group.entite) {
+    <section class="panel overflow-hidden">
+      <header
+        class="flex flex-wrap items-center justify-between gap-2.5 px-5 py-3.5"
+        [class]="group.rows.length ? 'border-b border-line' : ''"
+      >
+        <div class="flex min-w-0 flex-[1_1_220px] flex-col gap-0.5">
+          <h2 class="text-[14.5px] leading-[1.35] font-semibold tracking-[-0.01em] text-ink">
+            {{ group.entite }}
+          </h2>
+          <span class="text-[12px] text-ink-muted">{{ group.types || 'Aucun type rattaché' }}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span
+            class="rounded-full bg-warning-bg px-2.5 py-[3px] text-[12px] font-medium whitespace-nowrap text-warning"
+          >
+            {{ group.pending }} à déposer
+          </span>
+          <span class="font-mono text-[12.5px] whitespace-nowrap text-ink-muted">
+            {{ group.rows.length }} affiché(s)
+          </span>
+        </div>
+      </header>
+      @if (group.rows.length) {
+        <div class="overflow-x-auto">
+          <table class="grid-table min-w-[1060px] text-[13px]">
+            <thead>
+              <tr class="routage-grid grid-head py-2.5">
+                <th scope="col">Dossier</th>
+                <th scope="col">Client</th>
+                <th scope="col">Type</th>
+                <th scope="col">État d'origine</th>
+                <th scope="col">Routé le</th>
+                <th scope="col">Priorité</th>
+                <th scope="col">Prise en charge</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (dossier of group.rows; track dossier.ref) {
+                @let state = takeover(dossier);
+                <tr
+                  class="routage-grid items-center border-b border-soft px-5 py-[11px] last:border-b-0"
+                >
+                  <td class="font-mono text-[12.5px] whitespace-nowrap text-heading">
+                    {{ dossier.ref }}
+                  </td>
+                  <td class="flex min-w-0 flex-col gap-0.5">
+                    <span class="truncate text-ink">{{ dossier.client }}</span>
+                    <span class="truncate text-[11.5px] text-ink-muted">{{ dossier.agence }}</span>
+                  </td>
+                  <td class="truncate text-[12.5px] text-ink-secondary">{{ dossier.type }}</td>
+                  <td class="font-mono text-[12px] whitespace-nowrap text-ink-muted">
+                    {{ dossier.etat }}
+                  </td>
+                  <td class="font-mono text-[12px] whitespace-nowrap text-ink-muted">
+                    {{ formatStamp(dossier.affecte) }}
+                  </td>
+                  <td class="text-[12.5px] font-medium" [class]="priorityText[dossier.prio]">
+                    {{ dossier.prio }}
+                  </td>
+                  <td>
+                    <span
+                      class="inline-block max-w-full truncate rounded-full px-2.5 py-[3px] align-middle text-[12px] font-medium whitespace-nowrap"
+                      [class]="state.classes"
+                    >
+                      {{ state.label }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  }
+
+  <section class="flex flex-col gap-2.5 rounded-panel bg-navy px-5 py-[18px] text-side-muted">
+    <h3 class="text-[13.5px] font-semibold text-white">
+      Règle de routage (paramétrage back-office)
+    </h3>
+    <dl
+      class="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-x-6 gap-y-1.5 text-[12.5px]"
+    >
+      @for (rule of rules; track rule.type) {
+        <div class="flex justify-between gap-3 border-b border-white/8 py-1">
+          <dt>{{ rule.type }}</dt>
+          <dd class="text-white">{{ rule.entite }}</dd>
+        </div>
+      }
+    </dl>
+  </section>
+</div>

@@ -1,5 +1,5 @@
 import { Component, computed, input, output } from '@angular/core';
-import { formatDateTime } from '../../../../../core/utils/date.util';
+import { formatStamp } from '../../../../../core/utils/date.util';
 import { IconComponent } from '../../../../../shared/ui/icon/icon.component';
 import { Etat } from '../../../../dossiers/domain/entities/etat.entity';
 import { entityOfDossier, entitySummary, shortEntity } from '../../../../dossiers/domain/routing';
@@ -16,7 +16,7 @@ export class EtatTransmisComponent {
   readonly newEtat = output<void>();
   readonly print = output<void>();
 
-  protected readonly sentAt = computed(() => formatDateTime(this.etat().sentAt));
+  protected readonly sentAt = computed(() => formatStamp(this.etat().sentAt));
   protected readonly entities = computed(() => entitySummary(this.etat().dossiers));
   protected readonly rows = computed(() =>
     this.etat().dossiers.map((dossier, index) => ({

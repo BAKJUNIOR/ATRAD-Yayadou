@@ -1,0 +1,137 @@
+<section class="panel animate-enter overflow-hidden" aria-labelledby="retours-title">
+  <header class="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4">
+    <div class="flex min-w-0 flex-[1_1_320px] flex-col gap-[3px]">
+      <h2 id="retours-title" class="text-[15px] font-semibold text-ink">Dossiers retournés</h2>
+      <p class="text-[12.5px] text-pretty text-ink-muted">
+        Dossiers mis au statut « Dossier retourné » par une entité de traitement. Choisissez
+        l'entité, cochez les dossiers physiquement reçus et placés dans le courrier, puis confirmez.
+        L'Accueil n'a pas à contrôler le contenu des dossiers : le contrôle est fait par l'entité.
+      </p>
+    </div>
+    <span class="text-[12px] text-ink-muted">{{ pendingLabel() }}</span>
+  </header>
+
+  <div
+    class="flex flex-wrap items-center justify-between gap-2.5 border-b border-line bg-subtle px-5 py-3"
+  >
+    <label class="flex items-center gap-2 text-[12.5px] font-medium text-ink-secondary">
+      Entité
+      <select
+        class="min-w-[220px] rounded-control border border-line-strong bg-card px-2.5 py-2 text-[13px] font-normal text-ink outline-none focus:border-brand focus:ring-3 focus:ring-brand/16"
+        (change)="onEntite($event)"
+      >
+        <option value="" [selected]="!entite()">Toutes les entités ({{ pending().length }})</option>
+        @for (option of entiteOptions(); track option.value) {
+          <option [value]="option.value" [selected]="option.value === entite()">
+            {{ option.label }} ({{ option.count }})
+          </option>
+        }
+      </select>
+    </label>
+    <label class="flex items-center gap-2 text-[12.5px] font-medium text-ink-secondary">
+      Agence
+      <select
+        class="min-w-[180px] rounded-control border border-line-strong bg-card px-2.5 py-2 text-[13px] font-normal text-ink outline-none focus:border-brand focus:ring-3 focus:ring-brand/16"
+        (change)="onAgence($event)"
+      >
+        <option value="" [selected]="!agence()">Toutes les agences</option>
+        @for (option of agenceOptions(); track option) {
+          <option [value]="option" [selected]="option === agence()">{{ option }}</option>
+        }
+      </select>
+    </label>
+    <input
+      class="min-w-[160px] flex-[1_1_180px] rounded-control border border-line-strong bg-card px-[11px] py-2 text-[13px] text-ink outline-none placeholder:text-ink-faint focus:border-brand focus:ring-3 focus:ring-brand/16"
+      placeholder="Référence, client, type…"
+      aria-label="Filtrer par référence, client ou type"
+      [value]="query()"
+      (input)="onQuery($event)"
+    />
+    @if (hasFilter()) {
+      <button type="button" class="btn-outline px-3 py-2 text-[12.5px]" (click)="clearFilters()">
+        Effacer
+      </button>
+    }
+    <button
+      type="button"
+      class="btn-primary px-4 py-[9px] text-[13px] hover:bg-brand hover:brightness-110"
+      [disabled]="!pickedCount()"
+      (click)="confirmReturn()"
+    >
+      <app-icon name="send" [size]="15" [strokeWidth]="2" />
+      Confirmer le retour en agence ({{ pickedCount() }})
+    </button>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="grid-table min-w-[1100px] text-[13px]">
+      <thead>
+        <tr class="retours-grid grid-head">
+          <th scope="col">
+            <input
+              type="checkbox"
+              class="size-4 accent-brand"
+              aria-label="Tout sélectionner"
+              [checked]="allPicked()"
+              [disabled]="!rows().length"
+              (change)="toggleAll()"
+            />
+          </th>
+          <th scope="col">Dossier</th>
+          <th scope="col">Client / agence</th>
+          <th scope="col">Type</th>
+          <th scope="col">Entité</th>
+          <th scope="col">Pièces manquantes</th>
+          <th scope="col">Motif</th>
+          <th scope="col">Retourné le</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (dossier of rows(); track dossier.id) {
+          <tr
+            class="retours-grid cursor-pointer items-center border-b border-soft px-5 py-[13px] transition-colors hover:bg-subtle"
+            (click)="toggle(dossier.id)"
+          >
+            <td>
+              <input
+                type="checkbox"
+                class="size-4 accent-brand"
+                [attr.aria-label]="'Sélectionner ' + dossier.ref"
+                [checked]="isPicked(dossier.id)"
+                (click)="$event.stopPropagation()"
+                (change)="toggle(dossier.id)"
+              />
+            </td>
+            <td class="font-mono text-[12.5px] font-medium whitespace-nowrap text-heading">
+              {{ dossier.ref }}
+            </td>
+            <td class="flex min-w-0 flex-col gap-0.5">
+              <span class="truncate text-ink">{{ dossier.client }}</span>
+              <span class="truncate text-[11.5px] text-ink-muted">{{ dossier.agence }}</span>
+            </td>
+            <td class="truncate text-[12.5px] text-ink-secondary">{{ dossier.type }}</td>
+            <td class="text-[12.5px] text-ink-secondary">{{ bareEntity(dossier.entite) }}</td>
+            <td class="text-[12.5px] text-pretty text-ink">
+              {{ dossier.docsRetAt ? dossier.complements || '—' : '—' }}
+            </td>
+            <td class="flex min-w-0 flex-col gap-[3px]">
+              <span class="text-[11.5px] font-semibold text-danger">
+                {{ dossier.docsRetAt ? 'Faute de document(s)' : 'Non-éligibilité' }}
+              </span>
+              <span class="text-[12.5px] text-pretty text-ink-secondary">
+                {{ dossier.rejectReason || '—' }}
+              </span>
+            </td>
+            <td class="font-mono text-[11.5px] text-ink-muted">
+              {{ dossier.rejectedAt ? formatStamp(dossier.rejectedAt) : '—' }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (!rows().length) {
+    <p class="px-5 py-10 text-center text-[13.5px] text-ink-muted">{{ emptyMessage() }}</p>
+  }
+</section>

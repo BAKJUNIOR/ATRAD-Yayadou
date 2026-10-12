@@ -58,7 +58,9 @@ export class SuiviDossiersComponent {
   private readonly agenceCode = computed(
     () => this.session.account()?.entity.match(/\(([^)]+)\)/)?.[1] ?? '',
   );
-  private readonly all = computed(() => suiviDossiers(this.store.etats(), this.agenceCode()));
+  private readonly all = computed(() =>
+    suiviDossiers(this.store.etats(), this.store.dossiers(), this.agenceCode()),
+  );
   private readonly matching = computed(() =>
     this.all().filter((dossier) => matchesCriteria(dossier, this.applied())),
   );
