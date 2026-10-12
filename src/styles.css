@@ -714,3 +714,33 @@ html.dark {
     @apply rounded-[calc(var(--radius-brand)*0.7)] border border-line-strong bg-card px-2.5 py-1.5 text-[12.5px] whitespace-nowrap text-ink-secondary transition-colors hover:border-brand hover:text-brand-ink;
   }
 }
+
+.portfolio-grid {
+  grid-template-columns:
+    minmax(96px, 0.7fr) minmax(160px, 1.4fr) minmax(120px, 1fr) minmax(120px, 1fr)
+    minmax(96px, 0.7fr) minmax(150px, 1.1fr) minmax(110px, 0.9fr) minmax(70px, 0.5fr) 210px;
+}
+
+.grid-table tr.portfolio-grid {
+  gap: 16px;
+}
+
+.bac-grid {
+  grid-template-columns: 100px minmax(140px, 1.1fr) minmax(110px, 1fr) minmax(170px, 1fr) 96px;
+}
+
+.grid-table tr.bac-grid {
+  gap: 10px;
+}
+
+@layer components {
+  .menu-item {
+    @apply flex min-h-9 w-full items-center gap-2.5 rounded-[calc(var(--radius-brand)*0.6)] px-2.5 py-[7px] text-start text-[13px] leading-[1.3] text-pretty text-ink outline-none hover:bg-subtle focus-visible:bg-subtle aria-disabled:cursor-not-allowed aria-disabled:text-ink-faint;
+  }
+}
+
+@layer components {
+  .reject-button {
+    @apply rounded-control border border-danger-line bg-card px-4 py-[11px] text-start text-[13px] font-semibold text-danger transition-colors enabled:hover:bg-danger-bg disabled:border-line disabled:text-ink-faint disabled:opacity-45;
+  }
+}

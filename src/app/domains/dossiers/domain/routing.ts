@@ -56,16 +56,71 @@ export const MODE_LABEL: Record<AssignmentMode, string> = {
   disp: 'Via un répartiteur',
 };
 
+export interface EntitySettings {
+  mode: AssignmentMode;
+  team: readonly string[];
+  /** Répartiteurs : membres qui attribuent les dossiers en mode « Via un répartiteur ». */
+  dispatchers: readonly string[];
+  /** Membres autorisés à rechercher parmi tous les dossiers de l'entité. */
+  searchers: readonly string[];
+}
+
 /**
- * Paramétrage par défaut des entités (mode de répartition et équipe).
+ * Paramétrage par défaut des entités (mode de répartition, équipe et droits).
  * Deviendra modifiable par l'administrateur (écran « Routage & affectation »).
  */
-export const ENTITY_SETTINGS: Record<string, { mode: AssignmentMode; team: readonly string[] }> = {
-  'Entité Crédits (ET-007)': { mode: 'disp', team: ['Fatou Bamba', 'Éric Tanoh', 'Clarisse Yao'] },
-  'Entité Monétique (ET-012)': { mode: 'auto', team: ['Éric Tanoh'] },
-  'Service Réclamations (ET-020)': { mode: 'auto', team: ['Fatou Bamba', 'Ismaël Ouédraogo'] },
-  'Entité Conformité (ET-031)': { mode: 'auto', team: ['Clarisse Yao', 'Ismaël Ouédraogo'] },
+export const ENTITY_SETTINGS: Record<string, EntitySettings> = {
+  'Entité Crédits (ET-007)': {
+    mode: 'disp',
+    team: ['Fatou Bamba', 'Éric Tanoh', 'Clarisse Yao'],
+    dispatchers: ['Éric Tanoh'],
+    searchers: ['Fatou Bamba', 'Éric Tanoh'],
+  },
+  'Entité Monétique (ET-012)': {
+    mode: 'auto',
+    team: ['Éric Tanoh'],
+    dispatchers: [],
+    searchers: [],
+  },
+  'Service Réclamations (ET-020)': {
+    mode: 'auto',
+    team: ['Fatou Bamba', 'Ismaël Ouédraogo'],
+    dispatchers: [],
+    searchers: [],
+  },
+  'Entité Conformité (ET-031)': {
+    mode: 'auto',
+    team: ['Clarisse Yao', 'Ismaël Ouédraogo'],
+    dispatchers: [],
+    searchers: ['Clarisse Yao'],
+  },
 };
+
+/** Fonctions d'un membre dans une entité. */
+export interface MemberFunctions {
+  traiter: boolean;
+  /** S'attribuer des dossiers depuis le pool partagé. */
+  pool: boolean;
+  /** Affecter les dossiers du bac de répartition. */
+  affecter: boolean;
+  /** Rechercher parmi tous les dossiers de l'entité. */
+  rechercher: boolean;
+}
+
+export type MemberFunction = keyof MemberFunctions;
+
+export function functionsOf(user: string, entite: string): MemberFunctions {
+  const settings = ENTITY_SETTINGS[entite];
+  if (!settings?.team.includes(user)) {
+    return { traiter: false, pool: false, affecter: false, rechercher: false };
+  }
+  return {
+    traiter: true,
+    pool: settings.mode === 'pool',
+    affecter: settings.mode === 'disp' && settings.dispatchers.includes(user),
+    rechercher: settings.searchers.includes(user),
+  };
+}
 
 /** Délai de traitement, en jours, selon la priorité du dossier. */
 export const DELAI_PRIORITE: Record<Priorite, number> = { Urgente: 1, Haute: 3, Normale: 5 };

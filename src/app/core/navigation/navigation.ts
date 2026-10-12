@@ -1,4 +1,5 @@
 import { Role } from '../../domains/auth/domain/entities/account.entity';
+import { MemberFunction } from '../../domains/dossiers/domain/routing';
 import { IconName } from '../../shared/ui/icon/icon.component';
 
 export interface NavItem {
@@ -8,6 +9,8 @@ export interface NavItem {
   /** Absent pour un groupe : l'entrée ne fait que replier / déplier ses `children`. */
   path?: string;
   children?: NavItem[];
+  /** Fonction que l'agent doit avoir dans son entité pour voir l'entrée (profil traitement). */
+  requires?: MemberFunction;
 }
 
 export interface NavMenu {
@@ -66,25 +69,35 @@ export const NAVIGATION: Record<Role, NavMenu> = {
         label: 'Mes dossiers',
         icon: 'folder',
         path: '/traitement/mes-dossiers',
+        requires: 'traiter',
       },
-      { id: 'pool', label: 'Pool de dossiers', icon: 'layers', path: '/traitement/pool' },
+      {
+        id: 'pool',
+        label: 'Pool de dossiers',
+        icon: 'layers',
+        path: '/traitement/pool',
+        requires: 'pool',
+      },
       {
         id: 'affectint',
         label: 'Affectation des dossiers',
         icon: 'shuffle',
         path: '/traitement/affectation',
+        requires: 'affecter',
       },
       {
         id: 'tousdossiers',
         label: 'Rechercher des dossiers',
         icon: 'search',
         path: '/traitement/recherche',
+        requires: 'rechercher',
       },
       {
         id: 'retard',
         label: 'En retard & clôturés',
         icon: 'alert',
         path: '/traitement/retard-clotures',
+        requires: 'traiter',
       },
     ],
   },

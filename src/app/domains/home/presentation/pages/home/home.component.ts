@@ -2,7 +2,7 @@ import { Component, computed, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { NAVIGATION } from '../../../../../core/navigation/navigation';
 import { SessionService } from '../../../../../core/services/session.service';
-import { formatStamp } from '../../../../../core/utils/date.util';
+import { formatDate, formatStamp, isoDateToFr } from '../../../../../core/utils/date.util';
 import { entityCode } from '../../../../../core/utils/text.util';
 import { IconComponent, IconName } from '../../../../../shared/ui/icon/icon.component';
 import { StatCardComponent } from '../../../../../shared/ui/stat-card/stat-card.component';
@@ -11,7 +11,10 @@ import { pendingEtats, remainingCount } from '../../../../accueil/domain/recepti
 import { Account, Role } from '../../../../auth/domain/entities/account.entity';
 import { DEMO_ACCOUNTS } from '../../../../auth/infrastructure/mock/auth.mock';
 import { Etat } from '../../../../dossiers/domain/entities/etat.entity';
+import { isLocked } from '../../../../dossiers/domain/workflow';
 import { TransmissionStore } from '../../../../dossiers/infrastructure/store/transmission.store';
+import { isLate, unassigned } from '../../../../traitement/domain/portfolio';
+import { TraitementContext } from '../../../../traitement/presentation/traitement-context.service';
 import { Dashboard, DashboardAction } from '../../../domain/entities/dashboard.entity';
 import { DASHBOARD_MOCK } from '../../../infrastructure/mock/dashboard.mock';
 
@@ -52,6 +55,7 @@ export class HomeComponent {
   private readonly session = inject(SessionService);
   private readonly store = inject(TransmissionStore);
   private readonly router = inject(Router);
+  private readonly traitement = inject(TraitementContext);
 
   protected readonly lifecycle = LIFECYCLE;
   protected readonly demoAccounts = DEMO_ACCOUNTS;
@@ -70,6 +74,9 @@ export class HomeComponent {
     }
     if (account.role === 'accueil') {
       return { ...base, ...this.accueilDashboard() };
+    }
+    if (account.role === 'traitement') {
+      return { ...base, ...this.traitementDashboard() };
     }
     return base;
   });
@@ -186,6 +193,50 @@ export class HomeComponent {
         meta: this.etatMeta(etat),
         status: etat.status,
         actions: this.etatActions(etat),
+      })),
+    };
+  }
+
+  private traitementDashboard(): Partial<Dashboard> {
+    const context = this.traitement;
+    const entity = context.entityDossiers();
+    const mine = context.myDossiers();
+    const active = mine.filter((dossier) => !isLocked(dossier)).length;
+    const late = mine.filter((dossier) => isLate(dossier, context.today)).length;
+    const waiting = unassigned(entity).length;
+    const done = entity.filter(
+      (dossier) => dossier.status === 'Validé' || dossier.status === 'Clôturé',
+    ).length;
+    let queue = '';
+    if (waiting && context.mode() === 'pool') {
+      queue = ` ${waiting} dossier(s) disponible(s) dans le pool.`;
+    } else if (waiting && context.mode() === 'disp') {
+      queue = ` ${waiting} dossier(s) dans le bac à répartir.`;
+    }
+    return {
+      greeting: `Bonjour ${context.user().split(' ')[0]}`,
+      subline: `${active} dossier(s) en portefeuille, dont ${late} au-delà du délai de traitement.${queue}`,
+      stats: [
+        {
+          label: 'Dossiers affectés',
+          value: String(active),
+          hint: context.entite(),
+          tone: 'heading',
+        },
+        {
+          label: "En cours d'instruction",
+          value: String(mine.filter((dossier) => dossier.status === 'En cours').length),
+          hint: 'statut En cours',
+          tone: 'warning',
+        },
+        { label: 'En retard', value: String(late), hint: 'action requise', tone: 'danger' },
+        { label: 'Validés / clôturés', value: String(done), hint: 'cumul', tone: 'success' },
+      ],
+      rows: mine.slice(0, 5).map((dossier) => ({
+        ref: dossier.ref,
+        label: `${dossier.type} — ${dossier.client}`,
+        meta: `Affecté le ${formatDate(dossier.affecte)} · échéance ${isoDateToFr(dossier.echeanceIso)} · priorité ${dossier.prio.toLowerCase()}`,
+        status: dossier.status,
       })),
     };
   }

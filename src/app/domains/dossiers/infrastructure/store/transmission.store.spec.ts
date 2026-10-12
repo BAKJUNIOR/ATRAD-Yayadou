@@ -81,6 +81,35 @@ describe('TransmissionStore', () => {
     expect(credit?.status).toBe('Reçu');
   });
 
+  it('applies processing actions only where the circuit allows them', () => {
+    store.addDossier(dossier('Demande de prêt'));
+    const sent = store.transmit(AGENT);
+    if (!sent.ok) {
+      throw new Error(sent.error);
+    }
+    store.receive(sent.etat.ref, [sent.etat.dossiers[0].ref], 'Moussa Koné');
+    const id = store.dossiers()[0].id;
+
+    // Clôturer avant validation est refusé par le circuit.
+    expect(store.applyAction(id, { kind: 'cloturer' }, 'Fatou Bamba').ok).toBe(false);
+
+    expect(store.assign(id, 'Fatou Bamba', 'Éric Tanoh').ok).toBe(true);
+    expect(store.dossiers()[0].status).toBe('En cours');
+
+    store.applyAction(id, { kind: 'rejet_info', docs: ['Relevés bancaires'], note: '' }, 'Fatou');
+    expect(store.dossiers()[0].status).toBe('En attente de document(s) complémentaire(s)');
+
+    store.applyAction(id, { kind: 'retour_docs', reason: '' }, 'Fatou');
+    const returned = store.dossiers()[0];
+    expect(returned.status).toBe('Dossier retourné');
+    expect(returned.complements).toBe('Relevés bancaires');
+    // Un dossier retourné n'accepte plus d'action de l'entité…
+    expect(store.applyAction(id, { kind: 'valider' }, 'Fatou').ok).toBe(false);
+    // …et c'est l'Accueil qui le renvoie à l'agence.
+    expect(store.renvoyer([id], 'Moussa Koné')).toHaveLength(1);
+    expect(store.dossiers()[0].status).toBe('Retourné en agence');
+  });
+
   it('ignores a reception with no dossier checked', () => {
     store.addDossier(dossier('Réclamation'));
     const sent = store.transmit(AGENT);

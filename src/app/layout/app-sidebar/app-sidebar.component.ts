@@ -1,11 +1,13 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { NAVIGATION } from '../../core/navigation/navigation';
 import { SessionService } from '../../core/services/session.service';
 import { SidebarService } from '../../core/services/sidebar.service';
 import { initialsOf } from '../../core/utils/text.util';
+import { ENTITES } from '../../domains/dossiers/domain/routing';
 import { NavBadgesService } from '../../domains/notifications/nav-badges.service';
+import { TraitementContext } from '../../domains/traitement/presentation/traitement-context.service';
 import { BrandMarkComponent } from '../../shared/ui/brand-mark/brand-mark.component';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
 
@@ -16,16 +18,43 @@ import { IconComponent } from '../../shared/ui/icon/icon.component';
 })
 export class AppSidebarComponent {
   private readonly session = inject(SessionService);
+  private readonly router = inject(Router);
   protected readonly sidebar = inject(SidebarService);
   protected readonly badges = inject(NavBadgesService).counts;
 
   protected readonly account = this.session.account;
   protected readonly collapsed = this.sidebar.isCollapsed;
 
+  protected readonly traitement = inject(TraitementContext);
+  protected readonly entites = ENTITES;
+  protected readonly isTraitement = computed(() => this.session.role() === 'traitement');
+
   protected readonly menu = computed(() => {
     const role = this.session.role();
-    return role ? NAVIGATION[role] : null;
+    if (!role) {
+      return null;
+    }
+    const menu = NAVIGATION[role];
+    if (role !== 'traitement') {
+      return menu;
+    }
+    // L'agent ne voit que les écrans correspondant à ses fonctions dans l'entité.
+    const functions = this.traitement.functions();
+    return {
+      ...menu,
+      items: menu.items.filter((item) => !item.requires || functions[item.requires]),
+    };
   });
+
+  protected onEntite(event: Event): void {
+    this.traitement.setEntite((event.target as HTMLSelectElement).value);
+    void this.router.navigate(['/']);
+  }
+
+  protected onUser(event: Event): void {
+    this.traitement.setUser((event.target as HTMLSelectElement).value);
+    void this.router.navigate(['/']);
+  }
 
   protected readonly initials = computed(() => initialsOf(this.account()?.name ?? ''));
 

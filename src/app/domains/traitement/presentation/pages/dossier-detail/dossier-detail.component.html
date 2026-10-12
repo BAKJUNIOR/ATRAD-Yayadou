@@ -1,0 +1,344 @@
+<div class="flex animate-enter flex-col gap-[18px]">
+  <a
+    routerLink="/traitement/mes-dossiers"
+    class="btn-outline self-start px-[13px] py-2 text-[12.5px]"
+  >
+    ← Retour à mes dossiers
+  </a>
+
+  @if (dossier(); as dossier) {
+    @let view = this.view()!;
+
+    <section class="panel flex flex-wrap items-start justify-between gap-[18px] p-5">
+      <div class="flex min-w-0 flex-[1_1_380px] flex-col gap-2">
+        <div class="flex flex-wrap items-center gap-2.5">
+          <span
+            class="flex-none font-mono text-[15px] font-semibold whitespace-nowrap text-heading"
+          >
+            {{ dossier.ref }}
+          </span>
+          <app-status-badge [status]="dossier.status" />
+          <span
+            class="text-[12.5px] font-semibold whitespace-nowrap"
+            [class]="priorityText[dossier.prio]"
+          >
+            Priorité {{ dossier.prio }}
+          </span>
+        </div>
+        <h2 class="text-[19px] font-semibold text-ink">{{ dossier.client }}</h2>
+        <p class="text-[13px] text-ink-muted">{{ view.summary }}</p>
+        <dl class="flex flex-wrap gap-x-[22px] gap-y-2 pt-1 text-[12.5px] text-ink">
+          <div class="flex gap-1.5">
+            <dt class="text-ink-muted">Prénom</dt>
+            <dd>{{ dossier.prenom || '—' }}</dd>
+          </div>
+          <div class="flex gap-1.5">
+            <dt class="text-ink-muted">Nom</dt>
+            <dd>{{ dossier.nom || (dossier.prenom ? '—' : dossier.client) }}</dd>
+          </div>
+          <div class="flex gap-1.5">
+            <dt class="whitespace-nowrap text-ink-muted">N° de compte</dt>
+            <dd class="font-mono whitespace-nowrap">{{ dossier.compte || '—' }}</dd>
+          </div>
+        </dl>
+        @if (dossier.extra.length) {
+          <dl
+            class="mt-1.5 grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-x-[22px] gap-y-2.5 rounded-[calc(var(--radius-brand)*0.9)] border border-brand-tint-line bg-brand-tint-soft px-3.5 py-3"
+          >
+            @for (extra of dossier.extra; track extra.label) {
+              <div class="flex flex-col gap-0.5">
+                <dt class="text-[11.5px] text-ink-muted">{{ extra.label }}</dt>
+                <dd class="text-[13px] font-medium text-ink">{{ extra.value }}</dd>
+              </div>
+            }
+          </dl>
+        }
+      </div>
+      <div
+        class="flex flex-none flex-col items-end gap-1 rounded-[calc(var(--radius-brand)*0.9)] border border-line bg-subtle px-3 py-[9px] text-end text-[12.5px]"
+      >
+        <span class="whitespace-nowrap text-ink-muted">
+          Échéance <span class="font-mono text-ink">{{ view.echeance }}</span>
+        </span>
+        <span class="font-semibold whitespace-nowrap" [class]="delayText[view.delay.tone]">
+          {{ view.delay.label }}
+        </span>
+      </div>
+    </section>
+
+    @if (view.locked) {
+      <p
+        class="rounded-control border border-line-strong bg-line px-4 py-3 text-[13px] text-ink-secondary"
+      >
+        {{ view.lockedMessage }}
+      </p>
+    }
+    @if (view.waitingDocs) {
+      <p
+        class="flex flex-col gap-[3px] rounded-control border border-warning-line bg-warning-bg px-4 py-3 text-[13px] text-warning"
+      >
+        <strong class="font-semibold">Document(s) complémentaire(s) attendu(s)</strong>
+        <span>{{ view.docsMessage }}</span>
+      </p>
+    }
+
+    <div
+      class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,400px),1fr))] items-start gap-[18px]"
+    >
+      <div class="flex min-w-0 flex-col gap-[18px]">
+        <section
+          class="flex flex-col gap-3.5 rounded-brand border px-5 py-[18px]"
+          [class]="dossier.gest ? 'border-line bg-subtle' : 'border-warning-line bg-warning-bg'"
+          aria-labelledby="assign-title"
+        >
+          <div class="flex flex-wrap items-baseline justify-between gap-2.5">
+            <h2
+              id="assign-title"
+              class="text-[14px] font-semibold whitespace-nowrap"
+              [class]="dossier.gest ? 'text-ink' : 'text-warning'"
+            >
+              Affectation interne
+            </h2>
+            <span class="text-[11.5px] whitespace-nowrap text-ink-muted">
+              {{ context.modeLabel() }}
+            </span>
+          </div>
+          <dl
+            class="flex flex-col gap-[7px] rounded-control border border-line bg-card px-3.5 py-3 text-[12.5px] text-ink"
+          >
+            <div class="grid grid-cols-[max-content_minmax(0,1fr)] items-baseline gap-x-4">
+              <dt class="whitespace-nowrap text-ink-muted">Gestionnaire</dt>
+              <dd class="min-w-0 text-end font-semibold [overflow-wrap:anywhere]">
+                {{ dossier.gest || notAssigned }}
+              </dd>
+            </div>
+            <div class="grid grid-cols-[max-content_minmax(0,1fr)] items-baseline gap-x-4">
+              <dt class="whitespace-nowrap text-ink-muted">Affecté le</dt>
+              <dd class="text-end font-mono whitespace-nowrap">
+                {{ dossier.gestAt ? formatStamp(dossier.gestAt) : '—' }}
+              </dd>
+            </div>
+            <div class="grid grid-cols-[max-content_minmax(0,1fr)] items-baseline gap-x-4">
+              <dt class="whitespace-nowrap text-ink-muted">Reçu de l'Accueil</dt>
+              <dd class="flex min-w-0 flex-wrap justify-end gap-x-1.5 text-end">
+                <span class="font-mono whitespace-nowrap">{{ dossier.etat }}</span>
+                <span class="whitespace-nowrap">{{ dossier.agence }}</span>
+              </dd>
+            </div>
+          </dl>
+          @if (context.functions().affecter) {
+            <button
+              type="button"
+              class="self-start rounded-control border border-line-strong bg-card px-[13px] py-2 text-[12.5px] font-medium whitespace-nowrap text-heading transition-colors hover:border-brand hover:text-brand-ink"
+              [disabled]="!view.canReassign"
+              [attr.title]="view.canReassign ? null : view.reassignTip"
+              (click)="reassign()"
+            >
+              Réaffecter à un autre gestionnaire
+            </button>
+            <label class="form-label max-w-[340px] gap-1.5 text-[12.5px]">
+              Gestionnaire
+              <select
+                class="form-control py-2.5"
+                [disabled]="view.locked"
+                (change)="onGest($event)"
+              >
+                <option [value]="notAssigned" [selected]="view.pickedGest === notAssigned">
+                  {{ notAssigned }}
+                </option>
+                @for (member of context.team(); track member) {
+                  <option [value]="member" [selected]="member === view.pickedGest">
+                    {{ member }}
+                  </option>
+                }
+              </select>
+            </label>
+            <button
+              type="button"
+              class="btn-primary self-start px-4 py-2.5 text-[13px]"
+              [disabled]="view.locked"
+              (click)="assign()"
+            >
+              {{ dossier.gest ? 'Réaffecter le dossier' : 'Affecter le dossier' }}
+            </button>
+          }
+        </section>
+
+        <section
+          class="panel flex flex-col gap-[13px] px-5 py-[18px]"
+          aria-labelledby="pieces-title"
+        >
+          <div class="flex items-baseline justify-between gap-3">
+            <h2
+              id="pieces-title"
+              class="text-[14.5px] font-semibold tracking-[-0.01em] whitespace-nowrap text-ink"
+            >
+              Pièces du dossier
+            </h2>
+            <span class="text-[12px] whitespace-nowrap text-ink-muted">
+              {{ dossier.pieces.length }} pièce(s)
+            </span>
+          </div>
+          @if (dossier.pieces.length) {
+            <ul class="flex flex-col gap-2">
+              @for (piece of dossier.pieces; track piece.id) {
+                <li>
+                  <button
+                    type="button"
+                    class="flex w-full items-center justify-between gap-3 rounded-control border border-line bg-subtle px-[13px] py-[11px] text-start text-[13px] text-ink transition-colors hover:border-brand"
+                    (click)="pieceOpener.open(piece)"
+                  >
+                    <span class="flex min-w-0 items-center gap-2.5">
+                      <span
+                        class="flex-none rounded-[calc(var(--radius-brand)*0.5)] bg-brand-tint px-[7px] py-0.5 text-[10.5px] font-semibold tracking-[0.04em] text-brand-ink"
+                      >
+                        {{ piece.ext }}
+                      </span>
+                      <span class="truncate">{{ piece.name }}</span>
+                    </span>
+                    <span class="text-[11.5px] whitespace-nowrap text-ink-muted">
+                      {{ sizeLabel(piece.size) }} · {{ formatStamp(piece.at) }} · {{ piece.by }}
+                    </span>
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+          @if (dossier.note) {
+            <p class="text-[12.5px] leading-[1.55] text-ink-muted">{{ dossier.note }}</p>
+          }
+        </section>
+
+        <section
+          class="panel flex flex-col gap-3.5 px-5 py-[18px]"
+          aria-labelledby="comments-title"
+        >
+          <h2 id="comments-title" class="text-[14.5px] font-semibold tracking-[-0.01em] text-ink">
+            Commentaires d'instruction
+          </h2>
+          @if (dossier.comments?.length) {
+            <ul class="flex flex-col gap-3">
+              @for (entry of dossier.comments; track $index) {
+                <li class="flex items-start gap-[11px]">
+                  <span
+                    class="flex size-[30px] flex-none items-center justify-center rounded-full bg-brand-tint text-[12px] font-semibold text-brand-ink"
+                    aria-hidden="true"
+                  >
+                    {{ initialsOf(entry.who) }}
+                  </span>
+                  <div class="flex min-w-0 flex-col gap-[3px]">
+                    <span class="text-[12.5px] font-semibold text-ink">
+                      {{ entry.who }}
+                      <span class="font-mono text-[11.5px] font-normal text-ink-muted">
+                        {{ formatStamp(entry.at) }}
+                      </span>
+                    </span>
+                    <span class="text-[13px] leading-[1.55] text-ink-secondary">{{
+                      entry.text
+                    }}</span>
+                  </div>
+                </li>
+              }
+            </ul>
+          }
+          <form class="flex flex-col gap-2.5" (submit)="publish($event)">
+            <textarea
+              rows="3"
+              class="form-control resize-y px-3 py-[11px] text-[13px]"
+              aria-label="Commentaire d'instruction"
+              [placeholder]="
+                view.locked
+                  ? 'Dossier non modifiable — commentaires fermés.'
+                  : 'Ajouter un commentaire d\'instruction…'
+              "
+              [disabled]="view.locked"
+              [value]="comment()"
+              (input)="onComment($event)"
+            ></textarea>
+            <button
+              type="submit"
+              class="self-start rounded-control border border-line-strong bg-card px-[15px] py-[9px] text-[13px] text-ink-secondary transition-colors enabled:hover:border-brand enabled:hover:text-brand-ink disabled:text-ink-faint disabled:opacity-100"
+              [disabled]="view.locked || !comment().trim()"
+            >
+              Publier le commentaire
+            </button>
+          </form>
+        </section>
+      </div>
+
+      <section
+        class="panel flex min-w-0 flex-col gap-3 px-5 py-[18px]"
+        aria-labelledby="actions-title"
+      >
+        <h2 id="actions-title" class="text-[14.5px] font-semibold tracking-[-0.01em] text-ink">
+          Actions de traitement
+        </h2>
+        <p class="text-[12.5px] leading-[1.55] text-ink-muted">{{ view.hint }}</p>
+        <span
+          class="rounded-[calc(var(--radius-brand)*0.7)] border border-line bg-subtle px-2.5 py-[7px] text-[11.5px] leading-[1.45] text-ink-secondary"
+        >
+          {{ view.circuit }}
+        </span>
+        @for (transition of view.statusTransitions; track transition.target) {
+          <button
+            type="button"
+            class="rounded-control border border-brand bg-brand-tint-soft px-4 py-[11px] text-[13.5px] font-semibold text-brand-ink transition-colors hover:bg-brand-tint"
+            (click)="actions.run(dossier, 'statut', transition.target)"
+          >
+            {{ transition.label }}
+          </button>
+        }
+        <button
+          type="button"
+          class="btn-primary px-4"
+          [disabled]="!view.canValidate"
+          [attr.title]="view.validateTip"
+          (click)="actions.run(dossier, 'valider')"
+        >
+          Valider le dossier
+        </button>
+        <button
+          type="button"
+          class="rounded-control border bg-card px-4 py-[11px] text-[13.5px] font-semibold disabled:opacity-100"
+          [class]="view.canClose ? 'border-navy text-heading' : 'border-line text-ink-faint'"
+          [disabled]="!view.canClose"
+          [attr.title]="view.closeTip"
+          (click)="actions.run(dossier, 'cloturer')"
+        >
+          Clôturer le dossier
+        </button>
+        <div class="flex flex-col gap-2 border-t border-line pt-1.5">
+          <span class="text-[11.5px] font-semibold tracking-[0.04em] text-ink-muted uppercase">
+            Rejet / retour
+          </span>
+          <button
+            type="button"
+            class="reject-button"
+            [disabled]="!view.canReturn"
+            [attr.title]="view.canReturn ? null : view.notAllowedTip"
+            (click)="actions.run(dossier, 'retour_noneligible')"
+          >
+            {{ view.returnLabel }}
+          </button>
+          <button
+            type="button"
+            class="reject-button"
+            [disabled]="!view.canRequestDocs"
+            [attr.title]="view.canRequestDocs ? null : view.notAllowedTip"
+            (click)="actions.run(dossier, 'rejet_info')"
+          >
+            Demander des documents complémentaires
+          </button>
+        </div>
+      </section>
+    </div>
+  } @else {
+    <section class="panel flex flex-col items-center gap-2.5 px-5 py-10 text-center">
+      <h2 class="text-[15px] font-semibold text-ink">Dossier introuvable</h2>
+      <p class="text-[13px] text-ink-muted">
+        Aucun dossier <span class="font-mono">{{ ref() }}</span> dans l'entité
+        {{ context.entiteShort() }}.
+      </p>
+    </section>
+  }
+</div>

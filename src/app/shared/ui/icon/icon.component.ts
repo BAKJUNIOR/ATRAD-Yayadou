@@ -2,6 +2,9 @@ import { Component, computed, input } from '@angular/core';
 
 /** Tracés au trait sur une grille 24×24 ; la couleur suit `currentColor`. */
 const ICON_PATHS = {
+  more: 'M5 12h.01M12 12h.01M19 12h.01',
+  'user-plus':
+    'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM19 8v6M22 11h-6',
   bell: 'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0',
   'upload-line': 'M12 16V4M7 9l5-5 5 5M4 20h16',
   check: 'M20 6 9 17l-5-5',
