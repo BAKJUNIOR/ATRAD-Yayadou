@@ -1,5 +1,5 @@
 import { Component, computed, inject, input } from '@angular/core';
-import { formatDateTime } from '../../../../../core/utils/date.util';
+import { formatStamp } from '../../../../../core/utils/date.util';
 import { Dossier } from '../../../domain/entities/dossier.entity';
 import { fileSizeLabel } from '../../../domain/piece.rules';
 import { entityOfDossier } from '../../../domain/routing';
@@ -21,6 +21,8 @@ export class DossierDetailsComponent {
   protected readonly pieceOpener = inject(PieceOpener);
 
   readonly dossier = input.required<Dossier & { entite?: string }>();
+  /** État du pointage par l'Accueil, affiché quand le dossier appartient à un état transmis. */
+  readonly reception = input('');
 
   protected readonly sizeLabel = fileSizeLabel;
 
@@ -40,7 +42,8 @@ export class DossierDetailsComponent {
         value: entityOfDossier(dossier),
       },
       ...(dossier.montant ? [{ label: 'Montant', value: dossier.montant, mono: true }] : []),
-      { label: 'Date de création', value: formatDateTime(dossier.createdAt), mono: true },
+      { label: 'Date de création', value: formatStamp(dossier.createdAt), mono: true },
+      ...(this.reception() ? [{ label: 'Réception Accueil', value: this.reception() }] : []),
     ];
   });
 }

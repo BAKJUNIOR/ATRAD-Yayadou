@@ -1,6 +1,17 @@
 import { Status } from '../../../../shared/models/status';
 import { EtatDossier } from './dossier.entity';
 
+/** Trace d'un pointage de réception par l'Accueil. */
+export interface ReceptionLog {
+  at: string;
+  by: string;
+  /** Nombre de dossiers reçus lors de ce pointage. */
+  n: number;
+  /** Nombre de dossiers restés non reçus. */
+  missing: number;
+  refs: string[];
+}
+
 export interface EtatPrint {
   at: string;
   by: string;
@@ -23,6 +34,7 @@ export interface Etat {
   dest: string;
   dossiers: EtatDossier[];
   prints: EtatPrint[];
+  recLog?: ReceptionLog[];
 }
 
 const PRINTABLE_STATUSES: readonly Status[] = [

@@ -1,13 +1,15 @@
-import { formatDateTime } from '../../../core/utils/date.util';
+import { formatStamp } from '../../../core/utils/date.util';
 import { Status } from '../../../shared/models/status';
 import { TimelineEntry, TimelineTone } from '../../../shared/ui/timeline/timeline.component';
 import { DossierType } from '../../dossiers/domain/dossier-catalog';
-import { EtatDossier } from '../../dossiers/domain/entities/dossier.entity';
+import { EtatDossier, RoutedDossier } from '../../dossiers/domain/entities/dossier.entity';
 import { Etat } from '../../dossiers/domain/entities/etat.entity';
 
 /** Dossier transmis, vu depuis l'agence : rattaché à son état, avec le statut qu'elle peut voir. */
 export interface SuiviDossier extends EtatDossier {
   etat: Etat;
+  /** Suite donnée au dossier une fois réceptionné et routé ; absente tant qu'il ne l'est pas. */
+  routed?: RoutedDossier;
 }
 
 /** Statuts montrés tels quels à l'agence ; les étapes internes du traitement deviennent « En cours ». */
@@ -24,33 +26,46 @@ const AGENCY_VISIBLE: readonly Status[] = [
   'Retour en cours',
 ];
 
-function statusForAgency(etat: Etat, dossier: EtatDossier): Status {
-  let status: Status;
-  if (dossier.nonRec && !dossier.rec) {
-    status = 'Non reçu';
-  } else if (etat.status === 'En cours') {
-    status = dossier.status || 'Reçu';
-  } else if (etat.status === 'Reçu partiellement') {
-    status = 'Transmis';
-  } else {
-    status = etat.status;
-  }
-  if (status === 'Rejeté') {
+function visibleStatus(status: Status, returned: boolean): Status {
+  if (status === 'Rejeté' && !returned) {
     return 'Retour en cours';
   }
   return AGENCY_VISIBLE.includes(status) ? status : 'En cours';
 }
 
+function statusForAgency(etat: Etat, dossier: EtatDossier, routed?: RoutedDossier): Status {
+  if (routed) {
+    return visibleStatus(routed.status, !!routed.renvoyeAt);
+  }
+  if (dossier.nonRec && !dossier.rec) {
+    return 'Non reçu';
+  }
+  if (etat.status === 'En cours') {
+    return visibleStatus(dossier.status || 'Reçu', false);
+  }
+  return visibleStatus(etat.status === 'Reçu partiellement' ? 'Transmis' : etat.status, false);
+}
+
 /** Dossiers des états d'une agence, du plus récemment saisi au plus ancien. */
-export function suiviDossiers(etats: readonly Etat[], agenceCode: string): SuiviDossier[] {
+export function suiviDossiers(
+  etats: readonly Etat[],
+  routedDossiers: readonly RoutedDossier[],
+  agenceCode: string,
+): SuiviDossier[] {
+  const routedByRef = new Map(routedDossiers.map((dossier) => [dossier.ref, dossier]));
   return etats
     .filter((etat) => etat.code === agenceCode)
     .flatMap((etat) =>
-      etat.dossiers.map((dossier) => ({
-        ...dossier,
-        etat,
-        status: statusForAgency(etat, dossier),
-      })),
+      etat.dossiers.map((dossier) => {
+        const routed = routedByRef.get(dossier.ref);
+        return {
+          ...dossier,
+          etat,
+          routed,
+          entite: routed?.entite,
+          status: statusForAgency(etat, dossier, routed),
+        };
+      }),
     )
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.ref.localeCompare(a.ref));
 }
@@ -114,10 +129,10 @@ export interface ReceptionLabel {
 /** État du pointage d'un dossier par l'Accueil. */
 export function receptionLabel(etat: Etat, dossier: EtatDossier): ReceptionLabel {
   if (dossier.rec) {
-    return { label: `Reçu le ${formatDateTime(dossier.rec.at)}`, tone: 'brand' };
+    return { label: `Reçu le ${formatStamp(dossier.rec.at)}`, tone: 'brand' };
   }
   if (dossier.nonRec) {
-    return { label: `Non reçu (pointage du ${formatDateTime(dossier.nonRec.at)})`, tone: 'danger' };
+    return { label: `Non reçu (pointage du ${formatStamp(dossier.nonRec.at)})`, tone: 'danger' };
   }
   return { label: etat.sentAt ? 'En attente de réception' : '—', tone: 'warning' };
 }
@@ -150,8 +165,12 @@ export function dossierHistory(dossier: SuiviDossier): TimelineEntry[] {
   } else if (!dossier.nonRec && etat.receivedAt) {
     push(etat.receivedAt, "Réception confirmée par l'Accueil", etat.receivedBy ?? '', 'brand');
   }
-  for (const log of dossier.log.filter((entry) => !entry.pre)) {
-    push(log.at, log.label, log.who, log.tone);
+  const routed = dossier.routed;
+  if (routed) {
+    push(routed.affecte, `Routé automatiquement vers ${routed.entite}`, routed.affectedBy, 'info');
+    for (const log of routed.log.filter((entry) => !entry.pre)) {
+      push(log.at, log.label, log.who, log.tone);
+    }
   }
 
   return events
@@ -160,7 +179,7 @@ export function dossierHistory(dossier: SuiviDossier): TimelineEntry[] {
     .map((event) => ({
       label: event.label,
       who: event.who,
-      at: formatDateTime(event.at),
+      at: formatStamp(event.at),
       tone: event.tone,
     }));
 }

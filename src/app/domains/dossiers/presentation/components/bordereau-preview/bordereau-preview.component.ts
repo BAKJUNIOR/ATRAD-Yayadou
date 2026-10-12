@@ -3,7 +3,7 @@ import { Component, computed, inject } from '@angular/core';
 import { APP_NAME } from '../../../../../core/services/page-title.strategy';
 import { SessionService } from '../../../../../core/services/session.service';
 import { ToastService } from '../../../../../core/services/toast.service';
-import { formatDateTime, nowIso } from '../../../../../core/utils/date.util';
+import { formatStamp, nowIso } from '../../../../../core/utils/date.util';
 import { ButtonComponent } from '../../../../../shared/ui/button/button.component';
 import { IconComponent } from '../../../../../shared/ui/icon/icon.component';
 import { canPrintEtat } from '../../../domain/entities/etat.entity';
@@ -25,8 +25,8 @@ export class BordereauPreviewComponent {
 
   protected readonly appName = APP_NAME;
   protected readonly organisation = 'YAYADOU';
-  protected readonly editedAt = formatDateTime(nowIso());
-  protected readonly formatDateTime = formatDateTime;
+  protected readonly editedAt = formatStamp(nowIso());
+  protected readonly formatStamp = formatStamp;
 
   protected readonly etat = computed(
     () => this.store.etats().find((etat) => etat.ref === this.etatRef) ?? null,

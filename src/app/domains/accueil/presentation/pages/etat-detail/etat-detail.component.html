@@ -1,0 +1,218 @@
+<div class="flex animate-enter flex-col gap-[18px]">
+  <a
+    routerLink="/accueil-central/etats-recus"
+    class="btn-outline self-start px-[13px] py-2 text-[12.5px]"
+  >
+    ← Retour aux résultats
+  </a>
+
+  @if (etat(); as etat) {
+    <p
+      class="flex items-start gap-2.5 rounded-brand border border-info-line bg-info-bg px-3.5 py-[11px] text-[12.5px] leading-normal text-info"
+    >
+      <app-icon name="info" class="mt-px" [size]="16" [strokeWidth]="2" />
+      <span class="text-pretty text-ink">
+        L'Accueil confirme la réception du dossier (type, client). Le contrôle du contenu est
+        effectué par l'entité de traitement.
+      </span>
+    </p>
+
+    <section class="panel overflow-hidden" aria-labelledby="etat-title">
+      <header
+        class="flex flex-wrap items-center justify-between gap-2.5 border-b border-line px-5 py-[17px]"
+      >
+        <div class="flex flex-col gap-1">
+          <h2 id="etat-title" class="font-mono text-[16px] font-semibold text-ink">
+            {{ etat.ref }}
+          </h2>
+          <p class="text-[12.5px] text-ink-muted">
+            {{ etat.agence }} ({{ etat.code }}) · {{ etat.dossiers.length }} dossier(s) ·
+            {{ etat.type }}
+          </p>
+        </div>
+        <app-status-badge class="text-[12px]" [status]="etat.status" />
+      </header>
+
+      <dl
+        class="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-4 border-b border-soft px-5 py-[18px]"
+      >
+        <div class="flex flex-col gap-[3px]">
+          <dt class="text-[11.5px] tracking-[0.06em] text-ink-muted uppercase">Transmis le</dt>
+          <dd class="font-mono text-[13.5px] whitespace-nowrap text-ink">
+            {{ formatStamp(etat.sentAt) }}
+          </dd>
+        </div>
+        <div class="flex flex-col gap-[3px]">
+          <dt class="text-[11.5px] tracking-[0.06em] text-ink-muted uppercase">Émis par</dt>
+          <dd class="text-[13.5px] text-ink">{{ etat.emetteur }}</dd>
+        </div>
+        <div class="flex flex-col gap-[3px]">
+          <dt class="text-[11.5px] tracking-[0.06em] text-ink-muted uppercase">Destination</dt>
+          <dd class="text-[13.5px] text-ink">{{ etat.dest }}</dd>
+        </div>
+        <div class="flex flex-col gap-[3px]">
+          <dt class="text-[11.5px] tracking-[0.06em] text-ink-muted uppercase">Réception</dt>
+          <dd
+            class="font-mono text-[13.5px]"
+            [class]="etat.receivedAt ? 'text-brand-ink' : 'text-warning'"
+          >
+            {{ etat.receivedAt ? formatStamp(etat.receivedAt) : 'Non confirmée' }}
+          </dd>
+        </div>
+      </dl>
+
+      <div class="overflow-x-auto">
+        <div class="min-w-[950px]">
+          <div
+            class="flex flex-wrap items-center justify-between gap-2.5 border-b border-line px-5 py-2.5"
+          >
+            <div class="flex flex-wrap items-center gap-2">
+              <h3 class="text-[13px] font-semibold text-ink">{{ title() }}</h3>
+              <button type="button" class="chip-button" (click)="checkAll()">Tout cocher</button>
+              <button type="button" class="chip-button" (click)="uncheckAll()">
+                Tout décocher
+              </button>
+              <span
+                class="text-[12.5px] font-semibold whitespace-nowrap"
+                [class]="pickedCount() ? 'text-brand-ink' : 'text-warning'"
+                aria-live="polite"
+              >
+                {{ countLabel() }}
+              </span>
+            </div>
+            <button type="button" class="chip-button font-medium" (click)="toggleAllDetails()">
+              {{ allExpanded() ? 'Tout replier' : 'Tout déplier' }}
+            </button>
+          </div>
+
+          <table class="grid-table text-[13px]">
+            <thead>
+              <tr class="pointage-grid grid-head">
+                <th scope="col"><span class="sr-only">Reçu</span></th>
+                <th scope="col">Dossier</th>
+                <th scope="col">Client</th>
+                <th scope="col">Type</th>
+                <th scope="col">Produit</th>
+                <th scope="col">Entité</th>
+                <th scope="col">Priorité</th>
+                <th scope="col">Réception</th>
+                <th scope="col"><span class="sr-only">Détail</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of rows(); track row.dossier.ref) {
+                <tr
+                  class="pointage-grid cursor-pointer items-center border-b border-soft px-5 py-3 transition-colors hover:bg-brand-tint-soft"
+                  [class.bg-brand-tint-soft]="row.open"
+                  (click)="toggleDetails(row.dossier.ref)"
+                >
+                  <td class="flex items-center">
+                    @if (row.selectable) {
+                      <input
+                        type="checkbox"
+                        class="size-[17px] accent-brand"
+                        title="Cocher si le dossier est reçu physiquement (type et client conformes à l'état)"
+                        [attr.aria-label]="'Dossier ' + row.dossier.ref + ' reçu'"
+                        [checked]="row.checked"
+                        (click)="$event.stopPropagation()"
+                        (change)="toggle(row.dossier.ref)"
+                      />
+                    }
+                  </td>
+                  <td class="font-mono text-[12.5px] whitespace-nowrap text-heading">
+                    {{ row.dossier.ref }}
+                  </td>
+                  <td class="flex min-w-0 flex-col gap-0.5">
+                    <span class="truncate text-ink">{{ row.dossier.client }}</span>
+                    <span class="font-mono text-[11.5px] whitespace-nowrap text-ink-muted">
+                      {{ row.dossier.num }}
+                    </span>
+                    <span
+                      class="text-[11.5px] font-medium whitespace-nowrap"
+                      [class]="row.noteClass"
+                    >
+                      {{ row.note }}
+                    </span>
+                  </td>
+                  <td class="truncate text-[12.5px] text-ink-secondary">{{ row.dossier.type }}</td>
+                  <td class="truncate text-[12.5px] text-ink-secondary">
+                    {{ row.dossier.produit }}
+                  </td>
+                  <td class="truncate text-[12.5px] text-brand-ink">{{ row.entite }}</td>
+                  <td class="text-[12.5px] font-medium" [class]="priorityText[row.dossier.prio]">
+                    {{ row.dossier.prio }}
+                  </td>
+                  <td>
+                    <span
+                      class="tone-pill inline-flex items-center gap-1.5 rounded-full py-[3px] ps-1.5 pe-2.5 text-[11.5px] font-semibold whitespace-nowrap"
+                      [class]="row.tone"
+                      [attr.title]="row.note"
+                    >
+                      <span
+                        class="tone-pill-dot flex size-4 flex-none items-center justify-center rounded-full text-[10px] leading-none text-card"
+                        aria-hidden="true"
+                      >
+                        {{ row.icon }}
+                      </span>
+                      {{ row.pill }}
+                    </span>
+                  </td>
+                  <td class="flex justify-end text-ink-muted">
+                    <button
+                      type="button"
+                      [attr.aria-expanded]="row.open"
+                      [attr.aria-label]="'Détail du dossier ' + row.dossier.ref"
+                      (click)="toggleDetails(row.dossier.ref); $event.stopPropagation()"
+                    >
+                      <app-icon
+                        name="chevron-down"
+                        class="transition-transform duration-200"
+                        [class.rotate-180]="row.open"
+                        [size]="14"
+                        [strokeWidth]="2.2"
+                      />
+                    </button>
+                  </td>
+                </tr>
+                @if (row.open) {
+                  <tr class="block border-b border-line bg-subtle px-5 pt-3.5 pb-[18px]">
+                    <td class="block" colspan="9">
+                      <app-dossier-details [dossier]="row.dossier" [reception]="row.note" />
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <footer
+        class="flex flex-wrap items-center justify-between gap-3 border-t border-line bg-subtle px-5 py-3.5"
+      >
+        <span class="max-w-[560px] text-[12.5px] leading-normal text-pretty text-ink-muted">
+          Cochez les dossiers reçus physiquement (type et client conformes à l'état). Les non cochés
+          seront enregistrés « Non reçu » et pourront être pointés plus tard.
+        </span>
+        <button
+          type="button"
+          class="btn-primary flex-none px-[18px]"
+          [disabled]="!pickedCount()"
+          [attr.title]="pickedCount() ? null : 'Cochez au moins un dossier reçu'"
+          (click)="confirm()"
+        >
+          Confirmer la réception ({{ pickedCount() }} sur {{ remainingCount() }})
+        </button>
+      </footer>
+    </section>
+  } @else {
+    <section class="panel flex flex-col items-center gap-2.5 px-5 py-10 text-center">
+      <h2 class="text-[15px] font-semibold text-ink">État introuvable</h2>
+      <p class="text-[13px] text-ink-muted">
+        Aucun état de transmission ne porte la référence
+        <span class="font-mono">{{ ref() }}</span
+        >.
+      </p>
+    </section>
+  }
+</div>

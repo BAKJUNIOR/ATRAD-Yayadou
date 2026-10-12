@@ -103,3 +103,11 @@ src/app/
 - Dates : stockées en ISO 8601, mises en forme à l'affichage avec `core/utils/date.util.ts`.
 - Confirmation : `ConfirmService.ask(...)` (dialogue CDK). Saisie non enregistrée : la page implémente `canLeave()` et sa route déclare `unsavedChangesGuard`.
 - Classes utilitaires de formulaire dans `styles.css` : `form-control`, `form-label`, `form-error`, `panel`, `eyebrow`, `icon-button` ; champ complet avec `<app-form-field>`.
+
+## Parcours accueil
+
+- Réception : `TransmissionStore.receive()` pointe les dossiers reçus d'un état, les route vers leur entité (`RoutedDossier`) et les affecte selon le mode de l'entité (`ENTITY_SETTINGS` dans `routing.ts` : tour de rôle, pool ou répartiteur). Les dossiers non pointés passent « Non reçu » et restent pointables.
+- Écrans : `etats-recus` (recherche, état conservé dans `EtatSearchState`), `etats-recus/:ref` (pointage), `suivi-statistiques`, `dossiers-retournes`. Leurs règles sont dans `domains/accueil/domain/reception.ts`.
+- Pastilles du menu : `NavBadgesService` ; notifications par profil : `NotificationsService`.
+- Tableaux du prototype : `<table class="grid-table">` avec un modificateur de colonnes par ligne (`etats-grid`, `pointage-grid`, ...) défini dans `styles.css`.
+- Fidélité au prototype : avant d'écrire un écran, le rendre dans le prototype HTML et en reprendre la mise en page et les styles à l'identique.

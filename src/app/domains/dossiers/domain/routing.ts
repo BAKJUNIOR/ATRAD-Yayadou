@@ -1,4 +1,4 @@
-import { DossierType } from './dossier-catalog';
+import { DossierType, Priorite } from './dossier-catalog';
 
 export interface EntiteTraitement {
   name: string;
@@ -45,4 +45,32 @@ export function entitySummary(dossiers: readonly { type: DossierType; entite?: s
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
   return [...counts].map(([name, count]) => `${name} (${count})`).join(', ');
+}
+
+/** Façon dont une entité répartit les dossiers qu'elle reçoit. */
+export type AssignmentMode = 'auto' | 'pool' | 'disp';
+
+export const MODE_LABEL: Record<AssignmentMode, string> = {
+  auto: 'Automatique (tour de rôle)',
+  pool: 'Pool partagé',
+  disp: 'Via un répartiteur',
+};
+
+/**
+ * Paramétrage par défaut des entités (mode de répartition et équipe).
+ * Deviendra modifiable par l'administrateur (écran « Routage & affectation »).
+ */
+export const ENTITY_SETTINGS: Record<string, { mode: AssignmentMode; team: readonly string[] }> = {
+  'Entité Crédits (ET-007)': { mode: 'disp', team: ['Fatou Bamba', 'Éric Tanoh', 'Clarisse Yao'] },
+  'Entité Monétique (ET-012)': { mode: 'auto', team: ['Éric Tanoh'] },
+  'Service Réclamations (ET-020)': { mode: 'auto', team: ['Fatou Bamba', 'Ismaël Ouédraogo'] },
+  'Entité Conformité (ET-031)': { mode: 'auto', team: ['Clarisse Yao', 'Ismaël Ouédraogo'] },
+};
+
+/** Délai de traitement, en jours, selon la priorité du dossier. */
+export const DELAI_PRIORITE: Record<Priorite, number> = { Urgente: 1, Haute: 3, Normale: 5 };
+
+/** `Entité Crédits (ET-007)` → `Crédits` (retire aussi le préfixe des entités hors référentiel). */
+export function bareEntity(name: string): string {
+  return (name || '—').replace(/^(Entité|Service) /, '').replace(/ \(.*\)$/, '');
 }

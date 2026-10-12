@@ -5,6 +5,7 @@ import { NAVIGATION } from '../../core/navigation/navigation';
 import { SessionService } from '../../core/services/session.service';
 import { SidebarService } from '../../core/services/sidebar.service';
 import { initialsOf } from '../../core/utils/text.util';
+import { NavBadgesService } from '../../domains/notifications/nav-badges.service';
 import { BrandMarkComponent } from '../../shared/ui/brand-mark/brand-mark.component';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
 
@@ -16,6 +17,7 @@ import { IconComponent } from '../../shared/ui/icon/icon.component';
 export class AppSidebarComponent {
   private readonly session = inject(SessionService);
   protected readonly sidebar = inject(SidebarService);
+  protected readonly badges = inject(NavBadgesService).counts;
 
   protected readonly account = this.session.account;
   protected readonly collapsed = this.sidebar.isCollapsed;

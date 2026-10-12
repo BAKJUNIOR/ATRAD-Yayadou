@@ -112,7 +112,7 @@
 
 <ng-template #link let-item let-nested="nested">
   <a
-    class="flex flex-none items-center gap-2.5 rounded-control px-3 py-2 text-[13.5px] text-side transition-colors hover:bg-white/9"
+    class="relative flex flex-none items-center gap-2.5 rounded-control px-3 py-2 text-[13.5px] text-side transition-colors hover:bg-white/9"
     [class]="nested ? nestedItemClass() : itemClass()"
     [routerLink]="item.path"
     routerLinkActive="bg-white/12 font-medium text-white"
@@ -124,5 +124,18 @@
   >
     <app-icon [name]="item.icon" class="opacity-85" />
     <span class="min-w-0 flex-1 truncate" [class]="labelClass()">{{ item.label }}</span>
+    @if (badges()[item.id]; as count) {
+      @if (collapsed()) {
+        <span
+          class="absolute end-[9px] top-[5px] hidden size-[7px] rounded-full bg-brand-mid lg:block"
+        ></span>
+      }
+      <span
+        class="ms-auto rounded-brand bg-brand-mid px-[7px] py-px font-mono text-[11px] font-semibold text-brand-on-mid"
+        [class]="labelClass()"
+      >
+        {{ count }}
+      </span>
+    }
   </a>
 </ng-template>

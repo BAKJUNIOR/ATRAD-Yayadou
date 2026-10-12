@@ -38,7 +38,11 @@ export class SuiviDossierDetailComponent {
 
   protected readonly dossier = computed(() => {
     const code = entityCode(this.session.account()?.entity ?? '');
-    return suiviDossiers(this.store.etats(), code).find((d) => d.ref === this.ref()) ?? null;
+    return (
+      suiviDossiers(this.store.etats(), this.store.dossiers(), code).find(
+        (d) => d.ref === this.ref(),
+      ) ?? null
+    );
   });
 
   protected readonly history = computed(() => {
@@ -73,7 +77,7 @@ export class SuiviDossierDetailComponent {
         value: reception.label,
         classes: `font-medium ${RECEPTION_TEXT[reception.tone]}`,
       },
-      { label: 'Gestionnaire', value: 'Non affecté' },
+      { label: 'Gestionnaire', value: dossier.routed?.gest || 'Non affecté' },
     ];
   });
 }
