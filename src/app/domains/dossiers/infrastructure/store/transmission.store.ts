@@ -501,6 +501,11 @@ export class TransmissionStore {
     }
   }
 
+  /** Efface tous les dossiers et états (réinitialisation de la démonstration). */
+  reset(): void {
+    this.state.set({ ...INITIAL_STATE });
+  }
+
   /** Historise une impression du bordereau. */
   recordPrint(ref: string, by: string): void {
     const at = nowIso();

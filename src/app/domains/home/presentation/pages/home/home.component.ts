@@ -13,6 +13,7 @@ import { DEMO_ACCOUNTS } from '../../../../auth/infrastructure/mock/auth.mock';
 import { Etat } from '../../../../dossiers/domain/entities/etat.entity';
 import { isLocked } from '../../../../dossiers/domain/workflow';
 import { TransmissionStore } from '../../../../dossiers/infrastructure/store/transmission.store';
+import { SLA_TARGET, sla } from '../../../../pilotage/domain/indicators';
 import { isLate, unassigned } from '../../../../traitement/domain/portfolio';
 import { TraitementContext } from '../../../../traitement/presentation/traitement-context.service';
 import { Dashboard, DashboardAction } from '../../../domain/entities/dashboard.entity';
@@ -77,6 +78,9 @@ export class HomeComponent {
     }
     if (account.role === 'traitement') {
       return { ...base, ...this.traitementDashboard() };
+    }
+    if (account.role === 'manager') {
+      return { ...base, ...this.managerDashboard() };
     }
     return base;
   });
@@ -237,6 +241,51 @@ export class HomeComponent {
         label: `${dossier.type} — ${dossier.client}`,
         meta: `Affecté le ${formatDate(dossier.affecte)} · échéance ${isoDateToFr(dossier.echeanceIso)} · priorité ${dossier.prio.toLowerCase()}`,
         status: dossier.status,
+      })),
+    };
+  }
+
+  private managerDashboard(): Partial<Dashboard> {
+    const today = this.traitement.today;
+    const dossiers = this.store.dossiers();
+    const result = sla(dossiers, today);
+    const late = dossiers.filter((dossier) => isLate(dossier, today));
+    const ongoing = dossiers.filter(
+      (dossier) => dossier.status === 'En cours' || dossier.status === 'Reçu',
+    );
+    // Points d'attention : les retards d'abord, puis les dossiers encore ouverts.
+    const attention = [
+      ...late,
+      ...dossiers.filter((dossier) => !late.includes(dossier) && dossier.status !== 'Clôturé'),
+    ].slice(0, 5);
+    return {
+      subline: `Taux de respect des délais : ${result.rate} % sur ${result.treated.length} dossier(s) traités (objectif ${SLA_TARGET} %).`,
+      stats: [
+        {
+          label: 'Dossiers traités',
+          value: String(result.treated.length),
+          hint: 'validés ou clôturés',
+          tone: 'heading',
+        },
+        {
+          label: 'En cours',
+          value: String(ongoing.length),
+          hint: 'dans le réseau',
+          tone: 'warning',
+        },
+        { label: 'En retard', value: String(late.length), hint: 'délai dépassé', tone: 'danger' },
+        {
+          label: 'Respect des délais',
+          value: `${result.rate} %`,
+          hint: `objectif ${SLA_TARGET} %`,
+          tone: result.rate >= SLA_TARGET ? 'success' : 'warning',
+        },
+      ],
+      rows: attention.map((dossier) => ({
+        ref: dossier.ref,
+        label: `${dossier.client} — ${dossier.type}`,
+        meta: `${dossier.agence} · échéance ${isoDateToFr(dossier.echeanceIso)}`,
+        status: late.includes(dossier) ? 'En retard' : dossier.status,
       })),
     };
   }

@@ -2,6 +2,7 @@ import { Dialog } from '@angular/cdk/dialog';
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { NAVIGATION } from '../../core/navigation/navigation';
+import { DemoClock } from '../../core/services/demo-clock.service';
 import { APP_NAME, PageTitleStrategy } from '../../core/services/page-title.strategy';
 import { SessionService } from '../../core/services/session.service';
 import { SidebarService } from '../../core/services/sidebar.service';
@@ -33,6 +34,7 @@ export class AppHeaderComponent {
   private readonly session = inject(SessionService);
   private readonly router = inject(Router);
   private readonly dialog = inject(Dialog);
+  private readonly clock = inject(DemoClock);
   protected readonly sidebar = inject(SidebarService);
   protected readonly notifications = inject(NotificationsService);
 
@@ -55,16 +57,16 @@ export class AppHeaderComponent {
     return unread ? `Notifications, ${unread} non lue(s)` : 'Notifications';
   });
 
-  /** `Lundi 12 octobre 2026` */
-  protected readonly today = (() => {
+  /** `Lundi 12 octobre 2026` ; suit la date de démonstration. */
+  protected readonly today = computed(() => {
     const text = new Intl.DateTimeFormat('fr-FR', {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
       year: 'numeric',
-    }).format(new Date());
+    }).format(new Date(`${this.clock.today()}T00:00:00`));
     return text.charAt(0).toUpperCase() + text.slice(1);
-  })();
+  });
 
   protected dotClass(notification: AppNotification): string {
     return notification.read ? 'bg-line-strong' : UNREAD_DOT[notification.tone];

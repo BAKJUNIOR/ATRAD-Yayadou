@@ -136,6 +136,25 @@
         <app-icon name="logout" [size]="15" />
         <span [class]="labelClass()">Se déconnecter</span>
       </button>
+      <div class="flex flex-col items-end gap-0.5 text-end leading-[1.35]" [class]="labelClass()">
+        <span class="px-2 text-[10.5px] text-side-muted">{{ demoDateLabel() }}</span>
+        <button
+          type="button"
+          class="px-2 py-[5px] text-[10.5px] text-side-faint underline decoration-dotted hover:text-white"
+          title="Simule le passage d'un jour pour faire apparaître les retards"
+          (click)="advanceDay()"
+        >
+          Avancer la date de démo (+1 jour)
+        </button>
+        <button
+          type="button"
+          class="px-2 py-[5px] text-[10.5px] text-side-faint underline decoration-dotted hover:text-white"
+          title="Efface tous les dossiers/états créés pendant cette démo"
+          (click)="resetDemo()"
+        >
+          Réinitialiser les données de démo
+        </button>
+      </div>
     </div>
   }
 </aside>

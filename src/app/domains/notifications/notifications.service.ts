@@ -25,7 +25,7 @@ export interface AppNotification {
 
 /**
  * Notifications de l'utilisateur connecté, déduites de l'état des dossiers.
- * Profils couverts : agence, accueil et traitement ; les autres seront ajoutés avec leurs parcours.
+ * Profils couverts : agence, accueil, traitement et pilotage ; les autres seront ajoutés avec leurs parcours.
  */
 @Service()
 export class NotificationsService {
@@ -50,7 +50,9 @@ export class NotificationsService {
           ? this.forAccueil()
           : account.role === 'traitement'
             ? this.forTraitement()
-            : [];
+            : account.role === 'manager'
+              ? this.forManager()
+              : [];
     const read = this.readMap();
     return found.map((item) => ({ ...item, read: !!read[this.key(account.role, item.id)] }));
   });
@@ -77,6 +79,31 @@ export class NotificationsService {
         meta: "Renvoi à l'agence en attente",
         path: '/accueil-central/dossiers-retournes',
         tone: 'danger',
+      });
+    }
+    return found;
+  }
+
+  private forManager(): Omit<AppNotification, 'read'>[] {
+    const found: Omit<AppNotification, 'read'>[] = [];
+    const late = this.store.dossiers().filter((dossier) => isLate(dossier, this.traitement.today));
+    if (late.length) {
+      found.push({
+        id: `mlate:${late.map((dossier) => dossier.ref).join(',')}`,
+        label: `${late.length} dossier(s) en retard sur l'ensemble des entités`,
+        meta: 'Respect des délais',
+        path: '/pilotage/delais',
+        tone: 'danger',
+      });
+    }
+    const partial = this.store.etats().filter((etat) => etat.status === 'Reçu partiellement');
+    if (partial.length) {
+      found.push({
+        id: `part:${partial.map((etat) => etat.ref).join(',')}`,
+        label: `${partial.length} état(s) reçu(s) partiellement`,
+        meta: partial.map((etat) => etat.ref).join(', '),
+        path: '/pilotage/tableau-de-bord',
+        tone: 'warn',
       });
     }
     return found;
