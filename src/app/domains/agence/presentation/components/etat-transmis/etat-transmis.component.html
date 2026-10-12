@@ -1,0 +1,106 @@
+@let etat = this.etat();
+
+<section class="panel animate-enter overflow-hidden" aria-labelledby="etat-transmis-title">
+  <div class="flex flex-col gap-3 bg-success-bg p-[22px]">
+    <div class="flex items-center gap-[11px]">
+      <span
+        class="flex size-[30px] flex-none items-center justify-center rounded-full bg-success text-[15px] text-card"
+        aria-hidden="true"
+      >
+        ✓
+      </span>
+      <h2 id="etat-transmis-title" class="text-[15px] font-semibold text-success">
+        État transmis avec succès
+      </h2>
+    </div>
+    <p class="text-[13px] leading-[1.55] text-success">
+      L'état <strong>{{ etat.ref }}</strong> a été transmis à l'{{ etat.dest }}, qui le routera vers
+      : {{ entities() }}. Une notification a été envoyée à l'entité centrale.
+    </p>
+
+    <dl
+      class="flex flex-col gap-[7px] rounded-control border border-success-line bg-card px-3.5 py-3 text-[12.5px] text-ink"
+    >
+      <div class="flex items-baseline justify-between gap-3">
+        <dt class="flex-none whitespace-nowrap text-ink-muted">Date et heure d'envoi</dt>
+        <dd class="flex-none font-mono font-medium whitespace-nowrap text-heading">
+          {{ sentAt() }}
+        </dd>
+      </div>
+      <div class="flex items-baseline justify-between gap-3">
+        <dt class="flex-none whitespace-nowrap text-ink-muted">Émis par</dt>
+        <dd>{{ etat.emetteur }} — {{ etat.code }}</dd>
+      </div>
+      <div class="flex items-baseline justify-between gap-3">
+        <dt class="flex-none whitespace-nowrap text-ink-muted">Statut</dt>
+        <dd
+          class="rounded-full border border-info-line bg-info-bg px-[9px] py-0.5 font-semibold text-info"
+        >
+          Transmis
+        </dd>
+      </div>
+      <div class="flex items-baseline justify-between gap-3">
+        <dt class="flex-none whitespace-nowrap text-ink-muted">Accusé de réception</dt>
+        <dd class="text-warning">En attente de l'Accueil</dd>
+      </div>
+    </dl>
+
+    <div class="flex flex-col overflow-hidden rounded-brand border border-success-line bg-card">
+      <div class="flex items-center justify-between gap-3 border-b border-line px-3.5 py-2.5">
+        <h3 class="text-[13px] font-semibold text-ink">Récapitulatif des dossiers transmis</h3>
+        <span
+          class="rounded-full bg-soft px-[9px] py-0.5 text-[12px] font-semibold whitespace-nowrap text-ink-secondary"
+        >
+          {{ etat.dossiers.length }} dossier(s)
+        </span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[640px] border-collapse text-[13px] text-ink">
+          <thead>
+            <tr
+              class="border-b border-line bg-subtle text-[11px] tracking-[0.06em] text-ink-muted uppercase"
+            >
+              <th scope="col" class="w-[42px] py-2 ps-3.5 pe-1.5 text-start font-medium">N°</th>
+              <th scope="col" class="w-[116px] px-1.5 py-2 text-start font-medium">Référence</th>
+              <th scope="col" class="px-1.5 py-2 text-start font-medium">Client</th>
+              <th scope="col" class="px-1.5 py-2 text-start font-medium">Type</th>
+              <th scope="col" class="px-1.5 py-2 text-start font-medium">Produit</th>
+              <th scope="col" class="py-2 ps-1.5 pe-3.5 text-start font-medium">
+                Entité de traitement
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of rows(); track row.ref) {
+              <tr class="border-b border-soft last:border-b-0">
+                <td class="py-[9px] ps-3.5 pe-1.5 text-ink-muted tabular-nums">{{ row.n }}</td>
+                <td class="px-1.5 py-[9px] font-mono text-[12px] font-semibold">{{ row.ref }}</td>
+                <td class="px-1.5 py-[9px]">
+                  <span class="block truncate font-medium">{{ row.client }}</span>
+                  <span class="block font-mono text-[11.5px] text-ink-muted">{{ row.num }}</span>
+                </td>
+                <td class="px-1.5 py-[9px]">{{ row.type }}</td>
+                <td class="px-1.5 py-[9px] text-ink-secondary">{{ row.produit }}</td>
+                <td class="py-[9px] ps-1.5 pe-3.5 text-ink-secondary">{{ row.entite }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap gap-2.5 pt-0.5">
+      <button type="button" class="btn-primary px-4 py-2.5 text-[13px]" (click)="newEtat.emit()">
+        Créer un nouvel état
+      </button>
+      <button
+        type="button"
+        class="inline-flex items-center gap-[7px] rounded-control border border-success-line bg-card px-[15px] py-2.5 text-[13.5px] font-medium text-success transition-colors hover:border-success hover:bg-success-bg"
+        (click)="print.emit()"
+      >
+        <app-icon name="printer" [size]="15" [strokeWidth]="2" />
+        Imprimer le bordereau
+      </button>
+    </div>
+  </div>
+</section>

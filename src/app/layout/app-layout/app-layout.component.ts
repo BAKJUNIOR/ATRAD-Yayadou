@@ -27,7 +27,7 @@ import { BackdropComponent } from '../backdrop/backdrop.component';
         <main
           #main
           tabindex="-1"
-          class="mx-auto w-full max-w-(--breakpoint-2xl) flex-1 p-4 outline-none md:p-7"
+          class="w-full flex-1 px-3.5 pt-5 pb-9 outline-none lg:px-[30px] lg:pt-[26px] lg:pb-11"
         >
           <router-outlet />
         </main>

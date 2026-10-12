@@ -1,14 +1,29 @@
 import { Routes } from '@angular/router';
-
-// Écrans à construire : chaque route pointe sur le gabarit d'attente tant que la page du
-// domaine n'existe pas (à créer dans `presentation/pages/`).
-const placeholder = () =>
-  import('../../../shared/ui/screen-placeholder/screen-placeholder.component').then(
-    (m) => m.ScreenPlaceholderComponent,
-  );
+import { unsavedChangesGuard } from '../../../core/guards/unsaved-changes.guard';
 
 export const AGENCE_ROUTES: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'creer-etat' },
-  { path: 'creer-etat', title: 'Créer un état', loadComponent: placeholder },
-  { path: 'suivi', title: 'Suivi des dossiers', loadComponent: placeholder },
+  {
+    path: 'creer-etat',
+    title: 'Créer un état de transmission',
+    canDeactivate: [unsavedChangesGuard],
+    loadComponent: () =>
+      import('./pages/creer-etat/creer-etat.component').then((m) => m.CreerEtatComponent),
+  },
+  {
+    path: 'suivi',
+    title: 'Suivi des dossiers',
+    loadComponent: () =>
+      import('./pages/suivi-dossiers/suivi-dossiers.component').then(
+        (m) => m.SuiviDossiersComponent,
+      ),
+  },
+  {
+    path: 'suivi/:ref',
+    title: 'Détail du dossier',
+    loadComponent: () =>
+      import('./pages/suivi-dossier-detail/suivi-dossier-detail.component').then(
+        (m) => m.SuiviDossierDetailComponent,
+      ),
+  },
 ];

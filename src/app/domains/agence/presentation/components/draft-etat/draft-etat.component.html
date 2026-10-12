@@ -1,0 +1,162 @@
+@let draft = facade.draft();
+
+<section class="panel flex flex-col overflow-hidden" aria-labelledby="draft-etat-title">
+  <header class="flex flex-col gap-3 border-b border-line px-5 pt-[18px] pb-3.5">
+    <div class="flex items-center justify-between gap-3">
+      <h2 id="draft-etat-title" class="text-[14.5px] font-semibold tracking-[-0.01em] text-ink">
+        État en cours de constitution
+      </h2>
+      <span
+        class="rounded-full border border-line-strong bg-soft px-[9px] py-[3px] text-[11.5px] font-semibold text-ink-secondary"
+      >
+        Temporaire
+      </span>
+    </div>
+    <dl class="flex flex-col gap-[7px] text-[12.5px] text-ink-muted">
+      <div class="flex justify-between gap-3">
+        <dt>Référence</dt>
+        <dd class="font-mono font-medium whitespace-nowrap text-heading">
+          {{ facade.draftRef() }}
+        </dd>
+      </div>
+      <div class="flex items-baseline justify-between gap-3">
+        <dt class="whitespace-nowrap">Agence émettrice</dt>
+        <dd class="text-end text-ink">{{ facade.agenceName() }}</dd>
+      </div>
+      <div class="flex items-baseline justify-between gap-3">
+        <dt class="whitespace-nowrap">Destination</dt>
+        <dd class="text-end text-ink">{{ destination }}</dd>
+      </div>
+      <div class="flex items-baseline justify-between gap-3">
+        <dt class="whitespace-nowrap">Créé le</dt>
+        <dd class="text-end text-ink">{{ createdLabel() }}</dd>
+      </div>
+    </dl>
+  </header>
+
+  <div class="flex items-center justify-between gap-2 border-b border-line bg-subtle px-5 py-2.5">
+    <h3
+      class="text-[12px] font-semibold tracking-[0.06em] whitespace-nowrap text-ink-muted uppercase"
+    >
+      Dossiers ({{ draft.length }})
+    </h3>
+    @if (draft.length) {
+      <button
+        type="button"
+        class="rounded-[calc(var(--radius-brand)*0.7)] border border-line-strong bg-card px-[9px] py-1 text-[12px] font-medium whitespace-nowrap text-ink-secondary transition-colors hover:border-brand hover:text-brand-ink"
+        (click)="toggleAll()"
+      >
+        {{ allExpanded() ? 'Tout replier' : 'Tout déplier' }}
+      </button>
+    }
+  </div>
+
+  @if (draft.length) {
+    <ul class="flex max-h-[52vh] flex-col overflow-y-auto">
+      @for (dossier of draft; track dossier.id) {
+        @let open = isExpanded(dossier.id);
+        @let inEdit = facade.editId() === dossier.id;
+        <li>
+          <div
+            class="flex items-center gap-2.5 border-b border-soft py-2.5 ps-5 pe-3.5 transition-colors hover:bg-brand-tint-soft"
+            [class]="inEdit ? 'bg-brand-tint-soft' : 'bg-card'"
+          >
+            <button
+              type="button"
+              class="flex min-w-0 flex-1 items-center gap-2.5 text-start"
+              title="Cliquer pour voir le détail"
+              [attr.aria-expanded]="open"
+              [attr.aria-controls]="'draft-detail-' + dossier.id"
+              (click)="toggle(dossier.id)"
+            >
+              <app-icon
+                name="chevron-down"
+                class="text-ink-muted transition-transform duration-200"
+                [class.rotate-180]="open"
+                [size]="13"
+                [strokeWidth]="2.2"
+              />
+              <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span class="flex min-w-0 items-center gap-2">
+                  <span class="font-mono text-[11.5px] whitespace-nowrap text-brand-ink">
+                    {{ dossier.ref }}
+                  </span>
+                  <span class="truncate text-[13px] text-ink">{{ dossier.client }}</span>
+                </span>
+                <span class="truncate text-[11.5px] text-ink-muted">
+                  {{ dossier.type }} · {{ dossier.produit }} ·
+                  <span [class]="priorityText[dossier.prio]">{{ dossier.prio }}</span>
+                </span>
+              </span>
+            </button>
+            @if (inEdit) {
+              <span class="text-[11px] font-semibold whitespace-nowrap text-brand-ink">
+                En modification
+              </span>
+            }
+            <button
+              type="button"
+              class="flex size-[30px] flex-none items-center justify-center rounded-[calc(var(--radius-brand)*0.7)] border border-line bg-card text-ink-secondary transition-colors hover:border-brand hover:bg-brand-tint-soft hover:text-brand-ink"
+              title="Modifier le dossier"
+              [attr.aria-label]="'Modifier ' + dossier.ref"
+              (click)="facade.startEdit(dossier)"
+            >
+              <app-icon name="pencil" [size]="14" [strokeWidth]="2" />
+            </button>
+            <button
+              type="button"
+              class="flex size-[30px] flex-none items-center justify-center rounded-[calc(var(--radius-brand)*0.7)] border border-line bg-card text-ink-secondary transition-colors hover:border-danger-line hover:bg-danger-bg hover:text-danger"
+              title="Supprimer le dossier de l'état"
+              [attr.aria-label]="'Supprimer ' + dossier.ref"
+              (click)="facade.remove(dossier)"
+            >
+              <app-icon name="trash" [size]="14" [strokeWidth]="2" />
+            </button>
+          </div>
+          @if (open) {
+            <div
+              class="animate-enter border-b border-line bg-subtle px-5 pt-3.5 pb-[18px]"
+              [attr.id]="'draft-detail-' + dossier.id"
+            >
+              <app-dossier-details [dossier]="dossier" />
+            </div>
+          }
+        </li>
+      }
+    </ul>
+  } @else {
+    <p class="px-5 py-7 text-center text-[13px] leading-normal text-pretty text-ink-muted">
+      Aucun dossier pour l'instant. Remplissez le formulaire puis cliquez sur « Ajouter à l'état de
+      transmission ».
+    </p>
+  }
+
+  <footer class="flex flex-col gap-2.5 border-t border-line bg-card px-5 pt-3.5 pb-[18px]">
+    @if (draft.length) {
+      <p
+        class="rounded-control border border-brand-tint-line bg-brand-tint-soft px-3 py-[9px] text-[12.5px] leading-[1.45] text-brand-ink"
+      >
+        <strong class="font-semibold">Entités concernées :</strong> {{ facade.draftEntities() }}
+      </p>
+    }
+    <button
+      type="button"
+      class="btn-primary w-full py-3"
+      [disabled]="!draft.length"
+      [attr.title]="
+        draft.length ? null : 'Ajoutez au moins un dossier pour pouvoir transmettre l\'état.'
+      "
+      (click)="facade.send()"
+    >
+      Valider et transmettre ({{ draft.length }})
+    </button>
+    <span class="text-[12px] leading-normal text-pretty text-ink-muted">
+      @if (draft.length) {
+        Après validation, l'état passe au statut Transmis et est horodaté. Les dossiers ne pourront
+        plus être modifiés ni supprimés.
+      } @else {
+        Bouton actif dès le premier dossier ajouté.
+      }
+    </span>
+  </footer>
+</section>

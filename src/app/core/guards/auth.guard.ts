@@ -9,5 +9,6 @@ export const authGuard: CanActivateFn = () => {
 
 /** Renvoie un utilisateur déjà connecté vers son accueil (page de connexion). */
 export const guestGuard: CanActivateFn = () => {
-  return !inject(SessionService).isAuthenticated() || inject(Router).createUrlTree(['/']);
+  const session = inject(SessionService);
+  return !session.isAuthenticated() || session.isLeaving() || inject(Router).createUrlTree(['/']);
 };

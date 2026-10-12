@@ -8,7 +8,7 @@ export interface ToastMessage {
   message: string;
 }
 
-const TOAST_DURATION_MS = 5000;
+const TOAST_DURATION_MS = 2600;
 
 @Service()
 export class ToastService {
@@ -39,7 +39,8 @@ export class ToastService {
 
   private push(variant: ToastVariant, message: string): void {
     const id = this.nextId++;
-    this.messages.update((list) => [...list, { id, variant, message }]);
+    // Un seul message à la fois : le dernier remplace le précédent.
+    this.messages.set([{ id, variant, message }]);
     setTimeout(() => this.dismiss(id), TOAST_DURATION_MS);
   }
 }

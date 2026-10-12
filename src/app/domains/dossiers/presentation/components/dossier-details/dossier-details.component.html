@@ -1,0 +1,73 @@
+<dl class="grid grid-cols-[repeat(auto-fill,minmax(min(100%,170px),1fr))] gap-x-[18px] gap-y-3">
+  @for (field of fields(); track field.label) {
+    <div class="flex min-w-0 flex-col gap-[3px]">
+      <dt class="text-[10.5px] font-medium tracking-[0.07em] text-ink-muted uppercase">
+        {{ field.label }}
+      </dt>
+      <dd class="text-[13px] [overflow-wrap:anywhere] text-ink" [class.font-mono]="field.mono">
+        {{ field.value }}
+      </dd>
+    </div>
+  }
+</dl>
+
+@if (dossier().extra.length) {
+  <div class="flex flex-col gap-2 border-t border-dashed border-line-strong pt-3">
+    <span class="text-[10.5px] font-medium tracking-[0.07em] text-ink-muted uppercase">
+      Informations spécifiques · {{ dossier().type }}
+    </span>
+    <dl
+      class="grid grid-cols-[repeat(auto-fill,minmax(min(100%,200px),1fr))] gap-x-[18px] gap-y-2.5"
+    >
+      @for (extra of dossier().extra; track extra.label) {
+        <div class="flex min-w-0 flex-col gap-[3px]">
+          <dt class="text-[12px] text-ink-muted">{{ extra.label }}</dt>
+          <dd class="text-[13px] font-medium [overflow-wrap:anywhere] text-ink">
+            {{ extra.value }}
+          </dd>
+        </div>
+      }
+    </dl>
+  </div>
+}
+
+<div class="flex flex-col gap-1.5 border-t border-dashed border-line-strong pt-3">
+  <span class="text-[10.5px] font-medium tracking-[0.07em] text-ink-muted uppercase">
+    Pièces jointes ({{ dossier().pieces.length }})
+  </span>
+  @if (dossier().pieces.length) {
+    <ul class="flex flex-wrap gap-1.5">
+      @for (piece of dossier().pieces; track piece.id) {
+        <li>
+          <button
+            type="button"
+            class="inline-flex max-w-[280px] items-center gap-[7px] rounded-[calc(var(--radius-brand)*0.7)] border border-line bg-card py-[5px] ps-1.5 pe-2.5 text-[12.5px] text-ink transition-colors hover:border-brand hover:text-brand-ink"
+            [attr.title]="'Ouvrir ' + piece.name"
+            (click)="pieceOpener.open(piece)"
+          >
+            <span
+              class="rounded-[calc(var(--radius-brand)*0.5)] bg-brand-tint px-1.5 py-px text-[10px] font-semibold text-brand-ink"
+            >
+              {{ piece.ext }}
+            </span>
+            <span class="truncate">{{ piece.name }}</span>
+            <span class="text-[11.5px] whitespace-nowrap text-ink-muted">{{
+              sizeLabel(piece.size)
+            }}</span>
+          </button>
+        </li>
+      }
+    </ul>
+  } @else {
+    <span class="text-[13px] text-ink-muted">Aucune pièce jointe</span>
+  }
+</div>
+
+<div class="flex flex-col gap-[3px] border-t border-dashed border-line-strong pt-3">
+  <span class="text-[10.5px] font-medium tracking-[0.07em] text-ink-muted uppercase"
+    >Observation</span
+  >
+  <span class="text-[13px] leading-normal whitespace-pre-wrap text-ink-secondary">{{
+    dossier().note || 'Aucune observation'
+  }}</span>
+</div>
