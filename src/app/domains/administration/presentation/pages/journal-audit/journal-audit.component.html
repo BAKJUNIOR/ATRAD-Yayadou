@@ -1,0 +1,105 @@
+@let criteria = filter();
+
+<div class="flex animate-enter flex-col gap-4">
+  <p class="max-w-[720px] text-[13px] leading-[1.55] text-pretty text-ink-muted">
+    Piste d'audit : qui a fait quelle action, sur quel état ou dossier, et quand. Les événements
+    sont issus des opérations réellement effectuées dans l'application.
+  </p>
+
+  <div
+    class="flex flex-wrap items-end gap-2.5 rounded-panel border border-line bg-subtle px-4 py-3.5"
+  >
+    <label class="form-label">
+      Utilisateur
+      <select class="audit-control min-w-[190px]" (change)="set('user', $event)">
+        <option value="" [selected]="!criteria.user">Tous les utilisateurs</option>
+        @for (user of users(); track user) {
+          <option [value]="user" [selected]="user === criteria.user">{{ user }}</option>
+        }
+      </select>
+    </label>
+    <label class="form-label">
+      Action
+      <select class="audit-control min-w-[170px]" (change)="set('category', $event)">
+        <option value="" [selected]="!criteria.category">Toutes les actions</option>
+        @for (category of categories; track category) {
+          <option [value]="category" [selected]="category === criteria.category">
+            {{ category }}
+          </option>
+        }
+      </select>
+    </label>
+    <label class="form-label">
+      Du
+      <input
+        type="date"
+        class="audit-control"
+        [value]="criteria.from"
+        (change)="set('from', $event)"
+      />
+    </label>
+    <label class="form-label">
+      Au
+      <input type="date" class="audit-control" [value]="criteria.to" (change)="set('to', $event)" />
+    </label>
+    <label class="form-label flex-[1_1_200px]">
+      État ou dossier
+      <input
+        class="audit-control"
+        placeholder="Ex. ET-2026-0401"
+        [value]="criteria.query"
+        (input)="set('query', $event)"
+      />
+    </label>
+    @if (hasFilter()) {
+      <button type="button" class="btn-outline px-3 py-2 text-[12.5px]" (click)="reset()">
+        Effacer les filtres
+      </button>
+    }
+  </div>
+
+  <section class="panel overflow-hidden">
+    <p class="border-b border-line px-5 py-3 text-[12.5px] text-ink-muted" aria-live="polite">
+      {{ countLabel() }}
+    </p>
+    <div class="overflow-x-auto">
+      <table class="grid-table min-w-[700px] text-[13px]">
+        <thead>
+          <tr class="audit-grid grid-head py-2.5">
+            <th scope="col">Date et heure</th>
+            <th scope="col">Utilisateur</th>
+            <th scope="col">Action</th>
+            <th scope="col">Détail</th>
+            <th scope="col">État / dossier</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (event of rows(); track $index) {
+            <tr
+              class="audit-grid items-center border-b border-soft px-5 py-2.5 transition-colors last:border-b-0 hover:bg-subtle"
+            >
+              <td class="font-mono text-[12px] whitespace-nowrap text-ink-muted">
+                {{ formatStamp(event.at) }}
+              </td>
+              <td class="truncate text-ink">{{ event.who }}</td>
+              <td
+                class="inline-flex min-w-0 items-center gap-1.5 text-[12px] leading-[1.35] font-semibold"
+                [class]="categoryText[event.category] ?? 'text-ink-muted'"
+              >
+                <span class="size-[7px] flex-none rounded-full bg-current"></span>
+                {{ event.category }}
+              </td>
+              <td class="text-[12.5px] text-pretty text-ink-secondary">{{ event.label }}</td>
+              <td class="truncate font-mono text-[12px] text-heading">{{ event.target }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (!rows().length) {
+      <p class="px-5 py-8 text-center text-[13.5px] text-ink-muted">
+        Aucun événement ne correspond à ces filtres.
+      </p>
+    }
+  </section>
+</div>

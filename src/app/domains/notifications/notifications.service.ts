@@ -141,7 +141,9 @@ export class NotificationsService {
         meta: this.traitement.entiteShort(),
         path: this.traitement.functions().affecter
           ? '/traitement/affectation'
-          : '/traitement/mes-dossiers',
+          : this.traitement.functions().pool
+            ? '/traitement/pool'
+            : '/traitement/mes-dossiers',
         tone: 'warn',
       });
     }

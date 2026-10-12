@@ -1,0 +1,96 @@
+<div class="flex animate-enter flex-col gap-[18px]">
+  <section
+    class="flex flex-wrap items-end justify-between gap-4 rounded-panel bg-navy px-5 py-[18px] text-side-muted"
+  >
+    <div class="flex max-w-[600px] flex-col gap-1.5">
+      <h2 class="text-[15px] font-semibold text-white">
+        Pool de dossiers — {{ context.entiteShort() }}
+      </h2>
+      <p class="text-[12.5px] leading-[1.55] text-pretty">
+        Liste commune de l'entité. Cliquez sur « Je prends ce dossier » : il quitte le pool et
+        rejoint « Mes dossiers ».
+      </p>
+    </div>
+    <div class="flex flex-col items-start gap-1.5">
+      <span
+        class="text-[10.5px] leading-[1.4] font-semibold tracking-[0.1em] whitespace-nowrap text-side-faint uppercase"
+      >
+        Mode de répartition · {{ context.entiteShort() }}
+      </span>
+      <span
+        class="rounded-full border border-white/14 bg-white/8 px-3 py-1.5 text-[12.5px] font-semibold whitespace-nowrap text-white"
+      >
+        {{ context.modeLabel() }}
+      </span>
+      <span class="text-[11.5px] text-side-muted">
+        Paramétré dans Administration › Routage &amp; affectation
+      </span>
+    </div>
+  </section>
+
+  <section class="panel overflow-hidden" aria-labelledby="pool-title">
+    <header
+      class="flex flex-wrap items-center justify-between gap-2.5 border-b border-line px-5 py-3.5"
+    >
+      <h2
+        id="pool-title"
+        class="text-[14.5px] font-semibold tracking-[-0.01em] whitespace-nowrap text-ink"
+      >
+        Dossiers disponibles
+      </h2>
+      <span class="text-[12px] whitespace-nowrap text-ink-muted">
+        {{ countLabel() }} · triés par priorité
+      </span>
+    </header>
+    <div class="overflow-x-auto">
+      <table class="grid-table min-w-[640px] text-[13px]">
+        <thead>
+          <tr class="pool-grid grid-head py-2.5">
+            <th scope="col">Référence</th>
+            <th scope="col">Client</th>
+            <th scope="col">Type</th>
+            <th scope="col">Priorité</th>
+            <th scope="col">Échéance</th>
+            <th scope="col" class="text-end!">Prise en charge</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (dossier of rows(); track dossier.id) {
+            <tr class="pool-grid items-center border-b border-soft px-5 py-3 last:border-b-0">
+              <td>
+                <a
+                  class="font-mono text-[12.5px] whitespace-nowrap text-brand-ink hover:underline"
+                  [routerLink]="['/traitement/dossiers', dossier.ref]"
+                >
+                  {{ dossier.ref }}
+                </a>
+              </td>
+              <td class="truncate text-ink">{{ dossier.client }}</td>
+              <td class="truncate text-[12.5px] text-ink-secondary">{{ dossier.type }}</td>
+              <td class="text-[12.5px] font-semibold" [class]="priorityText[dossier.prio]">
+                {{ dossier.prio }}
+              </td>
+              <td class="font-mono text-[12px] text-ink-muted">
+                {{ isoDateToFr(dossier.echeanceIso) }}
+              </td>
+              <td class="flex justify-end">
+                <button
+                  type="button"
+                  class="btn-primary px-3 py-[7px] text-[12.5px]"
+                  (click)="take(dossier)"
+                >
+                  Je prends ce dossier
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (!rows().length) {
+      <p class="px-5 py-10 text-center text-[13.5px] text-ink-muted">
+        Le pool est vide : tous les dossiers reçus ont été pris en charge.
+      </p>
+    }
+  </section>
+</div>

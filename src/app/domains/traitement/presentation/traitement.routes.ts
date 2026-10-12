@@ -42,15 +42,10 @@ export const TRAITEMENT_ROUTES: Routes = [
       import('./pages/affectation/affectation.component').then((m) => m.AffectationComponent),
   },
   {
-    // Aucune entité n'est en mode pool par défaut : l'écran sera construit avec le paramétrage
-    // du routage par l'administrateur.
     path: 'pool',
     title: 'Pool de dossiers',
     canActivate: [functionGuard('pool')],
-    loadComponent: () =>
-      import('../../../shared/ui/screen-placeholder/screen-placeholder.component').then(
-        (m) => m.ScreenPlaceholderComponent,
-      ),
+    loadComponent: () => import('./pages/pool/pool.component').then((m) => m.PoolComponent),
   },
   {
     path: 'dossiers/:ref',

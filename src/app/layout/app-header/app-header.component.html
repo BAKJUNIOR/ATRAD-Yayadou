@@ -18,7 +18,7 @@
         aria-label="Fil d'Ariane"
         class="flex min-w-0 items-center gap-1.5 overflow-hidden text-[12px] whitespace-nowrap text-ink-muted"
       >
-        <a routerLink="/" class="flex-none hover:text-brand-ink hover:underline">{{ appName }}</a>
+        <a routerLink="/" class="flex-none hover:text-brand-ink hover:underline">{{ appName() }}</a>
         <span aria-hidden="true">›</span>
         <span class="min-w-0 truncate">{{ menuTitle() }}</span>
         @if (showPageCrumb()) {

@@ -2,6 +2,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { NAVIGATION } from '../../core/navigation/navigation';
+import { BrandService } from '../../core/services/brand.service';
 import { ConfirmService } from '../../core/services/confirm.service';
 import { DemoClock } from '../../core/services/demo-clock.service';
 import { StorageService } from '../../core/services/storage.service';
@@ -13,6 +14,7 @@ import { SidebarService } from '../../core/services/sidebar.service';
 import { initialsOf } from '../../core/utils/text.util';
 import { ENTITES } from '../../domains/dossiers/domain/routing';
 import { PieceFileStore } from '../../domains/dossiers/infrastructure/store/piece-file.store';
+import { RoutingStore } from '../../domains/dossiers/infrastructure/store/routing.store';
 import { TransmissionStore } from '../../domains/dossiers/infrastructure/store/transmission.store';
 import { NavBadgesService } from '../../domains/notifications/nav-badges.service';
 import { TraitementContext } from '../../domains/traitement/presentation/traitement-context.service';
@@ -31,7 +33,9 @@ export class AppSidebarComponent {
   private readonly clock = inject(DemoClock);
   private readonly store = inject(TransmissionStore);
   private readonly files = inject(PieceFileStore);
+  private readonly routing = inject(RoutingStore);
   private readonly storage = inject(StorageService);
+  private readonly brand = inject(BrandService);
   private readonly theme = inject(ThemeService);
   private readonly toast = inject(ToastService);
   private readonly confirm = inject(ConfirmService);
@@ -128,10 +132,12 @@ export class AppSidebarComponent {
       return;
     }
     this.store.reset();
+    this.routing.reset();
     void this.files.clear();
     this.clock.reset();
     this.storage.remove('atrad_notif_read_v1');
-    this.theme.setTheme('light');
+    this.brand.reset();
+    this.theme.clearChoice();
     await this.router.navigate(['/']);
     this.toast.info('Données de démo réinitialisées.');
   }

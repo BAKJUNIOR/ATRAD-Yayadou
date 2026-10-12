@@ -1,0 +1,380 @@
+@let brand = draft();
+<div class="-mb-9 flex animate-enter flex-wrap items-start gap-5 lg:-mb-11">
+  <div class="flex min-w-0 flex-[1_1_480px] flex-col gap-[18px] pb-5">
+    <section class="panel flex flex-col gap-4 px-5 py-[18px]">
+      <div class="flex flex-col gap-[3px]">
+        <h2 class="text-[14.5px] font-semibold tracking-[-0.01em] text-ink">A. Identité</h2>
+        <span class="text-[12.5px] leading-normal text-ink-muted">
+          Nom et logos affichés dans la barre latérale, la page de connexion, l'onglet du navigateur
+          et le bordereau imprimé.
+        </span>
+      </div>
+      <div class="grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-3.5">
+        <label class="brand-field">
+          Nom de l'application *
+          <input
+            class="brand-input"
+            maxlength="40"
+            [value]="brand.appName"
+            (input)="setText('appName', $event)"
+          />
+        </label>
+        <label class="brand-field">
+          Nom court *
+          <input
+            class="brand-input"
+            maxlength="12"
+            [value]="brand.shortName"
+            (input)="setText('shortName', $event)"
+          />
+        </label>
+        <label class="brand-field">
+          Nom de l'organisation *
+          <input
+            class="brand-input"
+            maxlength="40"
+            [value]="brand.org"
+            (input)="setText('org', $event)"
+          />
+        </label>
+      </div>
+      @if (identityError()) {
+        <span class="text-[12.5px] text-danger" role="alert">{{ identityError() }}</span>
+      }
+      <div class="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-3">
+        @for (logo of logos(); track logo.key) {
+          <div class="flex min-w-0 flex-col gap-2.5 rounded-brand border border-line bg-subtle p-3">
+            <div class="flex flex-col gap-0.5">
+              <span class="text-[13px] font-semibold text-ink">{{ logo.label }}</span>
+              <span class="text-[11.5px] text-ink-muted">{{ logo.hint }}</span>
+            </div>
+            <div
+              class="flex h-16 items-center justify-center overflow-hidden rounded-control border border-dashed border-line-strong bg-card"
+            >
+              @if (logo.src) {
+                <img
+                  class="h-[52px] w-[90%] flex-none object-contain"
+                  [src]="logo.src"
+                  [alt]="logo.label"
+                />
+              } @else {
+                <span
+                  class="flex size-[38px] items-center justify-center rounded-control bg-brand text-[15px] font-bold text-white"
+                >
+                  {{ initials() }}
+                </span>
+              }
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              <label
+                class="cursor-pointer rounded-[calc(var(--radius-brand)*0.7)] border border-brand bg-card px-[11px] py-1.5 text-[12.5px] font-medium whitespace-nowrap text-brand-ink transition-colors focus-within:ring-3 focus-within:ring-brand/16 hover:bg-brand-tint"
+              >
+                {{ logo.src ? 'Modifier' : 'Télécharger' }}
+                <input
+                  class="sr-only"
+                  type="file"
+                  accept=".png,.svg,.jpg,.jpeg,.webp"
+                  [attr.aria-label]="(logo.src ? 'Modifier' : 'Télécharger') + ' : ' + logo.label"
+                  (change)="onLogoFile(logo.key, $event)"
+                />
+              </label>
+              @if (logo.src) {
+                <button
+                  type="button"
+                  class="rounded-[calc(var(--radius-brand)*0.7)] border border-line-strong bg-card px-[11px] py-1.5 text-[12.5px] whitespace-nowrap text-ink-secondary transition-colors hover:border-danger-line hover:text-danger"
+                  (click)="removeLogo(logo.key)"
+                >
+                  Retirer
+                </button>
+              }
+            </div>
+            @if (logo.error) {
+              <span class="text-[12px] leading-[1.4] text-danger" role="alert">
+                {{ logo.error }}
+              </span>
+            }
+          </div>
+        }
+      </div>
+      <span class="text-[12px] text-ink-muted">
+        Formats acceptés : PNG, SVG, JPG, WEBP · 500 Ko maximum par fichier. Sans logo, les
+        initiales du nom court s'affichent dans une pastille de la couleur principale.
+      </span>
+    </section>
+
+    <section class="panel flex flex-col gap-3.5 px-5 py-[18px]">
+      <div class="flex flex-col gap-[3px]">
+        <h2 class="text-[14.5px] font-semibold tracking-[-0.01em] text-ink">
+          B. Palette de couleurs
+        </h2>
+        <span class="text-[12.5px] leading-normal text-ink-muted">
+          Les couleurs de statut (retard, succès, avertissement) ne changent pas avec la palette.
+        </span>
+      </div>
+      <div class="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2.5">
+        @for (item of palettes(); track item.palette.id) {
+          <button
+            type="button"
+            class="relative flex flex-col gap-[9px] rounded-brand border-2 bg-card p-2.5 text-start transition-colors hover:border-brand"
+            [class]="item.selected ? 'border-brand' : 'border-line'"
+            [attr.aria-pressed]="item.selected"
+            (click)="pickPalette(item.palette)"
+          >
+            <span
+              class="grid h-[26px] grid-cols-4 overflow-hidden rounded-[calc(var(--radius-brand)*0.6)] border border-line"
+              aria-hidden="true"
+            >
+              @for (swatch of item.swatches; track $index) {
+                <span [style.background]="swatch"></span>
+              }
+            </span>
+            <span
+              class="flex items-center justify-between gap-1.5 text-[13px] font-medium text-ink"
+            >
+              {{ item.palette.label }}
+              @if (item.selected) {
+                <span
+                  class="flex size-[18px] items-center justify-center rounded-full bg-brand text-[11px] text-white"
+                  aria-hidden="true"
+                >
+                  ✓
+                </span>
+              }
+            </span>
+          </button>
+        }
+      </div>
+    </section>
+
+    <section class="panel flex flex-col gap-3.5 px-5 py-[18px]">
+      <div class="flex flex-col gap-[3px]">
+        <h2 class="text-[14.5px] font-semibold tracking-[-0.01em] text-ink">
+          C. Couleurs personnalisées
+        </h2>
+        <span class="text-[12.5px] leading-normal text-ink-muted">
+          Modifier une couleur passe la palette en « Personnalisée ». Format attendu : #RRGGBB.
+        </span>
+      </div>
+      <div class="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3">
+        @for (color of colors(); track color.key) {
+          <div class="brand-field">
+            {{ color.label }}
+            <div class="grid grid-cols-[40px_minmax(0,1fr)] items-center gap-2">
+              <input
+                type="color"
+                class="size-10 cursor-pointer rounded-control border border-line-strong bg-card p-0.5"
+                [value]="color.value"
+                [attr.aria-label]="'Couleur ' + color.label + ' : sélecteur'"
+                (input)="onColorPick(color.key, $event)"
+              />
+              <input
+                class="brand-input font-mono uppercase"
+                [class]="color.invalid ? 'border-danger' : ''"
+                maxlength="7"
+                spellcheck="false"
+                [value]="color.text"
+                [attr.aria-label]="'Couleur ' + color.label + ' : code hexadécimal'"
+                [attr.aria-invalid]="color.invalid"
+                (input)="onColorText(color.key, $event)"
+              />
+            </div>
+            @if (color.invalid) {
+              <span class="text-[12px] font-normal text-danger" role="alert">
+                Format invalide : saisissez #RRGGBB (ex. #0F6E70).
+              </span>
+            }
+          </div>
+        }
+      </div>
+      @for (warning of warnings(); track warning) {
+        <div
+          class="flex items-start gap-2.5 rounded-control border border-warning-line bg-warning-bg px-3 py-2.5 text-[12.5px] leading-normal text-warning"
+          role="status"
+        >
+          <span class="font-bold" aria-hidden="true">!</span>
+          <span>{{ warning }}</span>
+        </div>
+      }
+    </section>
+
+    <section class="panel flex flex-col gap-3.5 px-5 py-[18px]">
+      <h2 class="text-[14.5px] font-semibold tracking-[-0.01em] text-ink">
+        D. Typographie et formes
+      </h2>
+      <div class="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] items-end gap-4">
+        <label class="brand-field">
+          Police
+          <select class="brand-input" (change)="setFont($event)">
+            @for (font of fonts; track font) {
+              <option [value]="font" [selected]="font === brand.font">{{ font }}</option>
+            }
+          </select>
+        </label>
+        <label class="brand-field">
+          <span class="flex justify-between gap-2">
+            Rayon des bords (px)
+            <span class="font-mono font-semibold text-brand-ink">{{ brand.radius }} px</span>
+          </span>
+          <input
+            type="range"
+            class="h-10 w-full accent-brand"
+            min="0"
+            max="20"
+            step="1"
+            [value]="brand.radius"
+            (input)="setRadius($event)"
+          />
+        </label>
+      </div>
+    </section>
+
+    <section class="panel flex flex-wrap items-center justify-between gap-4 px-5 py-[18px]">
+      <div class="flex min-w-0 flex-[1_1_260px] flex-col gap-[3px]">
+        <h2 class="text-[14.5px] font-semibold tracking-[-0.01em] text-ink">E. Mode d'affichage</h2>
+        <span class="text-[12.5px] leading-normal text-ink-muted">
+          Appliqué aux utilisateurs qui n'ont pas encore choisi eux-mêmes avec le bouton soleil /
+          lune de l'en-tête.
+        </span>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        class="flex items-center gap-2.5 text-[13px] font-medium text-ink"
+        [attr.aria-checked]="brand.darkDefault"
+        (click)="toggleDarkDefault()"
+      >
+        <span
+          class="relative h-6 w-[42px] rounded-full transition-colors"
+          [class]="brand.darkDefault ? 'bg-brand' : 'bg-line-strong'"
+        >
+          <span
+            class="absolute top-[3px] size-[18px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.25)] transition-[inset-inline-start]"
+            [class]="brand.darkDefault ? 'start-[21px]' : 'start-[3px]'"
+          ></span>
+        </span>
+        Mode sombre par défaut
+      </button>
+    </section>
+  </div>
+
+  <aside
+    class="flex max-w-[460px] min-w-0 flex-[1_1_340px] flex-col gap-2.5 pb-5 lg:sticky lg:top-[92px]"
+    aria-label="Aperçu en direct"
+  >
+    <div class="flex items-center justify-between gap-2.5">
+      <span class="eyebrow whitespace-nowrap">Aperçu en direct</span>
+      <div class="flex gap-[3px] rounded-control border border-line-strong bg-soft p-[3px]">
+        @for (mode of previewThemes; track mode.id) {
+          <button
+            type="button"
+            class="rounded-[calc(var(--radius-brand)*0.6)] px-[11px] py-[5px] text-[12px] font-medium transition-colors"
+            [class]="previewTheme() === mode.id ? 'bg-card text-ink' : 'text-ink-muted'"
+            [attr.aria-pressed]="previewTheme() === mode.id"
+            (click)="previewTheme.set(mode.id)"
+          >
+            {{ mode.label }}
+          </button>
+        }
+      </div>
+    </div>
+    <div
+      class="brand-preview grid min-h-[300px] grid-cols-[112px_minmax(0,1fr)] overflow-hidden rounded-panel border border-line-strong bg-page text-ink shadow-[0_8px_24px_-12px_rgba(16,24,40,0.25)]"
+      [class.brand-preview-dark]="previewTheme() === 'dark'"
+      [style]="previewVars()"
+      aria-hidden="true"
+    >
+      <div class="flex flex-col gap-1 bg-navy px-2 py-3">
+        <div class="flex min-w-0 items-center gap-1.5 px-1 pb-2.5">
+          @if (brand.logoFull) {
+            <img
+              class="h-[22px] w-[92px] flex-none object-contain object-left"
+              [src]="brand.logoFull"
+              alt=""
+            />
+          } @else {
+            <span
+              class="flex size-5 flex-none items-center justify-center rounded-[calc(var(--radius-brand)*0.5)] bg-brand-mid text-[9px] font-bold text-brand-on-mid"
+            >
+              {{ initials() }}
+            </span>
+            <span class="min-w-0 truncate text-[10.5px] font-semibold text-white">
+              {{ brand.shortName || brand.appName }}
+            </span>
+          }
+        </div>
+        <span
+          class="rounded-[calc(var(--radius-brand)*0.6)] bg-brand-mid/18 px-[7px] py-1.5 text-[10.5px] font-semibold text-white"
+        >
+          Accueil
+        </span>
+        <span class="px-[7px] py-1.5 text-[10.5px] text-side-muted">États reçus</span>
+        <span class="px-[7px] py-1.5 text-[10.5px] text-side-muted">Historique</span>
+      </div>
+      <div class="flex min-w-0 flex-col">
+        <div
+          class="flex items-center justify-between gap-2 border-b border-line bg-card px-3 py-2.5"
+        >
+          <span class="truncate text-[12px] font-semibold text-heading">Tableau de bord</span>
+          <span
+            class="flex size-[22px] items-center justify-center rounded-full bg-brand-tint text-[9px] font-bold text-brand-ink"
+          >
+            NC
+          </span>
+        </div>
+        <div class="flex flex-col gap-2.5 p-3">
+          <div class="flex flex-col gap-1 rounded-brand border border-line bg-card px-3 py-2.5">
+            <span class="text-[10px] text-ink-muted">Dossiers traités</span>
+            <span class="text-[20px] font-semibold text-heading">{{ treatedCount() }}</span>
+            <span class="h-1 overflow-hidden rounded-full bg-soft">
+              <span class="block h-full w-[62%] bg-brand"></span>
+            </span>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <span
+              class="rounded-control bg-brand px-3 py-[7px] text-[11px] font-semibold whitespace-nowrap text-white"
+            >
+              Action principale
+            </span>
+            <span
+              class="rounded-full border border-warning-line bg-warning-bg px-2 py-0.5 text-[10px] font-medium text-warning"
+            >
+              En cours
+            </span>
+          </div>
+          <span class="text-[11px] text-brand-ink underline">Lien actif — voir le détail</span>
+        </div>
+      </div>
+    </div>
+    <span class="text-[11.5px] leading-normal text-ink-muted">
+      L'aperçu reflète vos changements immédiatement. Ils ne s'appliquent à toute l'application
+      qu'après « Enregistrer ».
+    </span>
+  </aside>
+
+  <div
+    class="sticky bottom-0 z-[6] -mx-3.5 flex flex-[1_1_100%] flex-wrap items-center justify-between gap-3 border-t border-line bg-card/94 px-3.5 py-3.5 backdrop-blur-sm lg:-mx-[30px] lg:px-[30px]"
+  >
+    <span class="text-[12.5px]" [class]="status().tone" role="status">{{ status().text }}</span>
+    <div class="flex gap-2.5">
+      <button
+        type="button"
+        class="rounded-control border border-line-strong bg-card px-4 py-2.5 text-[13.5px] text-ink-secondary transition-colors hover:border-danger-line hover:text-danger"
+        (click)="reset()"
+      >
+        Réinitialiser
+      </button>
+      <button
+        type="button"
+        class="rounded-control px-[18px] py-2.5 text-[13.5px] font-semibold text-white transition-colors"
+        [class]="
+          saveDisabled() ? 'cursor-not-allowed bg-ink-faint' : 'bg-brand hover:bg-brand-dark'
+        "
+        [attr.aria-disabled]="saveDisabled()"
+        [title]="saveTip()"
+        (click)="save()"
+      >
+        Enregistrer
+      </button>
+    </div>
+  </div>
+</div>

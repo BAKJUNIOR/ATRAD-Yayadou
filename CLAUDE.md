@@ -125,3 +125,12 @@ src/app/
 - Indicateurs : fonctions pures de `domains/pilotage/domain/indicators.ts` (respect des délais, périodes, classements), affichées par `tableau-de-bord`, `delais`, `agences`, `rapports`.
 - `DemoClock` (`core/services`) décale la date du jour (« Avancer la date de démo ») pour faire apparaître les retards. Toute date du jour passe par `core/utils/date.util.ts` (`nowIso`, `todayIsoDate`, `isoDateInDays`) ou par `clock.today()` dans un `computed` : ne pas appeler `new Date()` directement.
 - « Réinitialiser les données de démo » vide `TransmissionStore`, les pièces jointes et la date de démonstration.
+
+## Parcours administration et marque blanche
+
+- Écrans : `logo-couleurs`, `routage` (type → entité, répartition interne), `journal-audit` ; « Agences & entités » et « Utilisateurs » restent sur le gabarit d'attente (non construits dans le prototype).
+- Routage : `RoutingStore` (clé `atrad_routing_v1`) remplace la configuration par défaut de `routing.ts` ; un changement ne s'applique qu'aux réceptions suivantes. Pool partagé : écran `traitement/pool`, `TransmissionStore.take()`.
+- Marque blanche : `BrandService` (`core/services`, clé `atrad_brand_v1`) pose les variables `--brand-*` sur `<html>`, charge la police, remplace le favicon et fournit nom, organisation et logos. Ne jamais écrire « ATRAD » ou « YAYADOU » en dur dans un écran : lire `BrandService`.
+- Modèle, palettes et dérivation des couleurs : `core/branding/brand.ts` et `core/utils/color.util.ts`. L'aperçu de l'écran applique le brouillon sur le seul bloc `.brand-preview` (`styles.css`).
+- Mode sombre par défaut de la marque : suivi par `ThemeService` tant que l'utilisateur n'a pas choisi lui-même (`followBrandDefault`, `clearChoice`).
+- « Réinitialiser les données de démo » rétablit aussi le routage, la marque et le choix de thème.

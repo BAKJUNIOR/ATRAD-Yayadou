@@ -1,5 +1,6 @@
 import { DialogRef } from '@angular/cdk/dialog';
 import { Component, computed, inject } from '@angular/core';
+import { BrandService } from '../../../core/services/brand.service';
 import { SessionService } from '../../../core/services/session.service';
 import { initialsOf } from '../../../core/utils/text.util';
 
@@ -48,6 +49,7 @@ import { initialsOf } from '../../../core/utils/text.util';
 })
 export class ProfileDialogComponent {
   protected readonly dialogRef = inject<DialogRef<void>>(DialogRef);
+  private readonly brand = inject(BrandService);
   protected readonly account = inject(SessionService).account;
 
   protected readonly initials = computed(() => initialsOf(this.account()?.name ?? ''));
@@ -58,7 +60,7 @@ export class ProfileDialogComponent {
           { label: 'Identifiant', value: account.ident },
           { label: 'Rôle', value: account.roleLabel },
           { label: 'Entité', value: account.entity },
-          { label: 'Organisation', value: 'YAYADOU' },
+          { label: 'Organisation', value: this.brand.org() },
         ]
       : [];
   });
