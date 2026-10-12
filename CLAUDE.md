@@ -93,3 +93,13 @@ src/app/
 ## Bibliothèques
 
 `@angular/cdk`, `apexcharts` + `ng-apexcharts` (graphiques), `flatpickr` (dates). Ne pas ajouter de dépendance sans demander.
+
+## Parcours agence (premiers écrans construits)
+
+- `domains/dossiers/` est le socle partagé par tous les profils : entités `Dossier` / `Etat`, catalogue des types et de leurs champs (`dossier-catalog.ts`), routage par défaut (`routing.ts`), bordereau imprimable.
+- `TransmissionStore` (`domains/dossiers/infrastructure/store/`) tient lieu de backend : dossiers et états sont conservés dans le `localStorage` (clé `atrad_live_data_v1`), le contenu des pièces jointes dans IndexedDB. Chaque méthode correspond à un futur appel d'API.
+- Les règles métier sont des fonctions pures dans `domains/<domaine>/domain/` (ex. `dossier-form.rules.ts`, `suivi.ts`), testées sans composant.
+- Un écran riche expose son état par une façade fournie par la page (`creer-etat.facade.ts`), partagée par ses composants.
+- Dates : stockées en ISO 8601, mises en forme à l'affichage avec `core/utils/date.util.ts`.
+- Confirmation : `ConfirmService.ask(...)` (dialogue CDK). Saisie non enregistrée : la page implémente `canLeave()` et sa route déclare `unsavedChangesGuard`.
+- Classes utilitaires de formulaire dans `styles.css` : `form-control`, `form-label`, `form-error`, `panel`, `eyebrow`, `icon-button` ; champ complet avec `<app-form-field>`.

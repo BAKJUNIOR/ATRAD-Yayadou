@@ -1,36 +1,181 @@
 <header
-  class="sticky top-0 z-20 flex items-center justify-between gap-3.5 border-b border-line bg-card/85 px-4 py-3 backdrop-blur-md backdrop-saturate-150 lg:px-7"
+  class="sticky top-0 z-20 flex items-center justify-between gap-3.5 border-b border-line bg-card/86 px-3.5 py-2.5 backdrop-blur-[10px] backdrop-saturate-[1.4] lg:px-7 lg:py-3.5"
 >
   <div class="flex min-w-0 items-center gap-3">
     <button
       type="button"
       class="flex size-9 flex-none items-center justify-center rounded-control border border-line-strong bg-card text-ink-secondary transition-colors hover:border-brand hover:text-brand-ink lg:hidden"
       aria-label="Ouvrir le menu"
+      title="Ouvrir le menu"
       [attr.aria-expanded]="sidebar.isMobileOpen()"
-      (click)="sidebar.setMobileOpen(true)"
+      (click)="closeMenus(); sidebar.setMobileOpen(true)"
     >
       <app-icon name="menu" [strokeWidth]="2" />
     </button>
 
-    <div class="flex min-w-0 flex-col gap-0.5">
+    <div class="flex min-w-0 flex-col gap-[3px]">
       <nav
         aria-label="Fil d'Ariane"
-        class="flex min-w-0 items-center gap-1.5 text-[12px] whitespace-nowrap text-ink-muted"
+        class="flex min-w-0 items-center gap-1.5 overflow-hidden text-[12px] whitespace-nowrap text-ink-muted"
       >
         <a routerLink="/" class="flex-none hover:text-brand-ink hover:underline">{{ appName }}</a>
         <span aria-hidden="true">›</span>
-        <span class="truncate">{{ menuTitle() }}</span>
+        <span class="min-w-0 truncate">{{ menuTitle() }}</span>
+        @if (showPageCrumb()) {
+          <span aria-hidden="true">›</span>
+          <span class="truncate text-ink-secondary">{{ pageTitle() }}</span>
+        }
       </nav>
-      <p class="truncate text-[18px] font-semibold tracking-[-0.02em] text-ink">
+      <span class="truncate text-[18px] font-semibold tracking-[-0.02em] text-ink">
         {{ pageTitle() }}
-      </p>
+      </span>
     </div>
   </div>
 
   <div class="flex flex-none items-center gap-2.5">
-    <span class="hidden font-mono text-[12px] whitespace-nowrap text-ink-muted md:block">{{
-      today
-    }}</span>
+    <label
+      class="hidden w-[220px] items-center gap-2 rounded-control border border-line-strong bg-subtle px-3 py-2 min-[1180px]:flex"
+    >
+      <app-icon name="search" class="text-ink-muted" [size]="13" [strokeWidth]="2" />
+      <span class="sr-only">Rechercher un dossier, un état</span>
+      <input
+        type="search"
+        placeholder="Rechercher un dossier, un état…"
+        class="w-full min-w-0 bg-transparent text-[13px] text-ink outline-none placeholder:text-ink-muted"
+      />
+    </label>
+
+    <span class="hidden font-mono text-[12px] whitespace-nowrap text-ink-muted min-[1320px]:block">
+      {{ today }}
+    </span>
+
     <app-theme-toggle />
+
+    <!-- Notifications -->
+    <div class="relative flex-none">
+      <button
+        type="button"
+        class="relative flex size-9 flex-none items-center justify-center rounded-control border border-line-strong bg-card text-ink-secondary transition-colors hover:border-brand hover:text-brand-ink"
+        title="Notifications"
+        [attr.aria-label]="bellLabel()"
+        [attr.aria-expanded]="bellOpen()"
+        (click)="toggleBell()"
+      >
+        <app-icon name="bell" [size]="17" [strokeWidth]="2" />
+        @if (notifications.unreadCount(); as unread) {
+          <span
+            class="absolute -end-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-card bg-danger-solid px-[5px] text-[10.5px] font-bold text-white"
+          >
+            {{ unread }}
+          </span>
+        }
+      </button>
+      @if (bellOpen()) {
+        <div class="fixed inset-0 z-30" (click)="closeMenus()"></div>
+        <div
+          role="dialog"
+          aria-label="Notifications"
+          class="absolute end-0 top-[46px] z-[31] w-[min(360px,calc(100vw-24px))] animate-enter overflow-hidden rounded-panel border border-line bg-card shadow-[0_18px_48px_-12px_rgba(14,22,34,0.35)]"
+        >
+          <div class="flex items-center justify-between gap-2.5 border-b border-line px-3.5 py-3">
+            <span class="text-[13.5px] font-semibold text-ink">Notifications</span>
+            <button
+              type="button"
+              class="px-1.5 py-1 text-[12px] font-medium whitespace-nowrap"
+              [class]="notifications.unreadCount() ? 'text-brand-ink' : 'text-ink-faint'"
+              [disabled]="!notifications.unreadCount()"
+              (click)="notifications.markAllRead()"
+            >
+              Tout marquer comme lu
+            </button>
+          </div>
+          @if (notifications.items().length) {
+            <ul class="flex max-h-[380px] flex-col overflow-y-auto">
+              @for (notification of notifications.items(); track notification.id) {
+                <li>
+                  <button
+                    type="button"
+                    class="grid w-full grid-cols-[10px_minmax(0,1fr)] items-start gap-2.5 border-b border-line px-3.5 py-[11px] text-start transition-colors hover:bg-subtle"
+                    [class]="notification.read ? 'bg-card' : 'bg-brand-tint-soft'"
+                    (click)="openNotification(notification)"
+                  >
+                    <span
+                      class="mt-[5px] size-2 rounded-full"
+                      [class]="dotClass(notification)"
+                    ></span>
+                    <span class="flex min-w-0 flex-col gap-0.5">
+                      <span
+                        class="text-[13px] leading-[1.4] text-ink"
+                        [class]="notification.read ? 'font-normal' : 'font-semibold'"
+                      >
+                        {{ notification.label }}
+                      </span>
+                      <span class="text-[11.5px] text-ink-muted">{{ notification.meta }}</span>
+                    </span>
+                  </button>
+                </li>
+              }
+            </ul>
+          } @else {
+            <div class="flex flex-col items-center gap-1.5 px-4 py-7 text-center">
+              <span class="text-[13.5px] font-medium text-ink">Aucune notification</span>
+              <span class="text-[12px] text-ink-muted">Vous êtes à jour.</span>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Menu profil -->
+    @if (account(); as account) {
+      <div class="relative flex-none">
+        <button
+          type="button"
+          class="flex h-9 items-center gap-[9px] rounded-full border border-line-strong bg-card py-0 ps-[3px] pe-2 text-ink transition-colors hover:border-brand"
+          aria-label="Menu profil"
+          aria-haspopup="menu"
+          [attr.aria-expanded]="profileOpen()"
+          (click)="toggleProfile()"
+        >
+          <span
+            class="flex size-7 items-center justify-center rounded-full bg-brand text-[11px] font-bold text-white"
+          >
+            {{ initials() }}
+          </span>
+          <span class="hidden text-[13px] font-medium whitespace-nowrap lg:inline">
+            {{ account.name }}
+          </span>
+          <app-icon name="chevron-down" class="text-ink-muted" [size]="12" [strokeWidth]="2.4" />
+        </button>
+        @if (profileOpen()) {
+          <div class="fixed inset-0 z-30" (click)="closeMenus()"></div>
+          <div
+            role="menu"
+            class="absolute end-0 top-[46px] z-[31] w-[250px] animate-enter overflow-hidden rounded-panel border border-line bg-card shadow-[0_18px_48px_-12px_rgba(14,22,34,0.35)]"
+          >
+            <div class="flex flex-col gap-0.5 border-b border-line px-3.5 py-3">
+              <span class="text-[13.5px] font-semibold text-ink">{{ account.name }}</span>
+              <span class="text-[12px] leading-[1.4] text-ink-muted">{{ account.roleLabel }}</span>
+            </div>
+            <button
+              type="button"
+              role="menuitem"
+              class="block w-full px-3.5 py-2.5 text-start text-[13px] text-ink hover:bg-subtle"
+              (click)="openProfile()"
+            >
+              Mon profil
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              class="block w-full border-t border-line px-3.5 py-2.5 text-start text-[13px] font-semibold text-danger hover:bg-danger-bg"
+              (click)="signOut()"
+            >
+              Déconnexion
+            </button>
+          </div>
+        }
+      </div>
+    }
   </div>
 </header>

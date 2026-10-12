@@ -1,6 +1,6 @@
 <aside
-  class="fixed inset-y-0 start-0 z-50 flex w-[264px] flex-col bg-navy py-5 text-side transition-[width,translate,visibility] duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:shadow-none"
-  [class]="[widthClass(), drawerClass()]"
+  class="fixed inset-y-0 start-0 z-50 flex w-[272px] flex-col bg-navy py-5 text-side transition-[width,translate,visibility] duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:shadow-none"
+  [class]="asideClass()"
   aria-label="Navigation principale"
 >
   <div class="flex flex-none items-center px-4 pb-4" [class]="itemClass()">
@@ -113,7 +113,7 @@
 <ng-template #link let-item let-nested="nested">
   <a
     class="flex flex-none items-center gap-2.5 rounded-control px-3 py-2 text-[13.5px] text-side transition-colors hover:bg-white/9"
-    [class]="[itemClass(), nested ? childClass() : '']"
+    [class]="nested ? nestedItemClass() : itemClass()"
     [routerLink]="item.path"
     routerLinkActive="bg-white/12 font-medium text-white"
     ariaCurrentWhenActive="page"

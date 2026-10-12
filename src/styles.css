@@ -2,6 +2,7 @@
 layer(base);
 
 @import 'tailwindcss';
+@import '@angular/cdk/overlay-prebuilt.css';
 
 /* Mode sombre piloté par la classe `.dark` posée sur <html> (voir ThemeService). */
 @custom-variant dark (&:is(.dark *));
@@ -312,6 +313,8 @@ html.dark {
     background-color: var(--bg-page);
     color: var(--text-main);
     font-family: var(--font-sans);
+    /* Interligne du prototype : les tailles de texte arbitraires héritent de cette valeur. */
+    line-height: normal;
     font-feature-settings:
       'tnum' 1,
       'cv11' 1;
@@ -452,4 +455,175 @@ html.dark {
 @utility side-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+
+/* Variante claire imposée (bordereau imprimable), quel que soit le thème de l'application. */
+.force-light {
+  color-scheme: light;
+
+  --bg-page: var(--brand-background);
+  --bg-card: #ffffff;
+  --bg-subtle: #f8fafc;
+  --bg-muted: #f1f4f7;
+  --border: #e6e9ee;
+  --border-strong: #d5dbe2;
+  --text-main: #16232e;
+  --text-heading: var(--brand-text-color);
+  --text-secondary: #3c4e5c;
+  --text-muted: #5e7180;
+  --text-faint: #9fb0bc;
+  --brand-primary-text: var(--brand-primary);
+
+  color: var(--text-main);
+}
+
+.app-dialog-backdrop {
+  background-color: rgba(14, 22, 34, 0.44);
+  backdrop-filter: blur(3px);
+}
+
+/* Carte-filtre du suivi : sa couleur vient du modificateur `.status-<clé>` (ou `.status-all`). */
+.status-all {
+  --status-fg: var(--brand-primary);
+}
+
+.stat-filter {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--brand-border-radius) * 1.4);
+  background: var(--bg-card);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  text-align: start;
+  transition:
+    box-shadow 0.15s ease,
+    transform 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.stat-filter:hover {
+  border-color: var(--status-fg);
+  box-shadow: 0 6px 18px -6px rgba(16, 24, 40, 0.14);
+  transform: translateY(-1px);
+}
+
+.stat-filter[aria-pressed='true'] {
+  border-color: var(--status-fg);
+  background: color-mix(in srgb, var(--status-fg) 7%, var(--bg-card));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--status-fg) 16%, transparent);
+}
+
+.stat-filter-icon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: calc(var(--brand-border-radius) * 0.8);
+  background: color-mix(in srgb, var(--status-fg) 13%, transparent);
+  color: var(--status-fg);
+}
+
+.stat-filter-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--status-fg);
+  color: #ffffff;
+}
+
+@layer components {
+  .form-label {
+    @apply flex min-w-0 flex-col gap-1 text-[12px] font-medium text-ink-secondary;
+  }
+
+  .form-control {
+    @apply w-full min-w-0 rounded-control border border-line-strong bg-card px-[11px] py-[9px] text-[13.5px] font-normal text-ink outline-none transition-shadow placeholder:text-ink-faint focus:border-brand focus:ring-3 focus:ring-brand/16;
+  }
+
+  .form-control[aria-invalid='true'] {
+    @apply border-danger bg-danger-bg focus:border-danger focus:ring-danger/18;
+  }
+
+  .form-error {
+    @apply block w-full animate-enter text-[12px] leading-[1.4] font-medium text-danger;
+  }
+
+  .panel {
+    @apply rounded-panel border border-line bg-card shadow-card;
+  }
+
+  .eyebrow {
+    @apply text-[11px] font-semibold tracking-[0.08em] text-ink-muted uppercase;
+  }
+
+  .icon-button {
+    @apply flex size-[34px] flex-none items-center justify-center rounded-control border border-line-strong bg-card text-ink-secondary transition-colors hover:border-brand hover:text-brand-ink;
+  }
+}
+
+/* Impression : seul le bordereau ouvert dans le dialogue est imprimé. */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 14mm;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+  }
+
+  app-root,
+  .cdk-overlay-backdrop,
+  [data-noprint] {
+    display: none !important;
+  }
+
+  .cdk-overlay-container,
+  .cdk-global-overlay-wrapper,
+  .cdk-overlay-pane,
+  .cdk-dialog-container,
+  .print-reset {
+    position: static !important;
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    background: none !important;
+    transform: none !important;
+  }
+
+  .print-sheet {
+    width: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .print-sheet [data-row] {
+    break-inside: avoid;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-control bg-brand px-[17px] py-[11px] text-[13.5px] font-semibold whitespace-nowrap text-white transition hover:bg-brand-dark hover:shadow-[0_4px_12px_-4px_color-mix(in_srgb,var(--brand-primary)_45%,transparent)] active:translate-y-px disabled:bg-ink-faint disabled:opacity-100 disabled:shadow-none;
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-control border border-line-strong bg-card px-[15px] py-[11px] text-[13.5px] whitespace-nowrap text-ink-secondary transition-colors hover:border-brand hover:text-brand-ink active:translate-y-px;
+  }
 }

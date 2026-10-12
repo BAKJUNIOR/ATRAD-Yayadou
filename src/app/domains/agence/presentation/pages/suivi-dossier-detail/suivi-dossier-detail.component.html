@@ -1,0 +1,82 @@
+<div class="flex animate-enter flex-col gap-[18px]">
+  <a routerLink="/agence/suivi" class="btn-outline self-start px-[13px] py-2 text-[12.5px]">
+    ← Retour au suivi des dossiers
+  </a>
+
+  @if (dossier(); as dossier) {
+    <div
+      class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,320px),1fr))] items-start gap-[18px]"
+    >
+      <section class="panel overflow-hidden" aria-labelledby="dossier-title">
+        <header
+          class="flex flex-wrap items-center justify-between gap-2.5 border-b border-line px-5 py-[17px]"
+        >
+          <div class="flex flex-col gap-1">
+            <h2
+              id="dossier-title"
+              class="flex-none font-mono text-[16px] font-semibold whitespace-nowrap text-heading"
+            >
+              {{ dossier.ref }}
+            </h2>
+            <span class="text-[12.5px] text-ink-muted"
+              >{{ dossier.client }} · {{ dossier.num }}</span
+            >
+          </div>
+          <app-status-badge [status]="dossier.status" />
+        </header>
+
+        <dl class="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-4 px-5 py-[18px]">
+          @for (field of fields(); track field.label) {
+            <div class="flex flex-col gap-[3px]">
+              <dt class="text-[11.5px] tracking-[0.06em] text-ink-muted uppercase">
+                {{ field.label }}
+              </dt>
+              <dd class="text-[13.5px] text-ink" [class]="field.classes ?? ''">
+                {{ field.value }}
+              </dd>
+            </div>
+          }
+        </dl>
+
+        @if (dossier.extra.length) {
+          <div
+            class="mx-5 mb-[18px] flex flex-col gap-2.5 rounded-[calc(var(--radius-brand)*0.9)] border border-brand-tint-line bg-brand-tint-soft px-4 py-3.5"
+          >
+            <span class="text-[11.5px] font-semibold tracking-[0.06em] text-brand-ink uppercase">
+              Informations spécifiques
+            </span>
+            <dl class="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3">
+              @for (extra of dossier.extra; track extra.label) {
+                <div class="flex flex-col gap-[3px]">
+                  <dt class="text-[11.5px] text-ink-muted">{{ extra.label }}</dt>
+                  <dd class="text-[13.5px] text-ink">{{ extra.value }}</dd>
+                </div>
+              }
+            </dl>
+          </div>
+        }
+
+        @if (dossier.note) {
+          <p class="mx-5 mb-5 text-[12.5px] text-ink-muted">Observation : {{ dossier.note }}</p>
+        }
+      </section>
+
+      <section class="panel px-5 py-[18px]" aria-labelledby="history-title">
+        <h2
+          id="history-title"
+          class="mb-[15px] text-[14.5px] font-semibold tracking-[-0.01em] text-ink"
+        >
+          Historique du dossier
+        </h2>
+        <app-timeline [entries]="history()" />
+      </section>
+    </div>
+  } @else {
+    <section class="panel flex flex-col items-center gap-2.5 px-5 py-10 text-center">
+      <h2 class="text-[15px] font-semibold text-ink">Dossier introuvable</h2>
+      <p class="text-[13px] text-ink-muted">
+        Aucun dossier <span class="font-mono">{{ ref() }}</span> n'a été transmis par votre agence.
+      </p>
+    </section>
+  }
+</div>

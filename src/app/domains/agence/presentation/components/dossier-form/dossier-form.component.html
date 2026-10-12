@@ -1,0 +1,258 @@
+@let value = facade.value();
+@let errors = facade.errors();
+@let editing = facade.editing();
+
+<section class="panel overflow-hidden" aria-labelledby="dossier-form-title">
+  <header class="border-b border-line px-5 py-4">
+    @if (editing) {
+      <div class="mb-[3px] flex flex-wrap items-center gap-2.5">
+        <h2 id="dossier-form-title" class="text-[15px] font-semibold whitespace-nowrap text-ink">
+          Modifier le dossier
+        </h2>
+        <span
+          class="rounded-full border border-brand-tint-line bg-brand-tint-soft px-[9px] py-0.5 font-mono text-[12.5px] whitespace-nowrap text-brand-ink"
+        >
+          {{ editing.ref }}
+        </span>
+      </div>
+      <p class="text-[12.5px] text-ink-muted">
+        La référence est conservée. Chaque modification est historisée sur le dossier.
+      </p>
+    } @else {
+      <h2 id="dossier-form-title" class="mb-[3px] text-[15px] font-semibold text-ink">
+        Nouveau dossier à transmettre
+      </h2>
+      <p class="text-[12.5px] text-ink-muted">
+        Les dossiers ajoutés restent au statut Temporaire jusqu'à la validation de l'état.
+      </p>
+    }
+  </header>
+
+  <form class="flex flex-col gap-3 px-[18px] py-4" novalidate (submit)="submit($event)">
+    <div class="flex flex-col gap-2.5">
+      <app-form-field label="Type de dossier *">
+        <select class="form-control" (change)="onType($event)">
+          @for (type of types; track type) {
+            <option [value]="type" [selected]="type === value.type">{{ type }}</option>
+          }
+        </select>
+      </app-form-field>
+
+      <app-form-field label="Numéro client *" [error]="errors['client'] ?? ''">
+        <input
+          type="text"
+          inputmode="numeric"
+          autocomplete="off"
+          class="form-control font-mono"
+          placeholder="12 chiffres, ex. 000123456789"
+          [attr.maxlength]="clientLength"
+          [value]="value.client"
+          [attr.aria-invalid]="!!errors['client']"
+          (input)="onText('client', $event)"
+          (blur)="facade.validateField('client')"
+        />
+      </app-form-field>
+
+      <app-form-field label="Prénom du client" [error]="errors['prenom'] ?? ''">
+        <input
+          type="text"
+          autocomplete="off"
+          class="form-control"
+          placeholder="Prénom"
+          [value]="value.prenom"
+          [attr.aria-invalid]="!!errors['prenom']"
+          (input)="onText('prenom', $event)"
+          (blur)="facade.validateField('prenom')"
+        />
+      </app-form-field>
+
+      <app-form-field label="Nom du client" [error]="errors['nom'] ?? ''">
+        <input
+          type="text"
+          autocomplete="off"
+          class="form-control"
+          placeholder="Nom"
+          [value]="value.nom"
+          [attr.aria-invalid]="!!errors['nom']"
+          (input)="onText('nom', $event)"
+          (blur)="facade.validateField('nom')"
+        />
+      </app-form-field>
+
+      <app-form-field label="N° de compte" [error]="errors['compte'] ?? ''">
+        <input
+          type="text"
+          autocomplete="off"
+          class="form-control font-mono"
+          placeholder="CPT-0000000"
+          [value]="value.compte"
+          [attr.aria-invalid]="!!errors['compte']"
+          (input)="onText('compte', $event)"
+          (blur)="facade.validateField('compte')"
+        />
+      </app-form-field>
+
+      <app-form-field label="Type de produit *">
+        <select class="form-control" (change)="onProduit($event)">
+          @for (produit of produits; track produit) {
+            <option [value]="produit" [selected]="produit === value.produit">{{ produit }}</option>
+          }
+        </select>
+      </app-form-field>
+
+      <app-form-field label="Priorité">
+        <select class="form-control" (change)="onPriorite($event)">
+          @for (priorite of priorites; track priorite) {
+            <option [value]="priorite" [selected]="priorite === value.prio">{{ priorite }}</option>
+          }
+        </select>
+      </app-form-field>
+
+      @for (field of facade.typeFields(); track field.key) {
+        <app-form-field
+          class="animate-enter"
+          [label]="extraLabel(field)"
+          [error]="errors[field.key] ?? ''"
+        >
+          @if (field.kind === 'select') {
+            <select
+              class="form-control"
+              [attr.aria-invalid]="extraInvalid(field)"
+              (change)="onExtra(field, $event)"
+              (blur)="facade.validateField(field.key)"
+            >
+              <option value="" [selected]="!value.extra[field.key]">Choisir…</option>
+              @for (option of field.options; track option) {
+                <option [value]="option" [selected]="option === value.extra[field.key]">
+                  {{ option }}
+                </option>
+              }
+            </select>
+          } @else {
+            <input
+              class="form-control"
+              [type]="field.kind"
+              [attr.min]="field.kind === 'number' ? 0 : null"
+              [placeholder]="field.placeholder ?? ''"
+              [value]="value.extra[field.key] ?? ''"
+              [attr.aria-invalid]="extraInvalid(field)"
+              (input)="onExtra(field, $event)"
+              (blur)="facade.validateField(field.key)"
+            />
+          }
+        </app-form-field>
+      }
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <span class="text-[12.5px] font-medium text-ink-secondary">Pièces jointes (facultatif)</span>
+      <label
+        class="flex cursor-pointer items-center gap-3.5 rounded-brand border-[1.5px] border-dashed px-4 py-3.5 transition-colors hover:border-brand hover:bg-brand-tint-soft has-focus-visible:border-brand"
+        [class]="dragging() ? 'border-brand bg-brand-tint' : 'border-line-strong bg-subtle'"
+        (dragover)="onDragOver($event)"
+        (dragleave)="dragging.set(false)"
+        (drop)="onDrop($event)"
+      >
+        <input
+          type="file"
+          multiple
+          class="sr-only"
+          accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+          (change)="onFiles($event)"
+        />
+        <span
+          class="flex size-9 flex-none items-center justify-center rounded-[calc(var(--radius-brand)*0.9)] bg-brand-tint text-brand-ink"
+        >
+          <app-icon name="upload-line" [size]="18" [strokeWidth]="2" />
+        </span>
+        <span class="flex min-w-0 flex-col gap-0.5">
+          <span class="text-[13.5px] font-medium text-ink">
+            Glissez vos fichiers ici ou <span class="text-brand-ink underline">parcourez</span>
+          </span>
+          <span class="text-[12px] text-ink-muted">
+            PDF, JPG, PNG, Word · 5 Mo max par fichier · 10 fichiers max
+          </span>
+        </span>
+      </label>
+
+      @if (facade.pieceError()) {
+        <span class="text-[12.5px] text-danger" role="alert">{{ facade.pieceError() }}</span>
+      }
+
+      @if (facade.pieces().length) {
+        <ul class="flex flex-col gap-1.5">
+          @for (piece of facade.pieces(); track piece.id) {
+            <li
+              class="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2.5 rounded-control border border-line bg-card py-2 ps-3 pe-2.5"
+            >
+              <span
+                class="rounded-[calc(var(--radius-brand)*0.5)] bg-brand-tint px-[7px] py-0.5 text-[10.5px] font-semibold tracking-[0.04em] text-brand-ink"
+              >
+                {{ piece.ext }}
+              </span>
+              <button
+                type="button"
+                class="truncate text-start text-[13px] text-ink hover:text-brand-ink hover:underline"
+                title="Ouvrir"
+                (click)="pieceOpener.open(piece)"
+              >
+                {{ piece.name }}
+              </button>
+              <span class="text-[12px] whitespace-nowrap text-ink-muted">{{
+                sizeLabel(piece.size)
+              }}</span>
+              <button
+                type="button"
+                class="flex size-7 items-center justify-center rounded-[calc(var(--radius-brand)*0.6)] border border-line bg-card text-[15px] leading-none text-ink-muted hover:border-danger-line hover:text-danger"
+                title="Retirer ce fichier"
+                [attr.aria-label]="'Retirer ' + piece.name"
+                (click)="facade.removePiece(piece)"
+              >
+                ×
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+
+    <app-form-field label="Observation (facultatif)">
+      <textarea
+        rows="2"
+        class="form-control resize-y"
+        placeholder="Précisions pour l'entité de traitement…"
+        [value]="value.note"
+        (input)="onText('note', $event)"
+      ></textarea>
+    </app-form-field>
+
+    @if (facade.editTypeWarning()) {
+      <div
+        class="rounded-control border border-warning-line bg-warning-bg px-3 py-2.5 text-[12.5px] leading-normal text-warning"
+      >
+        Type modifié (ancien : {{ facade.editOriginalType() }}). Les informations propres à l'ancien
+        type seront supprimées à l'enregistrement.
+      </div>
+    }
+
+    @if (facade.formError()) {
+      <div
+        role="alert"
+        class="rounded-control border border-danger-line bg-danger-bg px-3 py-2.5 text-[12.5px] text-danger"
+      >
+        {{ facade.formError() }}
+      </div>
+    }
+
+    <div class="flex flex-wrap items-center gap-2.5 border-t border-soft pt-4">
+      @if (editing) {
+        <button type="submit" class="btn-primary">Enregistrer les modifications</button>
+        <button type="button" class="btn-outline" (click)="facade.cancelEdit()">Annuler</button>
+      } @else {
+        <button type="submit" class="btn-primary">Ajouter à l'état de transmission</button>
+        <button type="button" class="btn-outline" (click)="facade.resetForm()">Effacer</button>
+      }
+      <span class="text-[12px] text-ink-muted">* champs obligatoires</span>
+    </div>
+  </form>
+</section>

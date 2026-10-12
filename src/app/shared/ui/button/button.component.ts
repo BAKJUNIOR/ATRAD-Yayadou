@@ -1,6 +1,6 @@
 import { Component, computed, input } from '@angular/core';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'outline';
+export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'danger';
 export type ButtonSize = 'sm' | 'md';
 
 const BASE =
@@ -9,6 +9,7 @@ const BASE =
 const VARIANTS: Record<ButtonVariant, string> = {
   primary: 'bg-brand text-white hover:bg-brand-dark',
   secondary: 'bg-navy text-white hover:bg-brand',
+  danger: 'bg-danger-solid text-white hover:brightness-90',
   outline:
     'border border-line-strong bg-card text-ink-secondary hover:border-brand hover:text-brand-ink',
 };

@@ -1,33 +1,106 @@
-import { Component, computed, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Dialog } from '@angular/cdk/dialog';
+import { Component, computed, inject, signal } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { NAVIGATION } from '../../core/navigation/navigation';
 import { APP_NAME, PageTitleStrategy } from '../../core/services/page-title.strategy';
 import { SessionService } from '../../core/services/session.service';
 import { SidebarService } from '../../core/services/sidebar.service';
+import { initialsOf } from '../../core/utils/text.util';
+import {
+  AppNotification,
+  NotificationTone,
+  NotificationsService,
+} from '../../domains/notifications/notifications.service';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
+import { ProfileDialogComponent } from '../../shared/ui/profile-dialog/profile-dialog.component';
 import { ThemeToggleComponent } from '../../shared/ui/theme-toggle/theme-toggle.component';
+
+const HOME_TITLE = 'Accueil';
+
+const UNREAD_DOT: Record<NotificationTone, string> = {
+  info: 'bg-brand-mid',
+  warn: 'bg-warning-dot',
+  danger: 'bg-danger-solid',
+};
 
 @Component({
   selector: 'app-header',
   imports: [RouterLink, IconComponent, ThemeToggleComponent],
+  host: { '(document:keydown.escape)': 'closeMenus()' },
   templateUrl: './app-header.component.html',
 })
 export class AppHeaderComponent {
   private readonly session = inject(SessionService);
+  private readonly router = inject(Router);
+  private readonly dialog = inject(Dialog);
   protected readonly sidebar = inject(SidebarService);
+  protected readonly notifications = inject(NotificationsService);
 
   protected readonly appName = APP_NAME;
   protected readonly pageTitle = inject(PageTitleStrategy).pageTitle;
+  protected readonly account = this.session.account;
 
+  protected readonly bellOpen = signal(false);
+  protected readonly profileOpen = signal(false);
+
+  protected readonly initials = computed(() => initialsOf(this.account()?.name ?? ''));
   protected readonly menuTitle = computed(() => {
     const role = this.session.role();
     return role ? NAVIGATION[role].title : '';
   });
+  /** Sur l'accueil, le fil d'Ariane s'arrête au parcours. */
+  protected readonly showPageCrumb = computed(() => this.pageTitle() !== HOME_TITLE);
+  protected readonly bellLabel = computed(() => {
+    const unread = this.notifications.unreadCount();
+    return unread ? `Notifications, ${unread} non lue(s)` : 'Notifications';
+  });
 
-  protected readonly today = new Intl.DateTimeFormat('fr-FR', {
-    weekday: 'short',
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date());
+  /** `Lundi 12 octobre 2026` */
+  protected readonly today = (() => {
+    const text = new Intl.DateTimeFormat('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }).format(new Date());
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  })();
+
+  protected dotClass(notification: AppNotification): string {
+    return notification.read ? 'bg-line-strong' : UNREAD_DOT[notification.tone];
+  }
+
+  protected toggleBell(): void {
+    this.profileOpen.set(false);
+    this.bellOpen.update((open) => !open);
+  }
+
+  protected toggleProfile(): void {
+    this.bellOpen.set(false);
+    this.profileOpen.update((open) => !open);
+  }
+
+  protected closeMenus(): void {
+    this.bellOpen.set(false);
+    this.profileOpen.set(false);
+  }
+
+  protected openNotification(notification: AppNotification): void {
+    this.notifications.markRead(notification.id);
+    this.closeMenus();
+    void this.router.navigateByUrl(notification.path);
+  }
+
+  protected openProfile(): void {
+    this.closeMenus();
+    this.dialog.open(ProfileDialogComponent, {
+      ariaLabel: 'Mon profil',
+      backdropClass: 'app-dialog-backdrop',
+    });
+  }
+
+  protected signOut(): void {
+    this.closeMenus();
+    void this.session.signOutAndLeave();
+  }
 }
