@@ -1,0 +1,96 @@
+@if (dashboard(); as dashboard) {
+  <div class="flex animate-enter flex-col gap-5">
+    <div class="flex flex-wrap items-end justify-between gap-5">
+      <div class="flex flex-col gap-1">
+        <h1 class="text-[25px] font-semibold tracking-[-0.015em] text-ink">
+          {{ dashboard.greeting }}
+        </h1>
+        <p class="text-[13.5px] text-pretty text-ink-muted">{{ dashboard.subline }}</p>
+      </div>
+      <a appButton [routerLink]="primaryPath()">
+        {{ dashboard.primaryLabel }}
+        <app-icon name="arrow-right" [size]="16" [strokeWidth]="2.2" />
+      </a>
+    </div>
+
+    <div class="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-3.5">
+      @for (stat of dashboard.stats; track stat.label) {
+        <app-stat-card
+          [label]="stat.label"
+          [value]="stat.value"
+          [hint]="stat.hint"
+          [tone]="stat.tone"
+        />
+      }
+    </div>
+
+    <div class="grid items-start gap-[18px] xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+      <section
+        class="overflow-hidden rounded-panel border border-line bg-card shadow-card"
+        aria-labelledby="home-list-title"
+      >
+        <div
+          class="flex items-center justify-between gap-3 border-b border-line px-[18px] py-[15px]"
+        >
+          <h2
+            id="home-list-title"
+            class="min-w-0 text-[14.5px] font-semibold tracking-[-0.01em] text-ink"
+          >
+            {{ dashboard.listTitle }}
+          </h2>
+          <span class="flex-none text-[12px] whitespace-nowrap text-ink-muted">
+            {{ dashboard.rows.length }} éléments
+          </span>
+        </div>
+        <ul>
+          @for (row of dashboard.rows; track row.ref) {
+            <li
+              class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-soft px-[18px] py-[13px] last:border-b-0"
+            >
+              <div class="flex min-w-0 flex-col gap-0.5">
+                <div class="flex items-center gap-2">
+                  <span
+                    class="flex-none font-mono text-[12.5px] font-medium whitespace-nowrap text-heading"
+                  >
+                    {{ row.ref }}
+                  </span>
+                  <span class="truncate text-[13px] text-ink">{{ row.label }}</span>
+                </div>
+                <span class="text-[11.5px] text-ink-muted">{{ row.meta }}</span>
+              </div>
+              <app-status-badge [status]="row.status" />
+            </li>
+          }
+        </ul>
+      </section>
+
+      <section
+        class="rounded-panel border border-line bg-card shadow-card"
+        aria-labelledby="home-lifecycle-title"
+      >
+        <h2
+          id="home-lifecycle-title"
+          class="border-b border-line px-[18px] py-[15px] text-[14.5px] font-semibold tracking-[-0.01em] text-ink"
+        >
+          Cycle de vie d'un dossier
+        </h2>
+        <ol class="flex flex-col gap-4 px-[18px] py-4">
+          @for (step of lifecycle; track step.title; let index = $index) {
+            <li class="flex gap-3">
+              <span
+                class="flex size-6 flex-none items-center justify-center rounded-full border border-brand-tint-line bg-brand-tint font-mono text-[11.5px] font-semibold text-brand-ink"
+                aria-hidden="true"
+              >
+                {{ index + 1 }}
+              </span>
+              <div class="flex min-w-0 flex-col gap-0.5">
+                <span class="text-[13px] font-medium text-ink">{{ step.title }}</span>
+                <span class="text-[12px] text-pretty text-ink-muted">{{ step.description }}</span>
+              </div>
+            </li>
+          }
+        </ol>
+      </section>
+    </div>
+  </div>
+}

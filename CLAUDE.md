@@ -56,3 +56,40 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 - Use the `providedIn: 'root'` option for singleton services
 - Prefer the `@Service` decorator over `@Injectable({providedIn: 'root'})` for new singleton services (Angular v22+)
 - Use the `inject()` function instead of constructor injection
+
+## Architecture du projet
+
+Même découpage que le back-office ATHL (`core` / `domains` / `layout` / `shared`), écrit avec les conventions ci-dessus (signals, `inject()`, `input()`).
+
+```
+src/app/
+├── core/                  # Transverse, sans UI
+│   ├── guards/            # authGuard, guestGuard, roleGuard(...roles)
+│   ├── navigation/        # NAVIGATION : menu de chaque profil
+│   └── services/          # theme, sidebar, session, storage, toast, page-title.strategy
+├── domains/<domaine>/     # Un dossier par domaine métier
+│   ├── domain/entities/   # Types métier
+│   ├── infrastructure/    # mock/ aujourd'hui, api/ au branchement du backend
+│   └── presentation/      # <domaine>.routes.ts, pages/, components/
+├── layout/                # app-layout, app-sidebar, app-header, backdrop, auth-page-layout
+└── shared/
+    ├── models/            # Types partagés entre domaines (statuts)
+    └── ui/                # Primitives : button, icon, status-badge, stat-card, theme-toggle, ...
+```
+
+- **Profils** : `agence`, `accueil`, `traitement`, `manager`, `admin`. Chaque profil a son menu (`core/navigation/navigation.ts`) et ses routes, protégées par `roleGuard`.
+- **Nouvel écran** : créer la page dans `domains/<domaine>/presentation/pages/`, puis remplacer `placeholder` par son `loadComponent` dans `<domaine>.routes.ts`. Le `title` d'une route ne contient que le nom de l'écran.
+- **Données** : aucune consommation d'API pour l'instant. Les données fictives vivent dans `infrastructure/mock/` ; `provideHttpClient` n'est pas encore déclaré.
+- **Nommage des fichiers** : suffixes explicites (`*.component.ts`, `*.service.ts`, `*.guard.ts`), configurés dans `angular.json`.
+
+## Thème et styles
+
+- Tailwind CSS v4, configuré uniquement dans `src/styles.css` (pas de `tailwind.config.js`).
+- Les couleurs sont des variables CSS (`--brand-*`, `--bg-*`, `--text-*`, `--status-*`) exposées en utilitaires par `@theme inline` : `bg-card`, `bg-soft`, `text-ink`, `text-ink-muted`, `border-line`, `bg-brand`, `text-brand-ink`, `bg-navy`, `text-success`, etc.
+- **Mode sombre** : `ThemeService` pose la classe `dark` et `data-theme` sur `<html>` (clé `atrad_theme_v1`). Les utilitaires ci-dessus suivent le thème tout seuls : ne pas écrire de variante `dark:` pour une couleur du thème, et ne pas coder de couleur hexadécimale dans un template.
+- **Statuts** : `<app-status-badge [status]="…" />`, la liste est dans `shared/models/status.ts`.
+- Polices : Geist (texte) et Geist Mono (références, dates).
+
+## Bibliothèques
+
+`@angular/cdk`, `apexcharts` + `ng-apexcharts` (graphiques), `flatpickr` (dates). Ne pas ajouter de dépendance sans demander.
