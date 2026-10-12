@@ -21,6 +21,14 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'profil',
+        title: 'Mon profil',
+        loadComponent: () =>
+          import('./domains/profile/presentation/pages/profile/profile.component').then(
+            (m) => m.ProfileComponent,
+          ),
+      },
+      {
         path: 'agence',
         canActivate: [roleGuard('agence')],
         loadChildren: () =>

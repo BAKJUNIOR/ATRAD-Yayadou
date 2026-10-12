@@ -16,6 +16,7 @@ import { ENTITES } from '../../domains/dossiers/domain/routing';
 import { PieceFileStore } from '../../domains/dossiers/infrastructure/store/piece-file.store';
 import { RoutingStore } from '../../domains/dossiers/infrastructure/store/routing.store';
 import { TransmissionStore } from '../../domains/dossiers/infrastructure/store/transmission.store';
+import { ProfileStore } from '../../domains/profile/infrastructure/store/profile.store';
 import { NavBadgesService } from '../../domains/notifications/nav-badges.service';
 import { TraitementContext } from '../../domains/traitement/presentation/traitement-context.service';
 import { BrandMarkComponent } from '../../shared/ui/brand-mark/brand-mark.component';
@@ -37,6 +38,7 @@ export class AppSidebarComponent {
   private readonly routing = inject(RoutingStore);
   private readonly storage = inject(StorageService);
   private readonly brand = inject(BrandService);
+  private readonly profiles = inject(ProfileStore);
   private readonly theme = inject(ThemeService);
   private readonly toast = inject(ToastService);
   private readonly confirm = inject(ConfirmService);
@@ -151,6 +153,7 @@ export class AppSidebarComponent {
     this.clock.reset();
     this.storage.remove('atrad_notif_read_v1');
     this.brand.reset();
+    this.profiles.reset();
     this.theme.clearChoice();
     await this.router.navigate(['/']);
     this.toast.info('Données de démo réinitialisées.');

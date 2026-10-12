@@ -138,3 +138,9 @@ src/app/
 - Modèle, palettes et dérivation des couleurs : `core/branding/brand.ts` et `core/utils/color.util.ts`. L'aperçu de l'écran applique le brouillon sur le seul bloc `.brand-preview` (`styles.css`).
 - Mode sombre par défaut de la marque : suivi par `ThemeService` tant que l'utilisateur n'a pas choisi lui-même (`followBrandDefault`, `clearChoice`).
 - « Réinitialiser les données de démo » rétablit aussi le routage, la marque et le choix de thème.
+
+## Profil de l'utilisateur
+
+- Page `/profil` (`domains/profile/`), ouverte depuis le menu du profil de l'en-tête et accessible à tous les rôles : identité, rattachement, sécurité, apparence.
+- Seules les coordonnées (e-mail, téléphone) sont modifiables ; elles sont conservées par identifiant dans `ProfileStore` (clé `atrad_profile_v1`). Le nom ne l'est pas : il sert à rattacher dossiers et affectations.
+- Règles de saisie : `domains/profile/domain/profile.rules.ts`. Le changement de mot de passe valide la saisie mais n'enregistre rien tant que l'API d'authentification n'est pas branchée.

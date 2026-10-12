@@ -1,6 +1,5 @@
-import { Dialog } from '@angular/cdk/dialog';
 import { Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { DemoClock } from '../../core/services/demo-clock.service';
 import { SessionService } from '../../core/services/session.service';
 import { SidebarService } from '../../core/services/sidebar.service';
@@ -11,7 +10,6 @@ import {
   NotificationsService,
 } from '../../domains/notifications/notifications.service';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
-import { ProfileDialogComponent } from '../../shared/ui/profile-dialog/profile-dialog.component';
 import { ThemeToggleComponent } from '../../shared/ui/theme-toggle/theme-toggle.component';
 
 /** Largeur à partir de laquelle la barre latérale est fixe (point de rupture `lg`). */
@@ -25,7 +23,7 @@ const UNREAD_DOT: Record<NotificationTone, string> = {
 
 @Component({
   selector: 'app-header',
-  imports: [IconComponent, ThemeToggleComponent],
+  imports: [RouterLink, RouterLinkActive, IconComponent, ThemeToggleComponent],
   host: {
     '(document:keydown.escape)': 'closeMenus()',
     '(document:keydown)': 'onShortcut($event)',
@@ -35,7 +33,6 @@ const UNREAD_DOT: Record<NotificationTone, string> = {
 export class AppHeaderComponent {
   private readonly session = inject(SessionService);
   private readonly router = inject(Router);
-  private readonly dialog = inject(Dialog);
   private readonly clock = inject(DemoClock);
   protected readonly sidebar = inject(SidebarService);
   protected readonly notifications = inject(NotificationsService);
@@ -108,14 +105,6 @@ export class AppHeaderComponent {
     this.notifications.markRead(notification.id);
     this.closeMenus();
     void this.router.navigateByUrl(notification.path);
-  }
-
-  protected openProfile(): void {
-    this.closeMenus();
-    this.dialog.open(ProfileDialogComponent, {
-      ariaLabel: 'Mon profil',
-      backdropClass: 'app-dialog-backdrop',
-    });
   }
 
   protected signOut(): void {

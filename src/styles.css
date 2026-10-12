@@ -621,6 +621,15 @@ html.dark {
     @apply block w-full animate-enter text-[12px] leading-[1.4] font-medium text-danger;
   }
 
+  /* Page « Mon profil » : carte d'une rubrique et bouton d'action à droite de son titre. */
+  .profile-card {
+    @apply flex flex-col gap-6 rounded-panel border border-line p-5 lg:p-6;
+  }
+
+  .profile-action {
+    @apply inline-flex items-center gap-2 rounded-full border border-line-strong bg-card px-4 py-2.5 text-[13.5px] font-medium whitespace-nowrap text-ink shadow-card transition-colors hover:border-brand hover:text-brand-ink;
+  }
+
   /* Champs de l'écran « Logo & Couleurs » : libellé au-dessus de la saisie. */
   .brand-field {
     @apply flex min-w-0 flex-col gap-1.5 text-[12.5px] font-medium text-ink-secondary;

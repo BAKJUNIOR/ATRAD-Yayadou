@@ -145,35 +145,42 @@
           <span class="hidden text-[13px] font-medium whitespace-nowrap lg:inline">
             {{ account.name }}
           </span>
-          <app-icon name="chevron-down" class="text-ink-muted" [size]="12" [strokeWidth]="2.4" />
+          <app-icon
+            name="chevron-down"
+            class="text-ink-muted transition-transform duration-200"
+            [class.rotate-180]="profileOpen()"
+            [size]="12"
+            [strokeWidth]="2.4"
+          />
         </button>
         @if (profileOpen()) {
           <div class="fixed inset-0 z-30" (click)="closeMenus()"></div>
           <div
             role="menu"
-            class="absolute end-0 top-[46px] z-[31] w-[250px] animate-enter overflow-hidden rounded-panel border border-line bg-card shadow-[0_18px_48px_-12px_rgba(14,22,34,0.35)]"
+            class="absolute end-0 top-[46px] z-[31] flex w-[272px] animate-enter flex-col gap-3 rounded-panel border border-line bg-card p-3 shadow-[0_18px_48px_-12px_rgba(14,22,34,0.35)]"
           >
-            <div class="flex flex-col gap-0.5 border-b border-line px-3.5 py-3">
-              <span class="text-[13.5px] font-semibold text-ink">{{ account.name }}</span>
+            <div class="flex flex-col gap-0.5 px-2 pt-1">
+              <span class="text-[14px] font-semibold text-ink">{{ account.name }}</span>
               <span class="text-[12px] leading-[1.4] text-ink-muted">{{ account.roleLabel }}</span>
             </div>
-            <button
-              type="button"
+            <a
               role="menuitem"
-              class="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-start text-[13px] text-ink hover:bg-subtle"
-              (click)="openProfile()"
+              routerLink="/profil"
+              routerLinkActive="bg-soft"
+              class="flex items-center gap-3 rounded-control px-3 py-2.5 text-[14px] font-medium text-ink transition-colors hover:bg-soft"
+              (click)="closeMenus()"
             >
-              <app-icon name="users" class="text-brand-ink" [size]="15" />
+              <app-icon name="user" class="text-ink-muted" [size]="20" [strokeWidth]="1.8" />
               Mon profil
-            </button>
+            </a>
             <button
               type="button"
               role="menuitem"
-              class="flex w-full items-center gap-2.5 border-t border-line px-3.5 py-2.5 text-start text-[13px] font-semibold text-danger hover:bg-danger-bg"
+              class="flex items-center justify-center gap-2 rounded-control border border-line-strong px-3 py-2.5 text-[13.5px] font-medium text-ink transition-colors hover:border-danger-line hover:bg-danger-bg hover:text-danger"
               (click)="signOut()"
             >
-              <app-icon name="logout" [size]="15" />
-              Déconnexion
+              <app-icon name="logout" class="text-danger" [size]="16" />
+              Se déconnecter
             </button>
           </div>
         }
