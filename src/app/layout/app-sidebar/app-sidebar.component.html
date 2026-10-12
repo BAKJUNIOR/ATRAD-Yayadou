@@ -12,19 +12,6 @@
     </span>
   </div>
 
-  <button
-    type="button"
-    class="mx-2.5 mb-3 hidden flex-none items-center gap-2 rounded-control border border-white/12 px-[11px] py-[7px] text-[12px] text-side-muted transition-colors hover:bg-white/8 hover:text-white lg:flex"
-    [class]="itemClass()"
-    [attr.aria-label]="collapsed() ? 'Déplier le menu' : 'Replier le menu'"
-    [attr.title]="collapsed() ? 'Déplier le menu' : 'Replier le menu'"
-    [attr.aria-expanded]="!collapsed()"
-    (click)="sidebar.toggleCollapsed()"
-  >
-    <span class="text-[14px] leading-none" aria-hidden="true">{{ collapsed() ? '»' : '«' }}</span>
-    <span class="whitespace-nowrap" [class]="labelClass()">Replier le menu</span>
-  </button>
-
   @if (menu(); as menu) {
     <p
       class="px-4 pb-2 text-[10.5px] font-semibold tracking-[0.12em] text-side-faint uppercase"
