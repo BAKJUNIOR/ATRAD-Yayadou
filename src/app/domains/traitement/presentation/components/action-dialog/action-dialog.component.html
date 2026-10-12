@@ -1,0 +1,88 @@
+<h2 class="text-[16px] font-semibold text-ink">{{ copy.title }}</h2>
+<p class="text-[13px] leading-[1.55] text-ink-muted">{{ copy.text }}</p>
+
+@if (kind === 'retour_noneligible' || kind === 'retour_docs') {
+  <label class="form-label gap-1.5 text-[12.5px]">
+    {{ kind === 'retour_docs' ? 'Motif (facultatif)' : 'Motif (obligatoire)' }}
+    <textarea
+      class="form-control resize-y px-[11px] py-2.5 text-[13px]"
+      [rows]="kind === 'retour_docs' ? 2 : 3"
+      [placeholder]="
+        kind === 'retour_docs' ? 'Ex. : relance sans réponse de l\'agence…' : 'Précisez le motif…'
+      "
+      [value]="reason()"
+      (input)="reason.set(text($event))"
+    ></textarea>
+  </label>
+}
+
+@if (kind === 'rejet_info') {
+  <div class="flex flex-col gap-2">
+    <span class="text-[12.5px] font-medium text-ink-secondary">
+      Document(s) manquant(s) — {{ data.dossier.type }} (au moins un)
+    </span>
+    <div class="flex flex-col gap-0.5 rounded-control border border-line bg-subtle p-1.5">
+      @for (doc of docOptions; track doc) {
+        <label
+          class="flex cursor-pointer items-center gap-2.5 rounded-[calc(var(--radius-brand)*0.6)] px-2 py-[7px] text-[13px] text-ink hover:bg-card"
+        >
+          <input
+            type="checkbox"
+            class="size-4 flex-none accent-brand"
+            [checked]="isChecked(doc)"
+            (change)="toggle(doc)"
+          />
+          <span class="min-w-0 flex-1">{{ doc }}</span>
+        </label>
+      }
+    </div>
+    @if (otherChecked()) {
+      <input
+        class="form-control text-[13px]"
+        placeholder="Préciser le document attendu…"
+        aria-label="Préciser le document attendu"
+        [value]="other()"
+        (input)="other.set(text($event))"
+      />
+    }
+    <label class="form-label gap-1.5 text-[12.5px]">
+      Remarque pour l'agence (facultatif)
+      <textarea
+        rows="2"
+        class="form-control resize-y px-[11px] py-2.5 text-[13px]"
+        placeholder="Ex. : merci de fournir une copie lisible…"
+        [value]="note()"
+        (input)="note.set(text($event))"
+      ></textarea>
+    </label>
+    <span
+      class="rounded-control border border-line bg-warning-bg px-[11px] py-2 text-[12.5px] text-ink"
+    >
+      Délai accordé : {{ docDelay }} jours — date limite :
+      <strong class="font-semibold">{{ deadline }}</strong>
+    </span>
+  </div>
+}
+
+@if (missing().length) {
+  <span class="text-[12px] text-warning">À compléter : {{ missing().join(', ') }}.</span>
+}
+
+<div class="flex justify-end gap-2.5 pt-1">
+  <button
+    type="button"
+    class="rounded-control border border-line-strong bg-card px-[15px] py-2.5 text-[13px] text-ink-secondary transition-colors hover:border-brand hover:text-brand-ink"
+    (click)="dialogRef.close()"
+  >
+    Annuler
+  </button>
+  <button
+    type="button"
+    class="rounded-control px-4 py-2.5 text-[13px] font-semibold text-white transition disabled:bg-ink-faint disabled:opacity-100"
+    [class]="missing().length ? '' : copy.buttonClass"
+    [disabled]="missing().length > 0"
+    (click)="confirm()"
+  >
+    {{ copy.confirm }}
+  </button>
+</div>

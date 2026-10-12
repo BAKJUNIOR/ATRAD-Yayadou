@@ -1,5 +1,5 @@
 import { Service, computed, effect, inject, signal } from '@angular/core';
-import { isoDateInDays, nowIso } from '../../../../core/utils/date.util';
+import { formatStamp, isoDateInDays, isoDateToFr, nowIso } from '../../../../core/utils/date.util';
 import { StorageService } from '../../../../core/services/storage.service';
 import { Account } from '../../../auth/domain/entities/account.entity';
 import { ACCUEIL_CENTRAL } from '../../domain/dossier-catalog';
@@ -17,6 +17,14 @@ import {
   entityOf,
   shortEntity,
 } from '../../domain/routing';
+import {
+  ATTENTE_DOCS,
+  DOC_DELAI_JOURS,
+  DossierAction,
+  isLocked,
+  nextStatuses,
+  targetOf,
+} from '../../domain/workflow';
 
 const STORE_KEY = 'atrad_live_data_v1';
 
@@ -49,6 +57,12 @@ export interface ReceptionResult {
   missing: number;
   /** Répartition des dossiers reçus : `Crédits (1), Réclamations (1)`. */
   routing: string;
+}
+
+/** Issue d'une opération sur un dossier : message à afficher, et succès ou refus. */
+export interface OperationResult {
+  ok: boolean;
+  message: string;
 }
 
 export type TransmitResult = { ok: true; etat: Etat } | { ok: false; error: string };
@@ -279,6 +293,214 @@ export class TransmissionStore {
     return targets;
   }
 
+  /** Affecte un dossier à un gestionnaire de son entité (répartiteur ou réaffectation). */
+  assign(id: number, gestionnaire: string, by: string): OperationResult {
+    const dossier = this.state().dossiers.find((candidate) => candidate.id === id);
+    if (!dossier) {
+      return { ok: false, message: 'Dossier introuvable.' };
+    }
+    if (isLocked(dossier)) {
+      return {
+        ok: false,
+        message:
+          dossier.status === 'Clôturé'
+            ? 'Dossier clôturé : aucune modification possible.'
+            : "Dossier renvoyé vers l'Accueil : aucune modification possible.",
+      };
+    }
+    const at = nowIso();
+    this.patchDossier(
+      id,
+      {
+        gest: gestionnaire,
+        gestAt: at,
+        status: dossier.status === 'Reçu' ? 'En cours' : dossier.status,
+      },
+      { at, who: by, label: `Affectation : ${gestionnaire}`, tone: 'brand' },
+    );
+    return { ok: true, message: `Dossier affecté à ${gestionnaire} — notification envoyée.` };
+  }
+
+  /** Transfère un dossier en cours à un autre gestionnaire de l'entité. */
+  reassign(id: number, gestionnaire: string, motif: string, by: string): OperationResult {
+    const dossier = this.state().dossiers.find((candidate) => candidate.id === id);
+    if (!dossier || dossier.status !== 'En cours' || !dossier.gest) {
+      return { ok: false, message: "Réaffectation impossible : le dossier n'est plus en cours." };
+    }
+    const at = nowIso();
+    const reason = motif.trim() ? ` — motif : ${motif.trim()}` : '';
+    this.patchDossier(
+      id,
+      { gest: gestionnaire, gestAt: at },
+      {
+        at,
+        who: by,
+        label: `Réaffecté de ${dossier.gest} à ${gestionnaire}${reason}`,
+        tone: 'brand',
+      },
+    );
+    return {
+      ok: true,
+      message: `${dossier.ref} réaffecté à ${gestionnaire} — notification envoyée.`,
+    };
+  }
+
+  addComment(id: number, who: string, text: string): void {
+    const at = nowIso();
+    this.state.update((state) => ({
+      ...state,
+      dossiers: state.dossiers.map((dossier) =>
+        dossier.id === id
+          ? { ...dossier, comments: [...(dossier.comments ?? []), { who, at, text }] }
+          : dossier,
+      ),
+    }));
+  }
+
+  /** Applique une action de traitement, si le circuit du dossier l'autorise. */
+  applyAction(id: number, action: DossierAction, by: string): OperationResult {
+    const dossier = this.state().dossiers.find((candidate) => candidate.id === id);
+    if (!dossier) {
+      return { ok: false, message: 'Dossier introuvable.' };
+    }
+    if (isLocked(dossier)) {
+      return {
+        ok: false,
+        message:
+          dossier.status === 'Clôturé'
+            ? 'Dossier clôturé : aucune modification possible.'
+            : "Dossier renvoyé vers l'Accueil : aucune action possible.",
+      };
+    }
+    const target = targetOf(action);
+    if (!nextStatuses(dossier).includes(target)) {
+      return {
+        ok: false,
+        message: `Transition « ${dossier.status} → ${target} » non autorisée par le circuit « ${dossier.type} ».`,
+      };
+    }
+
+    const at = nowIso();
+    const stamp = formatStamp(at);
+    const { ref } = dossier;
+    switch (action.kind) {
+      case 'statut': {
+        const resumed = dossier.status === ATTENTE_DOCS && target === 'En cours';
+        this.patchDossier(
+          id,
+          { status: target, ...(target === 'Traité' ? { closedAt: at, closedBy: by } : {}) },
+          {
+            at,
+            who: by,
+            label: resumed
+              ? `Documents reçus — reprise du traitement : ${ATTENTE_DOCS} → En cours · pièce(s) : ${(dossier.docsMissing ?? []).join(', ') || '—'}`
+              : `Changement de statut : ${dossier.status} → ${target}`,
+            tone: target === 'Traité' || resumed ? 'success' : 'brand',
+          },
+        );
+        return {
+          ok: true,
+          message: resumed
+            ? `Documents reçus — traitement de ${ref} repris.`
+            : `Dossier ${ref} : statut « ${target} ».`,
+        };
+      }
+      case 'valider':
+        this.patchDossier(
+          id,
+          { status: 'Validé', validatedAt: at, validatedBy: by },
+          { at, who: by, label: 'Dossier validé', tone: 'success' },
+        );
+        return { ok: true, message: `Dossier ${ref} validé le ${stamp}.` };
+      case 'cloturer':
+        this.patchDossier(
+          id,
+          { status: 'Clôturé', closedAt: at, closedBy: by },
+          {
+            at,
+            who: by,
+            label: 'Dossier clôturé — plus aucune modification possible',
+            tone: 'neutral',
+          },
+        );
+        return { ok: true, message: `Dossier ${ref} clôturé le ${stamp}.` };
+      case 'retour_noneligible':
+        this.patchDossier(
+          id,
+          {
+            status: 'Dossier retourné',
+            rejectedAt: at,
+            rejectedBy: by,
+            rejectReason: action.reason,
+            complements: '',
+          },
+          {
+            at,
+            who: by,
+            label: `Retour pour non-éligibilité, renvoyé vers l'Accueil — motif : ${action.reason}`,
+            tone: 'warning',
+          },
+        );
+        return { ok: true, message: `Dossier ${ref} renvoyé vers l'Accueil (Dossiers retournés).` };
+      case 'rejet_info': {
+        const deadlineIso = isoDateInDays(DOC_DELAI_JOURS);
+        const deadline = isoDateToFr(deadlineIso);
+        const note = action.note.trim();
+        this.patchDossier(
+          id,
+          {
+            status: ATTENTE_DOCS,
+            docsMissing: action.docs,
+            docsReqAt: at,
+            docsDeadlineIso: deadlineIso,
+            docsNote: note,
+            rejectReason: 'Document(s) complémentaire(s) manquant(s)',
+            complements: action.docs.join(', '),
+          },
+          {
+            at,
+            who: by,
+            label: `Changement de statut : ${dossier.status} → ${ATTENTE_DOCS} · document(s) attendu(s) : ${action.docs.join(', ')} · à fournir avant le ${deadline}${note ? ` · remarque : ${note}` : ''} · notification envoyée à l'agence (${dossier.agence})`,
+            tone: 'warning',
+          },
+        );
+        return {
+          ok: true,
+          message: `Agence notifiée — document(s) attendu(s) sur ${ref} avant le ${deadline}.`,
+        };
+      }
+      case 'retour_docs': {
+        const missing = dossier.docsMissing?.length
+          ? dossier.docsMissing
+          : dossier.complements
+            ? [dossier.complements]
+            : [];
+        const reason = action.reason.trim();
+        this.patchDossier(
+          id,
+          {
+            status: 'Dossier retourné',
+            rejectedAt: at,
+            rejectedBy: by,
+            docsRetAt: at,
+            rejectReason: reason || 'Document(s) non fourni(s) dans le délai',
+            complements: missing.join(', '),
+          },
+          {
+            at,
+            who: by,
+            label: `Changement de statut : ${ATTENTE_DOCS} → Dossier retourné · faute de document(s) : ${missing.join(', ') || '—'}${reason ? ` · motif : ${reason}` : ''} · renvoyé vers l'Accueil · agence notifiée`,
+            tone: 'danger',
+          },
+        );
+        return {
+          ok: true,
+          message: `Dossier ${ref} retourné faute de document(s) — visible dans « Dossiers retournés » de l'Accueil.`,
+        };
+      }
+    }
+  }
+
   /** Historise une impression du bordereau. */
   recordPrint(ref: string, by: string): void {
     const at = nowIso();
@@ -286,6 +508,15 @@ export class TransmissionStore {
       ...state,
       etats: state.etats.map((etat) =>
         etat.ref === ref ? { ...etat, prints: [...etat.prints, { at, by }] } : etat,
+      ),
+    }));
+  }
+
+  private patchDossier(id: number, patch: Partial<RoutedDossier>, log: DossierLog): void {
+    this.state.update((state) => ({
+      ...state,
+      dossiers: state.dossiers.map((dossier) =>
+        dossier.id === id ? { ...dossier, ...patch, log: [...dossier.log, log] } : dossier,
       ),
     }));
   }

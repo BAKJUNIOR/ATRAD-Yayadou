@@ -1,0 +1,288 @@
+@let criteria = state.draft();
+@let rows = this.rows();
+
+<div class="flex animate-enter flex-col gap-5">
+  <div
+    role="group"
+    aria-label="Filtrer par statut"
+    class="grid grid-cols-[repeat(auto-fit,minmax(132px,1fr))] gap-3"
+  >
+    @for (card of cards(); track card.label) {
+      <button
+        type="button"
+        class="stat-filter"
+        [class]="card.modifier"
+        [attr.aria-pressed]="card.on"
+        [attr.title]="card.tip"
+        (click)="pick(card.filter)"
+      >
+        <span class="flex items-center justify-between gap-2">
+          <span class="stat-filter-icon">
+            <app-icon [name]="card.icon" [size]="16" [strokeWidth]="2" />
+          </span>
+          @if (card.on) {
+            <span class="stat-filter-check animate-enter">
+              <app-icon name="check" [size]="11" [strokeWidth]="3" />
+            </span>
+          }
+        </span>
+        <span class="flex flex-col gap-0.5">
+          <span
+            class="text-[24px] leading-[1.05] font-semibold tracking-[-0.03em] text-ink tabular-nums"
+          >
+            {{ card.count }}
+          </span>
+          <span
+            class="truncate text-[12.5px]"
+            [class]="card.on ? 'font-semibold text-ink' : 'font-medium text-ink-muted'"
+          >
+            {{ card.label }}
+          </span>
+        </span>
+      </button>
+    }
+  </div>
+
+  <section class="panel overflow-hidden" aria-labelledby="portfolio-title">
+    <header
+      class="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4"
+    >
+      <div class="flex min-w-0 items-center gap-3">
+        <span
+          class="flex size-9 flex-none items-center justify-center rounded-[calc(var(--radius-brand)*0.9)] bg-brand-tint-soft text-brand-ink"
+        >
+          <app-icon name="search" [size]="17" [strokeWidth]="2" />
+        </span>
+        <div class="flex min-w-0 flex-col gap-0.5">
+          <h2 id="portfolio-title" class="text-[15px] font-semibold text-ink">{{ title() }}</h2>
+          <p class="text-[12.5px] text-ink-muted">
+            Renseignez un ou plusieurs critères puis cliquez sur « Rechercher » (ou Entrée).
+          </p>
+        </div>
+      </div>
+      <button
+        type="button"
+        class="btn-outline px-3 py-2 text-[12.5px] font-medium disabled:opacity-45"
+        [disabled]="!canReset()"
+        (click)="state.reset()"
+      >
+        <app-icon name="rotate" [size]="13" [strokeWidth]="2" />
+        Réinitialiser
+      </button>
+    </header>
+
+    <form
+      class="grid grid-cols-[repeat(auto-fill,minmax(min(100%,200px),1fr))] gap-x-3.5 gap-y-3 border-b border-line bg-subtle px-5 py-4"
+      (submit)="search($event)"
+    >
+      <label class="form-label gap-[5px]">
+        N° client
+        <input
+          class="form-control font-mono text-[13px]"
+          inputmode="numeric"
+          maxlength="12"
+          placeholder="12 chiffres"
+          [value]="criteria.num"
+          (input)="onCriterion('num', $event)"
+        />
+      </label>
+      <label class="form-label gap-[5px]">
+        Nom ou prénom du client
+        <input
+          class="form-control text-[13px]"
+          placeholder="Ex. Koffi"
+          [value]="criteria.nom"
+          (input)="onCriterion('nom', $event)"
+        />
+      </label>
+      <label class="form-label gap-[5px]">
+        N° de compte
+        <input
+          class="form-control text-[13px]"
+          placeholder="Ex. CPT-0000000"
+          [value]="criteria.compte"
+          (input)="onCriterion('compte', $event)"
+        />
+      </label>
+      <label class="form-label gap-[5px]">
+        Référence du dossier
+        <input
+          class="form-control font-mono text-[13px]"
+          placeholder="Ex. DOS-88201"
+          [value]="criteria.ref"
+          (input)="onCriterion('ref', $event)"
+        />
+      </label>
+      <label class="form-label gap-[5px]">
+        Type de dossier
+        <select class="form-control text-[13px]" (change)="onType($event)">
+          <option value="" [selected]="!criteria.type">Tous les types</option>
+          @for (type of types; track type) {
+            <option [value]="type" [selected]="type === criteria.type">{{ type }}</option>
+          }
+        </select>
+      </label>
+      <div class="flex min-w-0 items-end">
+        <button type="submit" class="btn-primary w-full px-4 py-2.5">
+          <app-icon name="search" [size]="15" [strokeWidth]="2" />
+          Rechercher
+        </button>
+      </div>
+    </form>
+
+    <div
+      class="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-2.5 text-[12.5px] text-ink-muted"
+    >
+      <span class="flex flex-wrap items-center gap-x-3.5 gap-y-2.5">
+        @if (mode() === 'late') {
+          <span class="inline-flex gap-0.5 rounded-control bg-soft p-[3px]" role="tablist">
+            @for (entry of tabs(); track entry.id) {
+              <a
+                role="tab"
+                class="inline-flex items-center gap-1.5 rounded-[calc(var(--radius-brand)*0.6)] px-3 py-[5px] text-[12.5px] font-semibold"
+                [class]="
+                  entry.id === currentTab()
+                    ? 'bg-card text-ink shadow-[0_1px_2px_rgba(16,24,40,0.12)]'
+                    : 'text-ink-muted'
+                "
+                [attr.aria-selected]="entry.id === currentTab()"
+                [routerLink]="[]"
+                [queryParams]="{ tab: entry.id }"
+              >
+                {{ entry.label }}
+                <span class="font-mono text-[11px] font-medium opacity-80">{{ entry.count }}</span>
+              </a>
+            }
+          </span>
+        }
+        <span aria-live="polite">
+          <strong class="font-semibold text-ink">{{ rows.length }}</strong> dossier(s) · les plus
+          urgents en premier
+        </span>
+      </span>
+      @if (hasFilter()) {
+        <span
+          class="inline-flex items-center gap-1.5 rounded-full bg-brand-tint-soft px-[9px] py-0.5 font-semibold text-brand-ink"
+        >
+          {{ filterLabel() }}
+        </span>
+      }
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="grid-table min-w-[1200px] text-[13px]">
+        <thead>
+          <tr class="portfolio-grid grid-head">
+            <th scope="col">Référence</th>
+            <th scope="col">Client</th>
+            <th scope="col">Type</th>
+            <th scope="col">Agence</th>
+            <th scope="col">Reçu le</th>
+            <th scope="col">Statut</th>
+            <th scope="col">Délai</th>
+            <th scope="col">Priorité</th>
+            <th scope="col" class="text-end!">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows; track row.dossier.id) {
+            @let dossier = row.dossier;
+            <tr
+              class="portfolio-grid cursor-pointer items-center border-b border-soft px-5 py-[13px] transition-colors hover:bg-subtle"
+              (click)="open(dossier.ref)"
+            >
+              <td class="font-mono text-[12.5px] whitespace-nowrap text-brand-ink">
+                {{ dossier.ref }}
+              </td>
+              <td class="flex min-w-0 flex-col gap-px">
+                <span class="truncate font-medium text-ink">{{ dossier.client }}</span>
+                <span class="truncate text-[11.5px] text-ink-muted">{{ dossier.compte }}</span>
+              </td>
+              <td class="truncate text-ink-secondary">{{ dossier.type }}</td>
+              <td class="truncate text-[12.5px] text-ink-secondary">{{ row.agence }}</td>
+              <td class="font-mono text-[12px] whitespace-nowrap text-ink-muted">
+                {{ formatDate(dossier.affecte) }}
+              </td>
+              <td>
+                <app-status-badge
+                  class="max-w-full"
+                  [status]="dossier.status"
+                  [label]="shortStatus(dossier.status)"
+                  [attr.title]="dossier.status"
+                />
+              </td>
+              <td
+                class="text-[12.5px] leading-[1.35] text-pretty"
+                [class]="delayText[row.delay.tone]"
+              >
+                {{ row.delay.label }}
+              </td>
+              <td class="text-[12.5px] font-semibold" [class]="priorityText[dossier.prio]">
+                {{ dossier.prio }}
+              </td>
+              <td class="flex items-center justify-end gap-1.5" (click)="$event.stopPropagation()">
+                @if (row.quick; as quick) {
+                  <button
+                    type="button"
+                    class="inline-flex h-8 items-center gap-1.5 rounded-[calc(var(--radius-brand)*0.7)] bg-brand ps-2.5 pe-3 text-[12.5px] font-semibold whitespace-nowrap text-white transition hover:bg-brand-dark"
+                    (click)="actions.run(dossier, quick)"
+                  >
+                    <app-icon [name]="row.quickIcon" [size]="14" [strokeWidth]="2.4" />
+                    {{ row.quickLabel }}
+                  </button>
+                }
+                <button
+                  type="button"
+                  class="inline-flex h-8 items-center gap-1.5 rounded-[calc(var(--radius-brand)*0.7)] border border-line-strong bg-card px-2.5 text-[12.5px] font-medium whitespace-nowrap text-heading transition-colors hover:border-brand hover:text-brand-ink aria-expanded:border-brand aria-expanded:bg-brand-tint-soft"
+                  [attr.aria-label]="'Actions sur ' + dossier.ref"
+                  [cdkMenuTriggerFor]="rowMenu"
+                >
+                  <app-icon name="more" [size]="14" [strokeWidth]="2.4" />
+                  Actions
+                </button>
+                <ng-template #rowMenu>
+                  <div
+                    cdkMenu
+                    class="flex w-[260px] animate-enter flex-col gap-0.5 rounded-brand border border-line bg-card p-1.5 shadow-[0_12px_32px_-8px_rgba(16,24,40,0.28),0_2px_6px_rgba(16,24,40,0.08)]"
+                  >
+                    <button type="button" cdkMenuItem class="menu-item" (click)="open(dossier.ref)">
+                      <app-icon name="eye" [size]="15" />
+                      <span>Consulter</span>
+                    </button>
+                    <button
+                      type="button"
+                      cdkMenuItem
+                      class="menu-item"
+                      [cdkMenuItemDisabled]="!!row.assignDisabledReason"
+                      [attr.title]="row.assignDisabledReason || null"
+                      (click)="open(dossier.ref)"
+                    >
+                      <app-icon name="user-plus" [size]="15" />
+                      <span>Affecter au gestionnaire</span>
+                    </button>
+                    @for (transition of row.transitions; track transition.target) {
+                      <button
+                        type="button"
+                        cdkMenuItem
+                        class="menu-item"
+                        [class.text-danger]="transition.danger"
+                        (click)="actions.run(dossier, transition.kind, transition.target)"
+                      >
+                        <app-icon [name]="transition.icon" [size]="15" />
+                        <span>{{ transition.label }}</span>
+                      </button>
+                    }
+                  </div>
+                </ng-template>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (!rows.length) {
+      <p class="px-5 py-10 text-center text-[13.5px] text-ink-muted">{{ emptyMessage() }}</p>
+    }
+  </section>
+</div>

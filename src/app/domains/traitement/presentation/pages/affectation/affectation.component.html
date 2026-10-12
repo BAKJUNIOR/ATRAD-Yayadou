@@ -1,0 +1,158 @@
+<div class="flex animate-enter flex-col gap-[18px]">
+  <section
+    class="flex flex-wrap items-center justify-between gap-4 rounded-brand bg-navy px-5 py-[18px] text-side-muted"
+  >
+    <div class="flex max-w-[620px] flex-col gap-1.5">
+      <h2 class="text-[15px] font-semibold text-white">
+        Affectation des dossiers — {{ context.entiteShort() }}
+      </h2>
+      <p class="text-[12.5px] leading-[1.55]">
+        Bac de l'entité : les dossiers reçus attendent ici d'être attribués. Choisissez une personne
+        de l'entité pour chaque dossier ; il quitte le bac et rejoint ses « Mes dossiers ». Tous les
+        agents ayant la fonction « Affecter des dossiers » voient cette même liste.
+      </p>
+    </div>
+    <div class="flex flex-wrap items-end gap-3.5">
+      <div class="flex flex-col items-start gap-1.5">
+        <span
+          class="text-[10.5px] leading-[1.4] font-semibold tracking-[0.1em] whitespace-nowrap text-side-faint uppercase"
+        >
+          Mode de répartition · {{ context.entiteShort() }}
+        </span>
+        <span
+          class="rounded-full border border-white/14 bg-white/8 px-3 py-1.5 text-[12.5px] font-semibold whitespace-nowrap text-white"
+        >
+          {{ context.modeLabel() }}
+        </span>
+        <span class="text-[11.5px] text-side-muted">
+          Paramétré dans Administration › Routage &amp; affectation
+        </span>
+      </div>
+      <span
+        class="rounded-full border border-white/22 bg-white/10 px-[13px] py-1.5 text-[12.5px] font-semibold whitespace-nowrap text-white"
+      >
+        {{ pendingLabel() }}
+      </span>
+    </div>
+  </section>
+
+  <div class="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-3.5">
+    <app-stat-card
+      label="En attente d'affectation"
+      hint="reçus dans l'entité"
+      tone="warning"
+      [value]="'' + rows().length"
+    />
+    <app-stat-card
+      label="Dossiers affectés"
+      hint="portefeuille actif"
+      tone="heading"
+      [value]="'' + activeCount()"
+    />
+    <app-stat-card
+      label="Agents de l'entité"
+      hint="équipe paramétrée"
+      tone="brand"
+      [value]="'' + context.team().length"
+    />
+  </div>
+
+  <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,340px),1fr))] items-start gap-[18px]">
+    <section class="panel min-w-0 overflow-hidden xl:col-span-2" aria-labelledby="bac-title">
+      <header class="border-b border-line px-5 py-4">
+        <h2 id="bac-title" class="mb-[3px] text-[15px] font-semibold text-ink">Bac à répartir</h2>
+        <p class="text-[12.5px] text-ink-muted">
+          Choisissez la personne, puis confirmez. La liste diminue au fur et à mesure.
+        </p>
+      </header>
+      <div class="overflow-x-auto">
+        <table class="grid-table min-w-[680px] text-[13px]">
+          <thead>
+            <tr class="bac-grid grid-head">
+              <th scope="col">Référence</th>
+              <th scope="col">Client</th>
+              <th scope="col">Type</th>
+              <th scope="col">Affecter à</th>
+              <th scope="col"><span class="sr-only">Confirmer</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (dossier of rows(); track dossier.id) {
+              <tr class="bac-grid items-center border-b border-soft px-5 py-3 last:border-b-0">
+                <td>
+                  <a
+                    class="font-mono text-[12.5px] whitespace-nowrap text-brand-ink hover:underline"
+                    [routerLink]="['/traitement/dossiers', dossier.ref]"
+                  >
+                    {{ dossier.ref }}
+                  </a>
+                </td>
+                <td class="flex min-w-0 flex-col gap-[3px]">
+                  <span class="truncate text-ink">{{ dossier.client }}</span>
+                  <span class="text-[11.5px] font-semibold" [class]="priorityText[dossier.prio]">
+                    {{ dossier.prio }}
+                  </span>
+                </td>
+                <td class="truncate text-[12.5px] text-ink-secondary">{{ dossier.type }}</td>
+                <td>
+                  <select
+                    class="form-control px-2.5 py-2 text-[13px]"
+                    [attr.aria-label]="'Gestionnaire pour ' + dossier.ref"
+                    (change)="onPick(dossier, $event)"
+                  >
+                    <option [value]="notAssigned" [selected]="pickOf(dossier) === notAssigned">
+                      {{ notAssigned }}
+                    </option>
+                    @for (member of context.team(); track member) {
+                      <option [value]="member" [selected]="member === pickOf(dossier)">
+                        {{ member }}
+                      </option>
+                    }
+                  </select>
+                </td>
+                <td>
+                  <button
+                    type="button"
+                    class="btn-primary w-full px-[13px] py-2 text-[12.5px]"
+                    (click)="assign(dossier)"
+                  >
+                    Affecter
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      @if (!rows().length) {
+        <p class="px-5 py-10 text-center text-[13.5px] text-ink-muted">
+          Le bac est vide : tous les dossiers reçus ont été attribués.
+        </p>
+      }
+    </section>
+
+    <section class="panel min-w-0 px-5 py-[18px]" aria-labelledby="load-title">
+      <h2 id="load-title" class="mb-4 text-[14.5px] font-semibold tracking-[-0.01em] text-ink">
+        Charge par gestionnaire
+      </h2>
+      <ul class="flex flex-col gap-3.5">
+        @for (entry of load(); track entry.name) {
+          <li class="flex flex-col gap-1.5">
+            <div class="flex items-baseline justify-between gap-3">
+              <span class="text-[13px] text-ink">{{ entry.name }}</span>
+              <span class="font-mono text-[12.5px] text-ink">{{ entry.n }}</span>
+            </div>
+            <div class="h-2 overflow-hidden rounded-[calc(var(--radius-brand)*0.5)] bg-soft">
+              <div
+                class="h-2 rounded-[calc(var(--radius-brand)*0.5)] transition-[width]"
+                [class]="entry.barClass"
+                [style.width]="entry.width"
+              ></div>
+            </div>
+            <span class="text-[11.5px] text-ink-muted">{{ entry.hint }}</span>
+          </li>
+        }
+      </ul>
+    </section>
+  </div>
+</div>

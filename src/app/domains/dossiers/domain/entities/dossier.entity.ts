@@ -92,6 +92,17 @@ export interface RoutedDossier extends Dossier {
   /** Gestionnaire en charge ; vide tant que le dossier n'est pas pris en charge. */
   gest: string;
   gestAt: string;
+  comments?: DossierComment[];
+  validatedAt?: string;
+  validatedBy?: string;
+  closedAt?: string;
+  closedBy?: string;
+  // Demande de documents complémentaires à l'agence.
+  docsMissing?: string[];
+  docsReqAt?: string;
+  /** Date limite de fourniture (`yyyy-MM-dd`). */
+  docsDeadlineIso?: string;
+  docsNote?: string;
   // Retour vers l'agence, renseigné par l'entité de traitement puis par l'Accueil.
   rejectedAt?: string;
   rejectedBy?: string;
@@ -101,4 +112,10 @@ export interface RoutedDossier extends Dossier {
   complements?: string;
   renvoyeAt?: string;
   renvoyeBy?: string;
+}
+
+export interface DossierComment {
+  who: string;
+  at: string;
+  text: string;
 }
