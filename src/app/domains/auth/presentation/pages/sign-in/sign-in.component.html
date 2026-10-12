@@ -1,0 +1,79 @@
+<app-auth-page-layout>
+  <div class="flex w-full max-w-[380px] animate-enter flex-col gap-6">
+    <div class="flex flex-col gap-1.5">
+      <h1 class="text-[23px] font-semibold tracking-[-0.01em] text-ink">Connexion</h1>
+      <p class="text-[13.5px] text-ink-muted">Accédez à votre espace de traçabilité.</p>
+    </div>
+
+    <form class="flex flex-col gap-4" novalidate (submit)="submit($event)">
+      <label class="flex flex-col gap-1.5 text-[12.5px] font-medium text-ink-secondary">
+        Identifiant
+        <input
+          type="text"
+          autocomplete="username"
+          placeholder="prenom.nom"
+          class="rounded-control border border-line-strong bg-card px-3 py-2.5 text-[14px] font-normal text-ink outline-none placeholder:text-ink-faint focus:border-brand focus:ring-3 focus:ring-brand/16"
+          [formField]="signInForm.ident"
+          [attr.aria-describedby]="error() ? 'signin-error' : null"
+        />
+      </label>
+
+      <label class="flex flex-col gap-1.5 text-[12.5px] font-medium text-ink-secondary">
+        Mot de passe
+        <input
+          type="password"
+          autocomplete="current-password"
+          placeholder="••••••••"
+          class="rounded-control border border-line-strong bg-card px-3 py-2.5 text-[14px] font-normal text-ink outline-none placeholder:text-ink-faint focus:border-brand focus:ring-3 focus:ring-brand/16"
+          [formField]="signInForm.password"
+          [attr.aria-describedby]="error() ? 'signin-error' : null"
+        />
+      </label>
+
+      @if (error()) {
+        <p
+          id="signin-error"
+          role="alert"
+          class="rounded-control border border-danger-line bg-danger-bg px-3 py-2.5 text-[12.5px] text-danger"
+        >
+          {{ error() }}
+        </p>
+      }
+
+      <button appButton type="submit" variant="secondary" class="mt-1 py-3 text-[14px]">
+        Se connecter
+      </button>
+    </form>
+
+    <section
+      class="flex flex-col gap-2.5 border-t border-line pt-4"
+      aria-labelledby="demo-accounts"
+    >
+      <h2
+        id="demo-accounts"
+        class="text-[11.5px] font-semibold tracking-[0.1em] text-ink-muted uppercase"
+      >
+        Comptes de démonstration
+      </h2>
+      <ul class="flex flex-col gap-1.5">
+        @for (account of demoAccounts; track account.ident) {
+          <li>
+            <button
+              type="button"
+              class="flex w-full items-center justify-between gap-3 rounded-control border border-line bg-card px-3 py-2 text-start transition-colors hover:border-brand hover:bg-brand-tint-soft"
+              (click)="open(account)"
+            >
+              <span class="flex min-w-0 flex-col gap-0.5">
+                <span class="text-[13px] font-medium text-ink">{{ account.name }}</span>
+                <span class="text-[11.5px] text-ink-muted">{{ account.roleLabel }}</span>
+              </span>
+              <span class="font-mono text-[11px] whitespace-nowrap text-brand-ink">
+                {{ account.ident }}
+              </span>
+            </button>
+          </li>
+        }
+      </ul>
+    </section>
+  </div>
+</app-auth-page-layout>

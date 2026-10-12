@@ -1,0 +1,36 @@
+<header
+  class="sticky top-0 z-20 flex items-center justify-between gap-3.5 border-b border-line bg-card/85 px-4 py-3 backdrop-blur-md backdrop-saturate-150 lg:px-7"
+>
+  <div class="flex min-w-0 items-center gap-3">
+    <button
+      type="button"
+      class="flex size-9 flex-none items-center justify-center rounded-control border border-line-strong bg-card text-ink-secondary transition-colors hover:border-brand hover:text-brand-ink lg:hidden"
+      aria-label="Ouvrir le menu"
+      [attr.aria-expanded]="sidebar.isMobileOpen()"
+      (click)="sidebar.setMobileOpen(true)"
+    >
+      <app-icon name="menu" [strokeWidth]="2" />
+    </button>
+
+    <div class="flex min-w-0 flex-col gap-0.5">
+      <nav
+        aria-label="Fil d'Ariane"
+        class="flex min-w-0 items-center gap-1.5 text-[12px] whitespace-nowrap text-ink-muted"
+      >
+        <a routerLink="/" class="flex-none hover:text-brand-ink hover:underline">{{ appName }}</a>
+        <span aria-hidden="true">›</span>
+        <span class="truncate">{{ menuTitle() }}</span>
+      </nav>
+      <p class="truncate text-[18px] font-semibold tracking-[-0.02em] text-ink">
+        {{ pageTitle() }}
+      </p>
+    </div>
+  </div>
+
+  <div class="flex flex-none items-center gap-2.5">
+    <span class="hidden font-mono text-[12px] whitespace-nowrap text-ink-muted md:block">{{
+      today
+    }}</span>
+    <app-theme-toggle />
+  </div>
+</header>

@@ -1,3 +1,455 @@
-/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&display=swap')
+layer(base);
 
 @import 'tailwindcss';
+
+/* Mode sombre piloté par la classe `.dark` posée sur <html> (voir ThemeService). */
+@custom-variant dark (&:is(.dark *));
+
+/*
+  ---------------------------------------------------------------------------
+  Jetons de marque (marque blanche)
+  ---------------------------------------------------------------------------
+  Les couleurs sont des variables CSS et non des valeurs figées dans @theme :
+  l'écran « Logo & Couleurs » doit pouvoir les remplacer à l'exécution.
+  Les composants ne lisent jamais ces variables directement, ils passent par
+  les utilitaires Tailwind déclarés plus bas (bg-card, text-ink-muted, ...).
+*/
+:root {
+  color-scheme: light;
+
+  --brand-primary: #0f6e70;
+  --brand-primary-dark: #0a5254;
+  --brand-secondary: #0b2942;
+  --brand-accent: #8ccfd0;
+  --brand-accent-light: #e3f3f3;
+  --brand-background: #f4f8f9;
+  --brand-text-color: #0b2942;
+  --brand-border-radius: 10px;
+
+  --brand-mid: color-mix(in srgb, var(--brand-primary) 62%, var(--brand-accent));
+  --brand-on-mid: color-mix(in srgb, var(--brand-secondary) 72%, #000000);
+  --brand-secondary-2: color-mix(in srgb, var(--brand-secondary) 82%, var(--brand-primary));
+
+  /* Textes posés sur le fond `--brand-secondary` (barre latérale, panneau de connexion). */
+  --side-text: color-mix(in srgb, #ffffff 86%, var(--brand-secondary));
+  --side-muted: color-mix(in srgb, #ffffff 70%, var(--brand-secondary));
+  --side-faint: color-mix(in srgb, #ffffff 52%, var(--brand-secondary));
+
+  /* Surfaces, bordures et textes */
+  --bg-page: var(--brand-background);
+  --bg-card: #ffffff;
+  --bg-subtle: #f8fafc;
+  --bg-muted: #f1f4f7;
+  --border: #e6e9ee;
+  --border-strong: #d5dbe2;
+  --text-main: #16232e;
+  --text-heading: var(--brand-text-color);
+  --text-secondary: #3c4e5c;
+  --text-muted: #5e7180;
+  --text-faint: #9fb0bc;
+
+  --brand-primary-text: var(--brand-primary);
+  --brand-tint: var(--brand-accent-light);
+  --brand-tint-soft: color-mix(in srgb, var(--brand-primary) 5%, #ffffff);
+  --brand-tint-border: color-mix(in srgb, var(--brand-primary) 26%, #ffffff);
+
+  /* Couleurs sémantiques */
+  --success: #1d6b34;
+  --success-bg: #e9f6ec;
+  --success-border: #c3e4cc;
+  --danger: #9b2c1f;
+  --danger-bg: #fdedec;
+  --danger-border: #f2c4bf;
+  --danger-solid: #c2362a;
+  --warning: #8a5a11;
+  --warning-bg: #fef4e3;
+  --warning-border: #f2ddb4;
+  --warning-dot: #e1a93f;
+  --info: #28518f;
+  --info-bg: #eef5fb;
+  --info-border: #c9dcee;
+
+  /* Statuts des dossiers et des états de transmission */
+  --status-temporaire: #4b5a67;
+  --status-temporaire-bg: #f4f6f8;
+  --status-temporaire-border: #d6dee6;
+  --status-transmis: #28518f;
+  --status-transmis-bg: #eaf0fb;
+  --status-transmis-border: #c6d5ee;
+  --status-recu: #0c6265;
+  --status-recu-bg: #e7f4f4;
+  --status-recu-border: #bedfdf;
+  --status-recupart: #9a4b12;
+  --status-recupart-bg: #fdf1e7;
+  --status-recupart-border: #f1cfb3;
+  --status-nonrecu: #9b2c1f;
+  --status-nonrecu-bg: #fdedec;
+  --status-nonrecu-border: #f2c4bf;
+  --status-encours: #8a5a11;
+  --status-encours-bg: #fef4e3;
+  --status-encours-border: #f2ddb4;
+  --status-valide: #1d6b34;
+  --status-valide-bg: #e9f6ec;
+  --status-valide-border: #c3e4cc;
+  --status-rejete: #9b2c1f;
+  --status-rejete-bg: #fdedec;
+  --status-rejete-border: #f2c4bf;
+  --status-retourne: #9b5b1f;
+  --status-retourne-bg: #fbefe3;
+  --status-retourne-border: #f0d4b8;
+  --status-complement: #8a6a11;
+  --status-complement-bg: #fdf3e0;
+  --status-complement-border: #f0dfae;
+  --status-cloture: #3b4855;
+  --status-cloture-bg: #eceef1;
+  --status-cloture-border: #d3dae1;
+  --status-retourencours: #9b5b1f;
+  --status-retourencours-bg: #fff6ec;
+  --status-retourencours-border: #f0d4b8;
+  --status-retard: #9b2c1f;
+  --status-retard-bg: #fdedec;
+  --status-retard-border: #f2c4bf;
+  --status-projete: #3d3f9a;
+  --status-projete-bg: #eef0fb;
+  --status-projete-border: #cfd2f1;
+  --status-traite: #18694f;
+  --status-traite-bg: #e6f4ef;
+  --status-traite-border: #bfe0d3;
+}
+
+html.dark {
+  color-scheme: dark;
+
+  --bg-page: #0f172a;
+  --bg-card: #1e293b;
+  --bg-subtle: #182335;
+  --bg-muted: #243247;
+  --border: #334155;
+  --border-strong: #475569;
+  --text-main: #e2e8f0;
+  --text-heading: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-muted: #9aa9bc;
+  --text-faint: #64748b;
+
+  --brand-primary-text: color-mix(in srgb, var(--brand-primary) 45%, #ffffff);
+  --brand-tint: color-mix(in srgb, var(--brand-primary) 28%, #1e293b);
+  --brand-tint-soft: color-mix(in srgb, var(--brand-primary) 14%, #1e293b);
+  --brand-tint-border: color-mix(in srgb, var(--brand-primary) 50%, #1e293b);
+
+  --success: #86efac;
+  --success-bg: rgba(74, 222, 128, 0.12);
+  --success-border: rgba(74, 222, 128, 0.34);
+  --danger: #fca5a5;
+  --danger-bg: rgba(248, 113, 113, 0.13);
+  --danger-border: rgba(248, 113, 113, 0.38);
+  --danger-solid: #dc3b2f;
+  --warning: #fcd34d;
+  --warning-bg: rgba(251, 191, 36, 0.12);
+  --warning-border: rgba(251, 191, 36, 0.36);
+  --warning-dot: #f2b94b;
+  --info: #93b4e8;
+  --info-bg: rgba(96, 140, 220, 0.13);
+  --info-border: rgba(96, 140, 220, 0.38);
+
+  --status-temporaire: #cbd5e1;
+  --status-temporaire-bg: rgba(148, 163, 184, 0.14);
+  --status-temporaire-border: rgba(148, 163, 184, 0.4);
+  --status-transmis: #9dbdf2;
+  --status-transmis-bg: rgba(96, 140, 220, 0.14);
+  --status-transmis-border: rgba(96, 140, 220, 0.4);
+  --status-recu: #7fd6d8;
+  --status-recu-bg: rgba(45, 180, 185, 0.14);
+  --status-recu-border: rgba(45, 180, 185, 0.4);
+  --status-recupart: #f5b98a;
+  --status-recupart-bg: rgba(234, 140, 70, 0.14);
+  --status-recupart-border: rgba(234, 140, 70, 0.4);
+  --status-nonrecu: #fca5a5;
+  --status-nonrecu-bg: rgba(248, 113, 113, 0.14);
+  --status-nonrecu-border: rgba(248, 113, 113, 0.4);
+  --status-encours: #f2c77a;
+  --status-encours-bg: rgba(242, 185, 75, 0.14);
+  --status-encours-border: rgba(242, 185, 75, 0.4);
+  --status-valide: #86d9a0;
+  --status-valide-bg: rgba(74, 200, 110, 0.14);
+  --status-valide-border: rgba(74, 200, 110, 0.4);
+  --status-rejete: #fca5a5;
+  --status-rejete-bg: rgba(248, 113, 113, 0.14);
+  --status-rejete-border: rgba(248, 113, 113, 0.4);
+  --status-retourne: #f0b985;
+  --status-retourne-bg: rgba(230, 150, 80, 0.14);
+  --status-retourne-border: rgba(230, 150, 80, 0.4);
+  --status-complement: #ebcf7a;
+  --status-complement-bg: rgba(230, 195, 80, 0.14);
+  --status-complement-border: rgba(230, 195, 80, 0.4);
+  --status-cloture: #cbd5e1;
+  --status-cloture-bg: rgba(148, 163, 184, 0.14);
+  --status-cloture-border: rgba(148, 163, 184, 0.4);
+  --status-retourencours: #f0b985;
+  --status-retourencours-bg: rgba(230, 150, 80, 0.14);
+  --status-retourencours-border: rgba(230, 150, 80, 0.4);
+  --status-retard: #fca5a5;
+  --status-retard-bg: rgba(248, 113, 113, 0.14);
+  --status-retard-border: rgba(248, 113, 113, 0.4);
+  --status-projete: #b4b8f5;
+  --status-projete-bg: rgba(129, 140, 248, 0.14);
+  --status-projete-border: rgba(129, 140, 248, 0.4);
+  --status-traite: #7ee0c0;
+  --status-traite-bg: rgba(52, 211, 153, 0.13);
+  --status-traite-border: rgba(52, 211, 153, 0.38);
+}
+
+/*
+  ---------------------------------------------------------------------------
+  Thème Tailwind
+  ---------------------------------------------------------------------------
+  `inline` : les utilitaires référencent les variables ci-dessus au lieu d'en
+  copier la valeur, ce qui les fait suivre le mode sombre et la marque blanche
+  sans variante `dark:`.
+*/
+@theme inline {
+  --font-sans: 'Geist', system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, monospace;
+
+  --breakpoint-2xsm: 375px;
+  --breakpoint-xsm: 425px;
+  --breakpoint-3xl: 2000px;
+
+  --radius-brand: var(--brand-border-radius);
+  --radius-control: calc(var(--brand-border-radius) * 0.8);
+  --radius-panel: calc(var(--brand-border-radius) * 1.2);
+
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04);
+  --shadow-raised: 0 6px 18px -6px rgba(16, 24, 40, 0.12);
+
+  /* Marque */
+  --color-brand: var(--brand-primary);
+  --color-brand-dark: var(--brand-primary-dark);
+  --color-brand-ink: var(--brand-primary-text);
+  --color-brand-accent: var(--brand-accent);
+  --color-brand-tint: var(--brand-tint);
+  --color-brand-tint-soft: var(--brand-tint-soft);
+  --color-brand-tint-line: var(--brand-tint-border);
+  --color-brand-mid: var(--brand-mid);
+  --color-brand-on-mid: var(--brand-on-mid);
+  --color-navy: var(--brand-secondary);
+  --color-navy-2: var(--brand-secondary-2);
+  --color-side: var(--side-text);
+  --color-side-muted: var(--side-muted);
+  --color-side-faint: var(--side-faint);
+
+  /* Surfaces */
+  --color-page: var(--bg-page);
+  --color-card: var(--bg-card);
+  --color-subtle: var(--bg-subtle);
+  --color-soft: var(--bg-muted);
+
+  /* Bordures */
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+
+  /* Textes */
+  --color-ink: var(--text-main);
+  --color-heading: var(--text-heading);
+  --color-ink-secondary: var(--text-secondary);
+  --color-ink-muted: var(--text-muted);
+  --color-ink-faint: var(--text-faint);
+
+  /* Sémantique */
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-success-line: var(--success-border);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-danger-line: var(--danger-border);
+  --color-danger-solid: var(--danger-solid);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
+  --color-warning-line: var(--warning-border);
+  --color-warning-dot: var(--warning-dot);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+  --color-info-line: var(--info-border);
+
+  --animate-enter: atrad-enter 0.35s ease both;
+  --animate-toast: atrad-toast 0.25s ease both;
+
+  @keyframes atrad-enter {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes atrad-toast {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+@layer base {
+  /* Tailwind v4 utilise `currentColor` par défaut : on revient à la bordure du thème. */
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--border, currentColor);
+  }
+
+  body {
+    background-color: var(--bg-page);
+    color: var(--text-main);
+    font-family: var(--font-sans);
+    font-feature-settings:
+      'tnum' 1,
+      'cv11' 1;
+    -webkit-font-smoothing: antialiased;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--brand-primary-text);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::after,
+    ::before {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Pastille de statut : la couleur vient du modificateur `.status-<clé>`. */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px 3px 8px;
+    border: 1px solid var(--status-border);
+    border-radius: 999px;
+    background-color: var(--status-bg);
+    color: var(--status-fg);
+    font-size: 11.5px;
+    font-weight: 500;
+    line-height: 1.35;
+    white-space: nowrap;
+  }
+
+  .status-badge::before {
+    content: '';
+    flex: none;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: currentColor;
+  }
+
+  .status-temporaire {
+    --status-fg: var(--status-temporaire);
+    --status-bg: var(--status-temporaire-bg);
+    --status-border: var(--status-temporaire-border);
+  }
+  .status-transmis {
+    --status-fg: var(--status-transmis);
+    --status-bg: var(--status-transmis-bg);
+    --status-border: var(--status-transmis-border);
+  }
+  .status-recu {
+    --status-fg: var(--status-recu);
+    --status-bg: var(--status-recu-bg);
+    --status-border: var(--status-recu-border);
+  }
+  .status-recupart {
+    --status-fg: var(--status-recupart);
+    --status-bg: var(--status-recupart-bg);
+    --status-border: var(--status-recupart-border);
+  }
+  .status-nonrecu {
+    --status-fg: var(--status-nonrecu);
+    --status-bg: var(--status-nonrecu-bg);
+    --status-border: var(--status-nonrecu-border);
+  }
+  .status-encours {
+    --status-fg: var(--status-encours);
+    --status-bg: var(--status-encours-bg);
+    --status-border: var(--status-encours-border);
+  }
+  .status-valide {
+    --status-fg: var(--status-valide);
+    --status-bg: var(--status-valide-bg);
+    --status-border: var(--status-valide-border);
+  }
+  .status-rejete {
+    --status-fg: var(--status-rejete);
+    --status-bg: var(--status-rejete-bg);
+    --status-border: var(--status-rejete-border);
+  }
+  .status-retourne {
+    --status-fg: var(--status-retourne);
+    --status-bg: var(--status-retourne-bg);
+    --status-border: var(--status-retourne-border);
+  }
+  .status-complement {
+    --status-fg: var(--status-complement);
+    --status-bg: var(--status-complement-bg);
+    --status-border: var(--status-complement-border);
+  }
+  .status-cloture {
+    --status-fg: var(--status-cloture);
+    --status-bg: var(--status-cloture-bg);
+    --status-border: var(--status-cloture-border);
+  }
+  .status-retourencours {
+    --status-fg: var(--status-retourencours);
+    --status-bg: var(--status-retourencours-bg);
+    --status-border: var(--status-retourencours-border);
+  }
+  .status-retard {
+    --status-fg: var(--status-retard);
+    --status-bg: var(--status-retard-bg);
+    --status-border: var(--status-retard-border);
+  }
+  .status-projete {
+    --status-fg: var(--status-projete);
+    --status-bg: var(--status-projete-bg);
+    --status-border: var(--status-projete-border);
+  }
+  .status-traite {
+    --status-fg: var(--status-traite);
+    --status-bg: var(--status-traite-bg);
+    --status-border: var(--status-traite-border);
+  }
+}
+
+@utility side-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}

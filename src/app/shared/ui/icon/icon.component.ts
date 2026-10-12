@@ -1,0 +1,64 @@
+import { Component, computed, input } from '@angular/core';
+
+/** Tracés au trait sur une grille 24×24 ; la couleur suit `currentColor`. */
+const ICON_PATHS = {
+  alert:
+    'M12 9v4M12 17h.01M10.3 4.3 2.6 17.5a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z',
+  'arrow-right': 'M5 12h14M13 6l6 6-6 6',
+  building:
+    'M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16M15 9h4a1 1 0 0 1 1 1v11M2 21h20M8 8h3M8 12h3M8 16h3',
+  chart: 'M4 20V10M10 20V4M16 20v-7M22 20H2',
+  'chevron-down': 'm6 9 6 6 6-6',
+  'chevrons-left': 'm11 17-5-5 5-5M18 17l-5-5 5-5',
+  clock: 'M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
+  close: 'M6 6l12 12M18 6 6 18',
+  folder: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z',
+  home: 'M3 10.5 12 3l9 7.5M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5',
+  inbox: 'M3 13h5l1.5 3h5L16 13h5M5 5h14l2 8v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5l2-8Z',
+  layers: 'm12 3 9 5-9 5-9-5 9-5ZM3 13l9 5 9-5',
+  list: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
+  logout: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',
+  menu: 'M4 6h16M4 12h16M4 18h16',
+  moon: 'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z',
+  palette: 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM12 3v18M12 8h7.9M12 12h9M12 16h7.9',
+  plus: 'M12 5v14M5 12h14',
+  report: 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5ZM14 3v5h5M9 13h6M9 17h6',
+  return: 'M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3',
+  route:
+    'M6 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM18 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM8 17h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7',
+  search: 'm21 21-4.3-4.3M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14Z',
+  settings: 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M16 4v4M10 10v4M18 16v4',
+  shuffle: 'M4 7h14l-3-3M20 17H6l3 3',
+  sun: 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
+  users:
+    'M16 20v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM21 20v-1a4 4 0 0 0-3-3.9M16 4.1a3.5 3.5 0 0 1 0 6.8',
+} as const;
+
+export type IconName = keyof typeof ICON_PATHS;
+
+/** Icône décorative : le libellé accessible est porté par l'élément parent. */
+@Component({
+  selector: 'app-icon',
+  host: { class: 'inline-flex shrink-0', 'aria-hidden': 'true' },
+  template: `
+    <svg
+      [attr.width]="size()"
+      [attr.height]="size()"
+      [attr.stroke-width]="strokeWidth()"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <path [attr.d]="path()" />
+    </svg>
+  `,
+})
+export class IconComponent {
+  readonly name = input.required<IconName>();
+  readonly size = input(18);
+  readonly strokeWidth = input(1.8);
+
+  protected readonly path = computed(() => ICON_PATHS[this.name()]);
+}
