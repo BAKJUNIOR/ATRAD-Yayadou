@@ -1,5 +1,5 @@
 import { Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { DemoClock } from '../../core/services/demo-clock.service';
 import { SessionService } from '../../core/services/session.service';
 import { SidebarService } from '../../core/services/sidebar.service';
@@ -9,7 +9,7 @@ import {
   NotificationTone,
   NotificationsService,
 } from '../../domains/notifications/notifications.service';
-import { IconComponent } from '../../shared/ui/icon/icon.component';
+import { IconComponent, IconName } from '../../shared/ui/icon/icon.component';
 import { ThemeToggleComponent } from '../../shared/ui/theme-toggle/theme-toggle.component';
 
 /** Largeur à partir de laquelle la barre latérale est fixe (point de rupture `lg`). */
@@ -21,9 +21,16 @@ const UNREAD_DOT: Record<NotificationTone, string> = {
   danger: 'bg-danger-solid',
 };
 
+/** Entrées du menu du profil : toutes mènent à la page « Mon profil ». */
+const PROFILE_ENTRIES: { label: string; icon: IconName }[] = [
+  { label: 'Modifier le profil', icon: 'user-circle' },
+  { label: 'Paramètres du compte', icon: 'gear' },
+  { label: 'Soutien', icon: 'info' },
+];
+
 @Component({
   selector: 'app-header',
-  imports: [RouterLink, RouterLinkActive, IconComponent, ThemeToggleComponent],
+  imports: [RouterLink, IconComponent, ThemeToggleComponent],
   host: {
     '(document:keydown.escape)': 'closeMenus()',
     '(document:keydown)': 'onShortcut($event)',
@@ -40,6 +47,8 @@ export class AppHeaderComponent {
   private readonly search = viewChild<ElementRef<HTMLInputElement>>('search');
 
   protected readonly account = this.session.account;
+
+  protected readonly profileEntries = PROFILE_ENTRIES;
 
   protected readonly bellOpen = signal(false);
   protected readonly profileOpen = signal(false);
