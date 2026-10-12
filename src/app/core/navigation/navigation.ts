@@ -118,6 +118,12 @@ export const NAVIGATION: Record<Role, NavMenu> = {
     items: [
       HOME,
       {
+        id: 'utilisateurs',
+        label: 'Utilisateurs',
+        icon: '☰',
+        path: '/administration/utilisateurs',
+      },
+      {
         id: 'param',
         label: 'Paramétrage',
         icon: '⚙',
@@ -141,12 +147,6 @@ export const NAVIGATION: Record<Role, NavMenu> = {
             path: '/administration/agences-entites',
           },
         ],
-      },
-      {
-        id: 'utilisateurs',
-        label: 'Utilisateurs',
-        icon: '☰',
-        path: '/administration/utilisateurs',
       },
       {
         id: 'journal',
