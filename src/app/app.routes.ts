@@ -1,13 +1,14 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard } from './core/guards/auth.guard';
 import { roleGuard } from './core/guards/role.guard';
-import { AppLayoutComponent } from './layout/app-layout/app-layout.component';
 
 // `title` ne porte que le nom de l'écran : PageTitleStrategy ajoute le nom de l'application.
 export const routes: Routes = [
   {
     path: '',
-    component: AppLayoutComponent,
+    // Chargée à la demande : la page de connexion n'a pas besoin de la coquille applicative.
+    loadComponent: () =>
+      import('./layout/app-layout/app-layout.component').then((m) => m.AppLayoutComponent),
     canActivate: [authGuard],
     children: [
       {
@@ -17,6 +18,14 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./domains/home/presentation/pages/home/home.component').then(
             (m) => m.HomeComponent,
+          ),
+      },
+      {
+        path: 'profil',
+        title: 'Mon profil',
+        loadComponent: () =>
+          import('./domains/profile/presentation/pages/profile/profile.component').then(
+            (m) => m.ProfileComponent,
           ),
       },
       {

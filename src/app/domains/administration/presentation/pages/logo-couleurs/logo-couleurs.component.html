@@ -9,57 +9,47 @@
           et le bordereau imprimé.
         </span>
       </div>
-      <div class="grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-3.5">
-        <label class="brand-field">
-          Nom de l'application *
+      <div class="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-x-[18px] gap-y-3.5">
+        <label class="brand-field font-semibold">
+          Nom de l'application
           <input
             class="brand-input"
             maxlength="40"
+            placeholder="Ex. ATRAD"
             [value]="brand.appName"
             (input)="setText('appName', $event)"
           />
         </label>
-        <label class="brand-field">
-          Nom court *
+        <label class="brand-field font-semibold">
+          Nom court
           <input
             class="brand-input"
             maxlength="12"
+            placeholder="Ex. DGTCP"
             [value]="brand.shortName"
             (input)="setText('shortName', $event)"
-          />
-        </label>
-        <label class="brand-field">
-          Nom de l'organisation *
-          <input
-            class="brand-input"
-            maxlength="40"
-            [value]="brand.org"
-            (input)="setText('org', $event)"
           />
         </label>
       </div>
       @if (identityError()) {
         <span class="text-[12.5px] text-danger" role="alert">{{ identityError() }}</span>
       }
-      <div class="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-3">
+      <div class="flex flex-wrap items-end gap-x-[18px] gap-y-4">
         @for (logo of logos(); track logo.key) {
-          <div class="flex min-w-0 flex-col gap-2.5 rounded-brand border border-line bg-subtle p-3">
-            <div class="flex flex-col gap-0.5">
-              <span class="text-[13px] font-semibold text-ink">{{ logo.label }}</span>
-              <span class="text-[11.5px] text-ink-muted">{{ logo.hint }}</span>
-            </div>
+          <div class="flex min-w-0 flex-col gap-2.5" [class]="logo.small ? '' : 'w-[230px]'">
+            <span class="text-[12.5px] font-semibold text-ink-secondary" [attr.title]="logo.hint">
+              {{ logo.label }}
+            </span>
             <div
-              class="flex h-16 items-center justify-center overflow-hidden rounded-control border border-dashed border-line-strong bg-card"
+              class="flex items-center justify-center overflow-hidden rounded-brand border border-line bg-card"
+              [class]="logo.small ? 'size-[58px] p-1' : 'h-[116px] w-full p-3'"
             >
               @if (logo.src) {
-                <img
-                  class="h-[52px] w-[90%] flex-none object-contain"
-                  [src]="logo.src"
-                  [alt]="logo.label"
-                />
+                <img class="size-full object-contain" [src]="logo.src" [alt]="logo.label" />
               } @else {
                 <span
-                  class="flex size-[38px] items-center justify-center rounded-control bg-brand text-[15px] font-bold text-white"
+                  class="flex items-center justify-center rounded-control bg-brand font-bold text-white"
+                  [class]="logo.small ? 'size-full text-[18px]' : 'size-[58px] text-[22px]'"
                 >
                   {{ initials() }}
                 </span>
@@ -67,8 +57,9 @@
             </div>
             <div class="flex flex-wrap gap-1.5">
               <label
-                class="cursor-pointer rounded-[calc(var(--radius-brand)*0.7)] border border-brand bg-card px-[11px] py-1.5 text-[12.5px] font-medium whitespace-nowrap text-brand-ink transition-colors focus-within:ring-3 focus-within:ring-brand/16 hover:bg-brand-tint"
+                class="inline-flex cursor-pointer items-center gap-2 rounded-control bg-brand-tint px-3 py-2 text-[13px] font-semibold whitespace-nowrap text-ink transition-colors focus-within:ring-3 focus-within:ring-brand/16 hover:bg-brand-tint-line"
               >
+                <app-icon name="download" class="text-brand-ink" [size]="15" [strokeWidth]="2" />
                 {{ logo.src ? 'Modifier' : 'Télécharger' }}
                 <input
                   class="sr-only"
@@ -81,15 +72,17 @@
               @if (logo.src) {
                 <button
                   type="button"
-                  class="rounded-[calc(var(--radius-brand)*0.7)] border border-line-strong bg-card px-[11px] py-1.5 text-[12.5px] whitespace-nowrap text-ink-secondary transition-colors hover:border-danger-line hover:text-danger"
+                  class="flex size-[35px] items-center justify-center rounded-control border border-danger-line bg-card text-danger-solid transition-colors hover:bg-danger-bg"
+                  title="Retirer"
+                  [attr.aria-label]="'Retirer : ' + logo.label"
                   (click)="removeLogo(logo.key)"
                 >
-                  Retirer
+                  <app-icon name="trash" [size]="15" [strokeWidth]="2" />
                 </button>
               }
             </div>
             @if (logo.error) {
-              <span class="text-[12px] leading-[1.4] text-danger" role="alert">
+              <span class="max-w-[230px] text-[12px] leading-[1.4] text-danger" role="alert">
                 {{ logo.error }}
               </span>
             }

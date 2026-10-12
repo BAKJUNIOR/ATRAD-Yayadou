@@ -1,10 +1,6 @@
-import { Dialog } from '@angular/cdk/dialog';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { NAVIGATION } from '../../core/navigation/navigation';
 import { DemoClock } from '../../core/services/demo-clock.service';
-import { BrandService } from '../../core/services/brand.service';
-import { PageTitleStrategy } from '../../core/services/page-title.strategy';
 import { SessionService } from '../../core/services/session.service';
 import { SidebarService } from '../../core/services/sidebar.service';
 import { initialsOf } from '../../core/utils/text.util';
@@ -13,11 +9,11 @@ import {
   NotificationTone,
   NotificationsService,
 } from '../../domains/notifications/notifications.service';
-import { IconComponent } from '../../shared/ui/icon/icon.component';
-import { ProfileDialogComponent } from '../../shared/ui/profile-dialog/profile-dialog.component';
+import { IconComponent, IconName } from '../../shared/ui/icon/icon.component';
 import { ThemeToggleComponent } from '../../shared/ui/theme-toggle/theme-toggle.component';
 
-const HOME_TITLE = 'Accueil';
+/** Largeur à partir de laquelle la barre latérale est fixe (point de rupture `lg`). */
+const DESKTOP_QUERY = '(min-width: 1024px)';
 
 const UNREAD_DOT: Record<NotificationTone, string> = {
   info: 'bg-brand-mid',
@@ -25,34 +21,42 @@ const UNREAD_DOT: Record<NotificationTone, string> = {
   danger: 'bg-danger-solid',
 };
 
+/** Entrées du menu du profil : toutes mènent à la page « Mon profil ». */
+const PROFILE_ENTRIES: { label: string; icon: IconName }[] = [
+  { label: 'Modifier le profil', icon: 'user-circle' },
+  { label: 'Paramètres du compte', icon: 'gear' },
+  { label: 'Soutien', icon: 'info' },
+];
+
 @Component({
   selector: 'app-header',
   imports: [RouterLink, IconComponent, ThemeToggleComponent],
-  host: { '(document:keydown.escape)': 'closeMenus()' },
+  host: {
+    '(document:keydown.escape)': 'closeMenus()',
+    '(document:keydown)': 'onShortcut($event)',
+  },
   templateUrl: './app-header.component.html',
 })
 export class AppHeaderComponent {
   private readonly session = inject(SessionService);
   private readonly router = inject(Router);
-  private readonly dialog = inject(Dialog);
   private readonly clock = inject(DemoClock);
   protected readonly sidebar = inject(SidebarService);
   protected readonly notifications = inject(NotificationsService);
 
-  protected readonly appName = inject(BrandService).appName;
-  protected readonly pageTitle = inject(PageTitleStrategy).pageTitle;
+  private readonly search = viewChild<ElementRef<HTMLInputElement>>('search');
+
   protected readonly account = this.session.account;
+
+  protected readonly profileEntries = PROFILE_ENTRIES;
 
   protected readonly bellOpen = signal(false);
   protected readonly profileOpen = signal(false);
 
   protected readonly initials = computed(() => initialsOf(this.account()?.name ?? ''));
-  protected readonly menuTitle = computed(() => {
-    const role = this.session.role();
-    return role ? NAVIGATION[role].title : '';
-  });
-  /** Sur l'accueil, le fil d'Ariane s'arrête au parcours. */
-  protected readonly showPageCrumb = computed(() => this.pageTitle() !== HOME_TITLE);
+  protected readonly toggleLabel = computed(() =>
+    this.sidebar.isCollapsed() ? 'Déplier le menu' : 'Replier le menu',
+  );
   protected readonly bellLabel = computed(() => {
     const unread = this.notifications.unreadCount();
     return unread ? `Notifications, ${unread} non lue(s)` : 'Notifications';
@@ -68,6 +72,24 @@ export class AppHeaderComponent {
     }).format(new Date(`${this.clock.today()}T00:00:00`));
     return text.charAt(0).toUpperCase() + text.slice(1);
   });
+
+  /** Replie la barre latérale sur grand écran, ouvre le tiroir sur petit écran. */
+  protected toggleSidebar(): void {
+    this.closeMenus();
+    if (window.matchMedia(DESKTOP_QUERY).matches) {
+      this.sidebar.toggleCollapsed();
+    } else {
+      this.sidebar.setMobileOpen(!this.sidebar.isMobileOpen());
+    }
+  }
+
+  /** Ctrl + K (ou ⌘ + K) place le curseur dans la recherche. */
+  protected onShortcut(event: KeyboardEvent): void {
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+      event.preventDefault();
+      this.search()?.nativeElement.focus();
+    }
+  }
 
   protected dotClass(notification: AppNotification): string {
     return notification.read ? 'bg-line-strong' : UNREAD_DOT[notification.tone];
@@ -92,14 +114,6 @@ export class AppHeaderComponent {
     this.notifications.markRead(notification.id);
     this.closeMenus();
     void this.router.navigateByUrl(notification.path);
-  }
-
-  protected openProfile(): void {
-    this.closeMenus();
-    this.dialog.open(ProfileDialogComponent, {
-      ariaLabel: 'Mon profil',
-      backdropClass: 'app-dialog-backdrop',
-    });
   }
 
   protected signOut(): void {

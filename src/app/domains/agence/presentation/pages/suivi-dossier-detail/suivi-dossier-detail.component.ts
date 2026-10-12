@@ -1,5 +1,6 @@
 import { Component, computed, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { DemoClock } from '../../../../../core/services/demo-clock.service';
 import { SessionService } from '../../../../../core/services/session.service';
 import { entityCode } from '../../../../../core/utils/text.util';
 import { StatusBadgeComponent } from '../../../../../shared/ui/status-badge/status-badge.component';
@@ -7,7 +8,7 @@ import { TimelineComponent } from '../../../../../shared/ui/timeline/timeline.co
 import { Priorite } from '../../../../dossiers/domain/dossier-catalog';
 import { entityOf } from '../../../../dossiers/domain/routing';
 import { TransmissionStore } from '../../../../dossiers/infrastructure/store/transmission.store';
-import { dossierHistory, receptionLabel, suiviDossiers } from '../../../domain/suivi';
+import { dossierHistory, receptionLabel, returnNotice, suiviDossiers } from '../../../domain/suivi';
 
 const RECEPTION_TEXT = { brand: 'text-brand-ink', danger: 'text-danger', warning: 'text-warning' };
 
@@ -32,6 +33,7 @@ interface DetailField {
 export class SuiviDossierDetailComponent {
   private readonly store = inject(TransmissionStore);
   private readonly session = inject(SessionService);
+  private readonly clock = inject(DemoClock);
 
   /** Référence du dossier, lue dans l'URL (`/agence/suivi/:ref`). */
   readonly ref = input.required<string>();
@@ -48,6 +50,11 @@ export class SuiviDossierDetailComponent {
   protected readonly history = computed(() => {
     const dossier = this.dossier();
     return dossier ? dossierHistory(dossier) : [];
+  });
+
+  protected readonly notice = computed(() => {
+    const dossier = this.dossier();
+    return dossier ? returnNotice(dossier, this.clock.today()) : null;
   });
 
   protected readonly fields = computed<DetailField[]>(() => {

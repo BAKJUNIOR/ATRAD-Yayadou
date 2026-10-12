@@ -2,6 +2,10 @@ import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { Component, computed, inject, signal } from '@angular/core';
 import { isoDateInDays, isoDateToFr } from '../../../../../core/utils/date.util';
 import { Status } from '../../../../../shared/models/status';
+import {
+  DialogHeadComponent,
+  DialogTone,
+} from '../../../../../shared/ui/dialog-head/dialog-head.component';
 import { RoutedDossier } from '../../../../dossiers/domain/entities/dossier.entity';
 import {
   DOC_DELAI_JOURS,
@@ -23,9 +27,9 @@ const OTHER = 'Autre';
 /** Confirmation d'une action de traitement, avec les informations qu'elle exige. */
 @Component({
   selector: 'app-action-dialog',
+  imports: [DialogHeadComponent],
   host: {
-    class:
-      'flex max-h-[calc(100vh-3rem)] w-[min(440px,calc(100vw-3rem))] animate-enter flex-col gap-3.5 overflow-y-auto rounded-[calc(var(--radius-brand)*1.6)] bg-card p-[26px] shadow-[0_24px_64px_-16px_rgba(14,22,34,0.38),0_0_0_1px_rgba(14,22,34,0.06)]',
+    class: 'dialog-card w-[min(560px,calc(100vw-2rem))]',
   },
   templateUrl: './action-dialog.component.html',
 })
@@ -110,7 +114,13 @@ export class ActionDialogComponent {
     }
   }
 
-  private buildCopy(): { title: string; text: string; confirm: string; buttonClass: string } {
+  private buildCopy(): {
+    title: string;
+    text: string;
+    confirm: string;
+    buttonClass: string;
+    tone: DialogTone;
+  } {
     const { dossier, target } = this.data;
     const brand = 'bg-brand hover:bg-brand-dark';
     switch (this.kind) {
@@ -120,6 +130,7 @@ export class ActionDialogComponent {
           text: "La clôture est définitive : le dossier sort du portefeuille actif et l'agence d'origine est notifiée.",
           confirm: 'Clôturer définitivement',
           buttonClass: 'bg-navy hover:brightness-110',
+          tone: 'warning',
         };
       case 'retour_noneligible':
         return {
@@ -127,6 +138,7 @@ export class ActionDialogComponent {
           text: `Le dossier sera renvoyé vers l'Accueil (écran « Dossiers retournés »), qui le retournera à l'agence d'origine (${dossier.agence}). Statut : Dossier retourné.`,
           confirm: "Renvoyer vers l'Accueil",
           buttonClass: 'bg-[#8a5a11] hover:brightness-110',
+          tone: 'warning',
         };
       case 'rejet_info':
         return {
@@ -134,6 +146,7 @@ export class ActionDialogComponent {
           text: `Cochez le(s) document(s) manquant(s). Le dossier reste dans l'entité au statut « En attente de document(s) complémentaire(s) » et le gestionnaire de l'agence d'origine (${dossier.agence}) est notifié.`,
           confirm: "Notifier l'agence",
           buttonClass: 'bg-[#8a5a11] hover:brightness-110',
+          tone: 'warning',
         };
       case 'retour_docs': {
         const expected = (dossier.docsMissing ?? []).join(', ') || dossier.complements || '—';
@@ -145,6 +158,7 @@ export class ActionDialogComponent {
           text: `Document(s) attendu(s) : ${expected}${deadline}. Le dossier passe au statut « Dossier retourné » et apparaît dans « Dossiers retournés » de l'Accueil, qui le renverra à l'agence. L'agence est notifiée.`,
           confirm: 'Retourner le dossier',
           buttonClass: 'bg-danger-solid hover:brightness-90',
+          tone: 'danger',
         };
       }
       case 'statut':
@@ -157,6 +171,7 @@ export class ActionDialogComponent {
               : ''),
           confirm: 'Confirmer',
           buttonClass: brand,
+          tone: 'info',
         };
       default:
         return {
@@ -164,6 +179,7 @@ export class ActionDialogComponent {
           text: 'Le dossier passera au statut Validé et sera horodaté. Il pourra ensuite être clôturé.',
           confirm: 'Valider le dossier',
           buttonClass: brand,
+          tone: 'success',
         };
     }
   }

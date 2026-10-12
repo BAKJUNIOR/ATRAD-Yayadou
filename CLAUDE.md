@@ -101,6 +101,8 @@ src/app/
 - Les règles métier sont des fonctions pures dans `domains/<domaine>/domain/` (ex. `dossier-form.rules.ts`, `suivi.ts`), testées sans composant.
 - Un écran riche expose son état par une façade fournie par la page (`creer-etat.facade.ts`), partagée par ses composants.
 - Dates : stockées en ISO 8601, mises en forme à l'affichage avec `core/utils/date.util.ts`.
+- Dialogues : hôte `dialog-card`, en-tête `<app-dialog-head [title] [kind]>` (pastille `danger` / `warning` / `success` / `info`, bouton de fermeture), boutons `dialog-cancel` / `dialog-confirm` dans `dialog-actions`.
+- Couleur des icônes d'action : suppression en rouge (`text-danger`), modification en bleu (`text-info`), consultation en couleur de marque, validation en vert.
 - Confirmation : `ConfirmService.ask(...)` (dialogue CDK). Saisie non enregistrée : la page implémente `canLeave()` et sa route déclare `unsavedChangesGuard`.
 - Classes utilitaires de formulaire dans `styles.css` : `form-control`, `form-label`, `form-error`, `panel`, `eyebrow`, `icon-button` ; champ complet avec `<app-form-field>`.
 
@@ -108,6 +110,8 @@ src/app/
 
 - Réception : `TransmissionStore.receive()` pointe les dossiers reçus d'un état, les route vers leur entité (`RoutedDossier`) et les affecte selon le mode de l'entité (`ENTITY_SETTINGS` dans `routing.ts` : tour de rôle, pool ou répartiteur). Les dossiers non pointés passent « Non reçu » et restent pointables.
 - Écrans : `etats-recus` (recherche, état conservé dans `EtatSearchState`), `etats-recus/:ref` (pointage), `suivi-statistiques`, `dossiers-retournes`. Leurs règles sont dans `domains/accueil/domain/reception.ts`.
+- Menu latéral : chaque entrée de `navigation.ts` porte le glyphe du prototype (`icon`), et non une icône SVG.
+- Détail d'un dossier côté agence : l'encart « motif du retour / documents attendus » vient de `returnNotice()` (`domains/agence/domain/suivi.ts`).
 - Pastilles du menu : `NavBadgesService` ; notifications par profil : `NotificationsService`.
 - Tableaux du prototype : `<table class="grid-table">` avec un modificateur de colonnes par ligne (`etats-grid`, `pointage-grid`, ...) défini dans `styles.css`.
 - Fidélité au prototype : avant d'écrire un écran, le rendre dans le prototype HTML et en reprendre la mise en page et les styles à l'identique.
@@ -134,3 +138,9 @@ src/app/
 - Modèle, palettes et dérivation des couleurs : `core/branding/brand.ts` et `core/utils/color.util.ts`. L'aperçu de l'écran applique le brouillon sur le seul bloc `.brand-preview` (`styles.css`).
 - Mode sombre par défaut de la marque : suivi par `ThemeService` tant que l'utilisateur n'a pas choisi lui-même (`followBrandDefault`, `clearChoice`).
 - « Réinitialiser les données de démo » rétablit aussi le routage, la marque et le choix de thème.
+
+## Profil de l'utilisateur
+
+- Page `/profil` (`domains/profile/`), ouverte depuis le menu du profil de l'en-tête et accessible à tous les rôles : identité, rattachement, sécurité, apparence.
+- Seules les coordonnées (e-mail, téléphone) sont modifiables ; elles sont conservées par identifiant dans `ProfileStore` (clé `atrad_profile_v1`). Le nom ne l'est pas : il sert à rattacher dossiers et affectations.
+- Règles de saisie : `domains/profile/domain/profile.rules.ts`. Le changement de mot de passe valide la saisie mais n'enregistre rien tant que l'API d'authentification n'est pas branchée.

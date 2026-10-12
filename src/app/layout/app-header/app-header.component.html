@@ -1,50 +1,50 @@
 <header
-  class="sticky top-0 z-20 flex items-center justify-between gap-3.5 border-b border-line bg-card/86 px-3.5 py-2.5 backdrop-blur-[10px] backdrop-saturate-[1.4] lg:px-7 lg:py-3.5"
+  class="sticky top-0 z-20 flex items-center justify-between gap-3.5 border-b border-line bg-card/86 px-3.5 py-2.5 backdrop-blur-[10px] backdrop-saturate-[1.4] lg:px-6 lg:py-3"
 >
-  <div class="flex min-w-0 items-center gap-3">
+  <div class="flex min-w-0 items-center gap-2 sm:gap-4">
     <button
       type="button"
-      class="flex size-9 flex-none items-center justify-center rounded-control border border-line-strong bg-card text-ink-secondary transition-colors hover:border-brand hover:text-brand-ink lg:hidden"
-      aria-label="Ouvrir le menu"
-      title="Ouvrir le menu"
-      [attr.aria-expanded]="sidebar.isMobileOpen()"
-      (click)="closeMenus(); sidebar.setMobileOpen(true)"
+      class="flex size-10 flex-none items-center justify-center rounded-control border border-line-strong bg-card text-ink-muted transition-colors hover:border-brand hover:text-brand-ink lg:size-11"
+      [attr.aria-label]="toggleLabel()"
+      [attr.title]="toggleLabel()"
+      [attr.aria-expanded]="!sidebar.isCollapsed()"
+      (click)="toggleSidebar()"
     >
-      <app-icon name="menu" [strokeWidth]="2" />
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-hidden="true">
+        <path
+          fill-rule="evenodd"
+          clip-rule="evenodd"
+          d="M0.583252 1C0.583252 0.585788 0.919038 0.25 1.33325 0.25H14.6666C15.0808 0.25 15.4166 0.585786 15.4166 1C15.4166 1.41421 15.0808 1.75 14.6666 1.75L1.33325 1.75C0.919038 1.75 0.583252 1.41422 0.583252 1ZM0.583252 11C0.583252 10.5858 0.919038 10.25 1.33325 10.25L14.6666 10.25C15.0808 10.25 15.4166 10.5858 15.4166 11C15.4166 11.4142 15.0808 11.75 14.6666 11.75L1.33325 11.75C0.919038 11.75 0.583252 11.4142 0.583252 11ZM1.33325 5.25C0.919038 5.25 0.583252 5.58579 0.583252 6C0.583252 6.41421 0.919038 6.75 1.33325 6.75L7.99992 6.75C8.41413 6.75 8.74992 6.41421 8.74992 6C8.74992 5.58579 8.41413 5.25 7.99992 5.25L1.33325 5.25Z"
+          fill="currentColor"
+        />
+      </svg>
     </button>
 
-    <div class="flex min-w-0 flex-col gap-[3px]">
-      <nav
-        aria-label="Fil d'Ariane"
-        class="flex min-w-0 items-center gap-1.5 overflow-hidden text-[12px] whitespace-nowrap text-ink-muted"
+    <label class="relative hidden lg:block">
+      <span class="sr-only">Rechercher un dossier, un état</span>
+      <app-icon
+        name="search"
+        class="pointer-events-none absolute start-4 top-1/2 -translate-y-1/2 text-ink-muted"
+        [size]="20"
+        [strokeWidth]="1.8"
+      />
+      <input
+        #search
+        type="search"
+        placeholder="Rechercher un dossier, un état…"
+        class="h-11 w-[300px] rounded-control border border-line-strong bg-transparent py-2.5 ps-12 pe-14 text-[14px] text-ink shadow-card outline-none placeholder:text-ink-faint focus:border-brand focus:ring-3 focus:ring-brand/16 xl:w-[430px]"
+      />
+      <kbd
+        class="absolute end-2.5 top-1/2 inline-flex -translate-y-1/2 items-center gap-0.5 rounded-control border border-line bg-subtle px-[7px] py-[4.5px] font-sans text-[12px] tracking-[-0.2px] text-ink-muted"
+        aria-hidden="true"
       >
-        <a routerLink="/" class="flex-none hover:text-brand-ink hover:underline">{{ appName() }}</a>
-        <span aria-hidden="true">›</span>
-        <span class="min-w-0 truncate">{{ menuTitle() }}</span>
-        @if (showPageCrumb()) {
-          <span aria-hidden="true">›</span>
-          <span class="truncate text-ink-secondary">{{ pageTitle() }}</span>
-        }
-      </nav>
-      <span class="truncate text-[18px] font-semibold tracking-[-0.02em] text-ink">
-        {{ pageTitle() }}
-      </span>
-    </div>
+        <span>⌘</span>
+        <span>K</span>
+      </kbd>
+    </label>
   </div>
 
   <div class="flex flex-none items-center gap-2.5">
-    <label
-      class="hidden w-[220px] items-center gap-2 rounded-control border border-line-strong bg-subtle px-3 py-2 min-[1180px]:flex"
-    >
-      <app-icon name="search" class="text-ink-muted" [size]="13" [strokeWidth]="2" />
-      <span class="sr-only">Rechercher un dossier, un état</span>
-      <input
-        type="search"
-        placeholder="Rechercher un dossier, un état…"
-        class="w-full min-w-0 bg-transparent text-[13px] text-ink outline-none placeholder:text-ink-muted"
-      />
-    </label>
-
     <span class="hidden font-mono text-[12px] whitespace-nowrap text-ink-muted min-[1320px]:block">
       {{ today() }}
     </span>
@@ -145,33 +145,50 @@
           <span class="hidden text-[13px] font-medium whitespace-nowrap lg:inline">
             {{ account.name }}
           </span>
-          <app-icon name="chevron-down" class="text-ink-muted" [size]="12" [strokeWidth]="2.4" />
+          <app-icon
+            name="chevron-down"
+            class="text-ink-muted transition-transform duration-200"
+            [class.rotate-180]="profileOpen()"
+            [size]="12"
+            [strokeWidth]="2.4"
+          />
         </button>
         @if (profileOpen()) {
           <div class="fixed inset-0 z-30" (click)="closeMenus()"></div>
           <div
             role="menu"
-            class="absolute end-0 top-[46px] z-[31] w-[250px] animate-enter overflow-hidden rounded-panel border border-line bg-card shadow-[0_18px_48px_-12px_rgba(14,22,34,0.35)]"
+            class="absolute end-0 top-[46px] z-[31] flex w-[272px] animate-enter flex-col gap-3 rounded-panel border border-line bg-card p-3 shadow-[0_18px_48px_-12px_rgba(14,22,34,0.35)]"
           >
-            <div class="flex flex-col gap-0.5 border-b border-line px-3.5 py-3">
-              <span class="text-[13.5px] font-semibold text-ink">{{ account.name }}</span>
+            <div class="flex flex-col gap-0.5 px-2 pt-1">
+              <span class="text-[14px] font-semibold text-ink">{{ account.name }}</span>
               <span class="text-[12px] leading-[1.4] text-ink-muted">{{ account.roleLabel }}</span>
+            </div>
+            <div class="flex flex-col gap-0.5">
+              @for (entry of profileEntries; track entry.label) {
+                <a
+                  role="menuitem"
+                  routerLink="/profil"
+                  class="flex items-center gap-3 rounded-control px-3 py-2.5 text-[14px] font-medium text-ink transition-colors hover:bg-soft"
+                  (click)="closeMenus()"
+                >
+                  <app-icon
+                    [name]="entry.icon"
+                    class="text-ink-muted"
+                    [size]="20"
+                    [strokeWidth]="1.8"
+                  />
+                  {{ entry.label }}
+                </a>
+              }
             </div>
             <button
               type="button"
               role="menuitem"
-              class="block w-full px-3.5 py-2.5 text-start text-[13px] text-ink hover:bg-subtle"
-              (click)="openProfile()"
-            >
-              Mon profil
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              class="block w-full border-t border-line px-3.5 py-2.5 text-start text-[13px] font-semibold text-danger hover:bg-danger-bg"
+              class="flex items-center justify-center gap-2 rounded-control border border-line-strong px-3 py-2.5 text-[13.5px] font-medium text-ink transition-colors hover:border-danger-line hover:bg-danger-bg hover:text-danger"
               (click)="signOut()"
             >
-              Déconnexion
+              <app-icon name="logout" class="text-danger" [size]="16" />
+              Se déconnecter
             </button>
           </div>
         }

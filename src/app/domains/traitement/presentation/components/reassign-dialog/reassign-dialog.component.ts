@@ -1,5 +1,6 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { Component, inject, signal } from '@angular/core';
+import { DialogHeadComponent } from '../../../../../shared/ui/dialog-head/dialog-head.component';
 
 export interface ReassignDialogData {
   ref: string;
@@ -16,16 +17,17 @@ export interface ReassignChoice {
 /** Transfert d'un dossier en cours à un autre gestionnaire. */
 @Component({
   selector: 'app-reassign-dialog',
+  imports: [DialogHeadComponent],
   host: {
-    class:
-      'flex w-[min(460px,calc(100vw-3rem))] animate-enter flex-col gap-3.5 rounded-[calc(var(--radius-brand)*1.6)] bg-card p-[26px] shadow-[0_24px_64px_-16px_rgba(14,22,34,0.38),0_0_0_1px_rgba(14,22,34,0.06)]',
+    class: 'dialog-card w-[min(520px,calc(100vw-2rem))]',
   },
   template: `
-    <h2 class="text-[16px] font-semibold text-ink">Réaffecter {{ data.ref }}</h2>
-    <p class="text-[13px] leading-[1.55] text-ink-muted">
-      Gestionnaire actuel : <strong class="font-semibold text-ink">{{ data.current }}</strong
-      >. La réaffectation est horodatée et ajoutée à l'historique du dossier.
-    </p>
+    <app-dialog-head kind="info" [title]="'Réaffecter ' + data.ref" (closed)="dialogRef.close()">
+      <p>
+        Gestionnaire actuel : <strong class="font-semibold text-ink">{{ data.current }}</strong
+        >. La réaffectation est horodatée et ajoutée à l'historique du dossier.
+      </p>
+    </app-dialog-head>
     <label class="form-label gap-1.5 text-[12.5px]">
       Nouveau gestionnaire *
       <select class="form-control py-2.5" (change)="gestionnaire.set(value($event))">
@@ -44,17 +46,11 @@ export interface ReassignChoice {
         (input)="motif.set(value($event))"
       />
     </label>
-    <div class="flex justify-end gap-2.5 pt-1">
+    <div class="dialog-actions">
+      <button type="button" class="dialog-cancel" (click)="dialogRef.close()">Annuler</button>
       <button
         type="button"
-        class="rounded-control border border-line-strong bg-card px-[15px] py-2.5 text-[13px] text-ink-secondary transition-colors hover:border-brand hover:text-brand-ink"
-        (click)="dialogRef.close()"
-      >
-        Annuler
-      </button>
-      <button
-        type="button"
-        class="btn-primary px-4 py-2.5 text-[13px]"
+        class="dialog-confirm bg-brand hover:bg-brand-dark"
         title="Choisissez le nouveau gestionnaire"
         [disabled]="!gestionnaire()"
         (click)="dialogRef.close({ gestionnaire: gestionnaire(), motif: motif() })"

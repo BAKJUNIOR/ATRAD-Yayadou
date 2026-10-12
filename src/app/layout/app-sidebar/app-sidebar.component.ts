@@ -1,4 +1,4 @@
-import { NgTemplateOutlet } from '@angular/common';
+import { Location, NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { NAVIGATION } from '../../core/navigation/navigation';
@@ -16,6 +16,7 @@ import { ENTITES } from '../../domains/dossiers/domain/routing';
 import { PieceFileStore } from '../../domains/dossiers/infrastructure/store/piece-file.store';
 import { RoutingStore } from '../../domains/dossiers/infrastructure/store/routing.store';
 import { TransmissionStore } from '../../domains/dossiers/infrastructure/store/transmission.store';
+import { ProfileStore } from '../../domains/profile/infrastructure/store/profile.store';
 import { NavBadgesService } from '../../domains/notifications/nav-badges.service';
 import { TraitementContext } from '../../domains/traitement/presentation/traitement-context.service';
 import { BrandMarkComponent } from '../../shared/ui/brand-mark/brand-mark.component';
@@ -29,6 +30,7 @@ import { IconComponent } from '../../shared/ui/icon/icon.component';
 export class AppSidebarComponent {
   private readonly session = inject(SessionService);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
   protected readonly sidebar = inject(SidebarService);
   private readonly clock = inject(DemoClock);
   private readonly store = inject(TransmissionStore);
@@ -36,6 +38,7 @@ export class AppSidebarComponent {
   private readonly routing = inject(RoutingStore);
   private readonly storage = inject(StorageService);
   private readonly brand = inject(BrandService);
+  private readonly profiles = inject(ProfileStore);
   private readonly theme = inject(ThemeService);
   private readonly toast = inject(ToastService);
   private readonly confirm = inject(ConfirmService);
@@ -77,8 +80,9 @@ export class AppSidebarComponent {
 
   protected readonly initials = computed(() => initialsOf(this.account()?.name ?? ''));
 
-  // Les groupes sont dépliés par défaut : on ne retient que ceux que l'utilisateur a repliés.
-  private readonly closedGroups = signal<ReadonlySet<string>>(new Set());
+  // Les groupes sont repliés par défaut : un clic les déplie. Seul le groupe de l'écran
+  // affiché au chargement est ouvert d'emblée, pour que l'entrée active reste visible.
+  private readonly openGroups = signal<ReadonlySet<string>>(this.groupsOfCurrentUrl());
 
   // Le repli ne concerne que les écrans larges : en tiroir mobile, les libellés restent visibles.
   protected readonly labelClass = computed(() => (this.collapsed() ? 'lg:hidden' : ''));
@@ -86,10 +90,10 @@ export class AppSidebarComponent {
     this.collapsed() ? 'lg:justify-center lg:px-0' : '',
   );
   protected readonly nestedItemClass = computed(() =>
-    this.collapsed() ? this.itemClass() : 'ps-9',
+    this.collapsed() ? `ps-11 ${this.itemClass()}` : 'ps-11',
   );
   protected readonly asideClass = computed(() => {
-    const width = this.collapsed() ? 'lg:w-[72px]' : 'lg:w-[254px]';
+    const width = this.collapsed() ? 'lg:w-[92px]' : 'lg:w-[300px]';
     const drawer = this.sidebar.isMobileOpen()
       ? 'translate-x-0 shadow-2xl'
       : '-translate-x-full max-lg:invisible';
@@ -97,17 +101,29 @@ export class AppSidebarComponent {
   });
 
   protected isGroupOpen(id: string): boolean {
-    return !this.closedGroups().has(id);
+    return this.openGroups().has(id);
   }
 
   protected toggleGroup(id: string): void {
-    this.closedGroups.update((closed) => {
-      const next = new Set(closed);
+    this.openGroups.update((open) => {
+      const next = new Set(open);
       if (!next.delete(id)) {
         next.add(id);
       }
       return next;
     });
+  }
+
+  private groupsOfCurrentUrl(): Set<string> {
+    const role = this.session.role();
+    const groups = role ? NAVIGATION[role].items.filter((item) => item.children) : [];
+    // `Location` et non `Router.url` : la coquille est créée avant la fin de la navigation.
+    const url = this.location.path();
+    return new Set(
+      groups
+        .filter((group) => group.children?.some((child) => url.startsWith(child.path!)))
+        .map((group) => group.id),
+    );
   }
 
   /** `Date de démo : 18/10/2026 (+6 j)` */
@@ -137,6 +153,7 @@ export class AppSidebarComponent {
     this.clock.reset();
     this.storage.remove('atrad_notif_read_v1');
     this.brand.reset();
+    this.profiles.reset();
     this.theme.clearChoice();
     await this.router.navigate(['/']);
     this.toast.info('Données de démo réinitialisées.');

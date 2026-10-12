@@ -96,7 +96,7 @@
             }
             <button
               type="button"
-              class="flex size-[30px] flex-none items-center justify-center rounded-[calc(var(--radius-brand)*0.7)] border border-line bg-card text-ink-secondary transition-colors hover:border-brand hover:bg-brand-tint-soft hover:text-brand-ink"
+              class="flex size-[30px] flex-none items-center justify-center rounded-[calc(var(--radius-brand)*0.7)] border border-info-line bg-card text-info transition-colors hover:bg-info-bg"
               title="Modifier le dossier"
               [attr.aria-label]="'Modifier ' + dossier.ref"
               (click)="facade.startEdit(dossier)"
@@ -105,7 +105,7 @@
             </button>
             <button
               type="button"
-              class="flex size-[30px] flex-none items-center justify-center rounded-[calc(var(--radius-brand)*0.7)] border border-line bg-card text-ink-secondary transition-colors hover:border-danger-line hover:bg-danger-bg hover:text-danger"
+              class="flex size-[30px] flex-none items-center justify-center rounded-[calc(var(--radius-brand)*0.7)] border border-danger-line bg-card text-danger-solid transition-colors hover:bg-danger-bg"
               title="Supprimer le dossier de l'état"
               [attr.aria-label]="'Supprimer ' + dossier.ref"
               (click)="facade.remove(dossier)"

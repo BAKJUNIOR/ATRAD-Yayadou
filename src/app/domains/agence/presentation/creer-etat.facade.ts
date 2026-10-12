@@ -343,6 +343,7 @@ export class CreerEtatFacade {
     }
     const confirmed = await this.confirm.ask({
       title: 'Quitter sans enregistrer ?',
+      tone: 'warning',
       text: `${message} Si vous quittez cet écran, cette saisie sera perdue.`,
       okLabel: 'Quitter sans enregistrer',
       cancelLabel: 'Rester',

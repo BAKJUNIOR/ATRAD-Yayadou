@@ -19,15 +19,16 @@ import { ThemeService } from '../../../../../core/services/theme.service';
 import { ToastService } from '../../../../../core/services/toast.service';
 import { contrastRatio, isHexColor } from '../../../../../core/utils/color.util';
 import { initialsOf } from '../../../../../core/utils/text.util';
+import { IconComponent } from '../../../../../shared/ui/icon/icon.component';
 import { TransmissionStore } from '../../../../dossiers/infrastructure/store/transmission.store';
 
 type PreviewTheme = 'light' | 'dark';
 type StatusTone = 'danger' | 'warning' | 'muted';
 
-const LOGOS: { key: BrandLogoKey; label: string; hint: string }[] = [
+const LOGOS: { key: BrandLogoKey; label: string; hint: string; small?: boolean }[] = [
   { key: 'logoFull', label: 'Logo complet', hint: 'Barre latérale dépliée et bordereau' },
   { key: 'logoIcon', label: 'Logo icône', hint: 'Barre latérale repliée (carré)' },
-  { key: 'favicon', label: 'Favicon', hint: 'Onglet du navigateur' },
+  { key: 'favicon', label: 'Favicon', hint: 'Onglet du navigateur', small: true },
 ];
 
 const COLORS: { key: BrandColorKey; label: string }[] = [
@@ -60,6 +61,7 @@ function ratioLabel(ratio: number): string {
 /** Administration : identité, couleurs, police et rayon de la marque blanche. */
 @Component({
   selector: 'app-logo-couleurs',
+  imports: [IconComponent],
   templateUrl: './logo-couleurs.component.html',
 })
 export class LogoCouleursComponent implements LeaveAware {
@@ -92,7 +94,7 @@ export class LogoCouleursComponent implements LeaveAware {
     if (!draft.shortName.trim()) {
       return 'Le nom court est obligatoire.';
     }
-    return draft.org.trim() ? '' : "Le nom de l'organisation est obligatoire.";
+    return '';
   });
   private readonly hexError = computed(() =>
     Object.values(this.hexInputs()).some((value) => !isHexColor(value)),
@@ -198,7 +200,7 @@ export class LogoCouleursComponent implements LeaveAware {
     effect(() => this.brand.loadFont(this.draft().font));
   }
 
-  protected setText(key: 'appName' | 'shortName' | 'org', event: Event): void {
+  protected setText(key: 'appName' | 'shortName', event: Event): void {
     this.update({ [key]: (event.target as HTMLInputElement).value });
   }
 
@@ -312,6 +314,7 @@ export class LogoCouleursComponent implements LeaveAware {
     }
     return this.confirm.ask({
       title: 'Quitter sans enregistrer ?',
+      tone: 'warning',
       text: 'Le thème (logo et couleurs) a été modifié mais pas enregistré. Si vous quittez cet écran, cette saisie sera perdue.',
       okLabel: 'Quitter sans enregistrer',
       cancelLabel: 'Rester',

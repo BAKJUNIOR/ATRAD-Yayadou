@@ -1,4 +1,4 @@
-import { formatStamp } from '../../../core/utils/date.util';
+import { formatStamp, isoDateToFr } from '../../../core/utils/date.util';
 import { Status } from '../../../shared/models/status';
 import { TimelineEntry, TimelineTone } from '../../../shared/ui/timeline/timeline.component';
 import { DossierType } from '../../dossiers/domain/dossier-catalog';
@@ -182,4 +182,61 @@ export function dossierHistory(dossier: SuiviDossier): TimelineEntry[] {
       at: formatStamp(event.at),
       tone: event.tone,
     }));
+}
+
+/** Encart expliquant à l'agence pourquoi un dossier lui revient ou ce qu'on attend d'elle. */
+export interface ReturnNotice {
+  title: string;
+  text: string;
+  /** Compléments demandés, quand ils ne figurent pas déjà dans `text`. */
+  complements: string;
+}
+
+const MOTIF_TITLES: Partial<Record<Status, string>> = {
+  'Dossier retourné': 'Motif du retour (non-éligibilité)',
+  Rejeté: 'Motif du rejet (absence de complément)',
+};
+
+/** Motif du retour ou documents attendus d'un dossier ; `null` s'il n'y a rien à signaler. */
+export function returnNotice(dossier: SuiviDossier, todayIso: string): ReturnNotice | null {
+  const routed = dossier.routed;
+  if (!routed) {
+    return null;
+  }
+  const status = dossier.status;
+  const awaiting = status === 'En attente de document(s) complémentaire(s)';
+  const sentBack = status === 'Retourné en agence';
+  const returned = status === 'Dossier retourné' || sentBack;
+  const missing = routed.docsMissing?.join(', ') || routed.complements || '';
+
+  let title: string;
+  let text: string;
+  if (awaiting) {
+    title = 'Document(s) complémentaire(s) attendu(s)';
+    text = `Pièce(s) à fournir : ${missing || '—'}`;
+    if (routed.docsDeadlineIso) {
+      const late = todayIso > routed.docsDeadlineIso ? ' (délai dépassé)' : '';
+      text += ` — avant le ${isoDateToFr(routed.docsDeadlineIso)}${late}`;
+    }
+    if (routed.docsNote) {
+      text += `. Remarque de l'entité : ${routed.docsNote}`;
+    }
+  } else if (returned && routed.docsRetAt) {
+    title = sentBack ? "Renvoyé à l'agence faute de document(s)" : 'Retourné faute de document(s)';
+    text = `Document(s) manquant(s) : ${missing || '—'}`;
+    if (routed.rejectReason) {
+      text += ` · motif : ${routed.rejectReason}`;
+    }
+    if (sentBack && routed.renvoyeAt) {
+      text += ` · renvoyé par l'Accueil le ${formatStamp(routed.renvoyeAt)}`;
+    }
+  } else {
+    title = sentBack ? "Renvoyé à l'agence (non-éligibilité)" : (MOTIF_TITLES[status] ?? '');
+    text = routed.rejectReason ?? '';
+  }
+  if (!title || !text) {
+    return null;
+  }
+  const inText = awaiting || (returned && !!routed.docsRetAt);
+  return { title, text, complements: inText ? '' : (routed.complements ?? '') };
 }
