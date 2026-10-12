@@ -14,20 +14,14 @@
 
   <button
     type="button"
-    class="mx-2.5 mb-3 hidden flex-none items-center gap-2 rounded-control border border-white/12 px-3 py-1.5 text-[12px] text-side-muted transition-colors hover:bg-white/8 hover:text-white lg:flex"
+    class="mx-2.5 mb-3 hidden flex-none items-center gap-2 rounded-control border border-white/12 px-[11px] py-[7px] text-[12px] text-side-muted transition-colors hover:bg-white/8 hover:text-white lg:flex"
     [class]="itemClass()"
     [attr.aria-label]="collapsed() ? 'Déplier le menu' : 'Replier le menu'"
     [attr.title]="collapsed() ? 'Déplier le menu' : 'Replier le menu'"
     [attr.aria-expanded]="!collapsed()"
     (click)="sidebar.toggleCollapsed()"
   >
-    <app-icon
-      name="chevrons-left"
-      class="transition-transform duration-200"
-      [class.rotate-180]="collapsed()"
-      [size]="15"
-      [strokeWidth]="2"
-    />
+    <span class="text-[14px] leading-none" aria-hidden="true">{{ collapsed() ? '»' : '«' }}</span>
     <span class="whitespace-nowrap" [class]="labelClass()">Replier le menu</span>
   </button>
 
@@ -46,21 +40,23 @@
         @if (item.children; as children) {
           <button
             type="button"
-            class="flex w-full flex-none items-center gap-2.5 rounded-control px-3 py-2 text-start text-[13.5px] text-side transition-colors hover:bg-white/9"
+            class="flex w-full flex-none items-center gap-2.5 rounded-control px-[11px] py-2 text-start text-[13.5px] text-side transition-colors hover:bg-white/9"
             [class]="itemClass()"
             [attr.aria-expanded]="isGroupOpen(item.id)"
             [attr.aria-label]="item.label"
             [attr.title]="collapsed() ? item.label : null"
             (click)="toggleGroup(item.id)"
           >
-            <app-icon [name]="item.icon" class="opacity-85" />
+            <span class="w-[18px] flex-none text-center text-[13px] opacity-85" aria-hidden="true">
+              {{ item.icon }}
+            </span>
             <span class="min-w-0 flex-1 truncate" [class]="labelClass()">{{ item.label }}</span>
             <app-icon
               name="chevron-down"
               class="opacity-75 transition-transform duration-200"
               [class]="labelClass()"
-              [class.-rotate-90]="!isGroupOpen(item.id)"
-              [size]="13"
+              [class.rotate-180]="isGroupOpen(item.id)"
+              [size]="12"
               [strokeWidth]="2.4"
             />
           </button>
@@ -133,7 +129,9 @@
         [attr.title]="collapsed() ? 'Se déconnecter' : null"
         (click)="signOut()"
       >
-        <app-icon name="logout" [size]="15" />
+        @if (collapsed()) {
+          <app-icon name="logout" class="hidden lg:block" [size]="15" />
+        }
         <span [class]="labelClass()">Se déconnecter</span>
       </button>
       <div class="flex flex-col items-end gap-0.5 text-end leading-[1.35]" [class]="labelClass()">
@@ -161,7 +159,7 @@
 
 <ng-template #link let-item let-nested="nested">
   <a
-    class="relative flex flex-none items-center gap-2.5 rounded-control px-3 py-2 text-[13.5px] text-side transition-colors hover:bg-white/9"
+    class="relative flex flex-none items-center gap-2.5 rounded-control px-[11px] py-2 text-[13.5px] text-side transition-colors hover:bg-white/9"
     [class]="nested ? nestedItemClass() : itemClass()"
     [routerLink]="item.path"
     routerLinkActive="bg-white/12 font-medium text-white"
@@ -171,7 +169,9 @@
     [attr.title]="collapsed() ? item.label : null"
     (click)="closeDrawer()"
   >
-    <app-icon [name]="item.icon" class="opacity-85" />
+    <span class="w-[18px] flex-none text-center text-[13px] opacity-85" aria-hidden="true">
+      {{ item.icon }}
+    </span>
     <span class="min-w-0 flex-1 truncate" [class]="labelClass()">{{ item.label }}</span>
     @if (badges()[item.id]; as count) {
       @if (collapsed()) {

@@ -56,6 +56,22 @@
           </div>
         }
 
+        @if (notice(); as notice) {
+          <div
+            class="mx-5 mb-5 flex flex-col gap-[5px] rounded-control border border-warning-line bg-warning-bg px-[15px] py-[13px]"
+          >
+            <span class="text-[11.5px] font-semibold tracking-[0.04em] text-warning uppercase">
+              {{ notice.title }}
+            </span>
+            <span class="text-[13px] leading-normal text-ink">{{ notice.text }}</span>
+            @if (notice.complements) {
+              <span class="text-[12.5px] text-ink-muted">
+                Compléments attendus : {{ notice.complements }}
+              </span>
+            }
+          </div>
+        }
+
         @if (dossier.note) {
           <p class="mx-5 mb-5 text-[12.5px] text-ink-muted">Observation : {{ dossier.note }}</p>
         }

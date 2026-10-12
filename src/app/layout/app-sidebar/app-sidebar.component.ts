@@ -86,7 +86,7 @@ export class AppSidebarComponent {
     this.collapsed() ? 'lg:justify-center lg:px-0' : '',
   );
   protected readonly nestedItemClass = computed(() =>
-    this.collapsed() ? this.itemClass() : 'ps-9',
+    this.collapsed() ? `ps-[34px] ${this.itemClass()}` : 'ps-[34px]',
   );
   protected readonly asideClass = computed(() => {
     const width = this.collapsed() ? 'lg:w-[72px]' : 'lg:w-[254px]';
