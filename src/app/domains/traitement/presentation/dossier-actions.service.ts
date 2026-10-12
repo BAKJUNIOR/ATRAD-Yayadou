@@ -25,6 +25,8 @@ export interface TransitionOption {
   kind: DossierActionKind;
   label: string;
   icon: IconName;
+  /** Couleur de l'icône, selon la nature du statut visé. */
+  iconClass: string;
   danger: boolean;
 }
 
@@ -36,6 +38,16 @@ const TRANSITION_ICONS: Partial<Record<Status, IconName>> = {
   'En cours': 'arrow-right',
   Projeté: 'pencil',
   Traité: 'check-circle',
+};
+
+const TRANSITION_ICON_CLASSES: Partial<Record<Status, string>> = {
+  Validé: 'text-success',
+  Clôturé: 'text-ink-muted',
+  [ATTENTE_DOCS]: 'text-warning',
+  'Dossier retourné': 'text-danger',
+  'En cours': 'text-info',
+  Projeté: 'text-info',
+  Traité: 'text-success',
 };
 
 /** Ouvre la confirmation d'une action de traitement puis l'applique au dossier. */
@@ -66,6 +78,7 @@ export class DossierActionsService {
           kind: action.kind,
           label,
           icon: TRANSITION_ICONS[target] ?? 'plus',
+          iconClass: TRANSITION_ICON_CLASSES[target] ?? 'text-ink-muted',
           danger: target === 'Dossier retourné',
         },
       ];

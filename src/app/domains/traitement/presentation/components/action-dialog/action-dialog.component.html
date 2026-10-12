@@ -1,5 +1,6 @@
-<h2 class="text-[16px] font-semibold text-ink">{{ copy.title }}</h2>
-<p class="text-[13px] leading-[1.55] text-ink-muted">{{ copy.text }}</p>
+<app-dialog-head [title]="copy.title" [kind]="copy.tone" (closed)="dialogRef.close()">
+  <p>{{ copy.text }}</p>
+</app-dialog-head>
 
 @if (kind === 'retour_noneligible' || kind === 'retour_docs') {
   <label class="form-label gap-1.5 text-[12.5px]">
@@ -65,20 +66,16 @@
 }
 
 @if (missing().length) {
-  <span class="text-[12px] text-warning">À compléter : {{ missing().join(', ') }}.</span>
+  <span class="text-center text-[12.5px] text-warning"
+    >À compléter : {{ missing().join(', ') }}.</span
+  >
 }
 
-<div class="flex justify-end gap-2.5 pt-1">
+<div class="dialog-actions">
+  <button type="button" class="dialog-cancel" (click)="dialogRef.close()">Annuler</button>
   <button
     type="button"
-    class="rounded-control border border-line-strong bg-card px-[15px] py-2.5 text-[13px] text-ink-secondary transition-colors hover:border-brand hover:text-brand-ink"
-    (click)="dialogRef.close()"
-  >
-    Annuler
-  </button>
-  <button
-    type="button"
-    class="rounded-control px-4 py-2.5 text-[13px] font-semibold text-white transition disabled:bg-ink-faint disabled:opacity-100"
+    class="dialog-confirm"
     [class]="missing().length ? '' : copy.buttonClass"
     [disabled]="missing().length > 0"
     (click)="confirm()"

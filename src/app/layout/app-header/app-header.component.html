@@ -160,17 +160,19 @@
             <button
               type="button"
               role="menuitem"
-              class="block w-full px-3.5 py-2.5 text-start text-[13px] text-ink hover:bg-subtle"
+              class="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-start text-[13px] text-ink hover:bg-subtle"
               (click)="openProfile()"
             >
+              <app-icon name="users" class="text-brand-ink" [size]="15" />
               Mon profil
             </button>
             <button
               type="button"
               role="menuitem"
-              class="block w-full border-t border-line px-3.5 py-2.5 text-start text-[13px] font-semibold text-danger hover:bg-danger-bg"
+              class="flex w-full items-center gap-2.5 border-t border-line px-3.5 py-2.5 text-start text-[13px] font-semibold text-danger hover:bg-danger-bg"
               (click)="signOut()"
             >
+              <app-icon name="logout" [size]="15" />
               Déconnexion
             </button>
           </div>

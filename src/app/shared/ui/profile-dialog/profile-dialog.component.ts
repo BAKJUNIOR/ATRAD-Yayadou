@@ -2,28 +2,38 @@ import { DialogRef } from '@angular/cdk/dialog';
 import { Component, computed, inject } from '@angular/core';
 import { BrandService } from '../../../core/services/brand.service';
 import { SessionService } from '../../../core/services/session.service';
+import { IconComponent } from '../icon/icon.component';
 import { initialsOf } from '../../../core/utils/text.util';
 
 /** Fiche « Mon profil » de l'utilisateur connecté. */
 @Component({
   selector: 'app-profile-dialog',
+  imports: [IconComponent],
   host: {
-    class:
-      'flex w-[min(420px,calc(100vw-3rem))] animate-enter flex-col gap-4 rounded-[calc(var(--radius-brand)*1.6)] border border-line bg-card p-6 shadow-[0_24px_64px_-16px_rgba(14,22,34,0.45)]',
+    class: 'dialog-card w-[min(460px,calc(100vw-2rem))]',
   },
   template: `
+    <button
+      type="button"
+      class="absolute end-4 top-4 flex size-10 items-center justify-center rounded-full bg-soft text-ink-muted transition-colors hover:bg-line hover:text-ink"
+      aria-label="Fermer"
+      title="Fermer"
+      (click)="dialogRef.close()"
+    >
+      <app-icon name="close" [size]="18" [strokeWidth]="2" />
+    </button>
     @if (account(); as account) {
-      <div class="flex items-center gap-3.5">
+      <div class="flex flex-col items-center gap-1 text-center">
         <span
-          class="flex size-12 flex-none items-center justify-center rounded-full bg-brand text-[16px] font-bold text-white"
+          class="mb-2 flex size-[72px] items-center justify-center rounded-full bg-brand text-[24px] font-bold text-white"
           aria-hidden="true"
         >
           {{ initials() }}
         </span>
-        <span class="flex min-w-0 flex-col gap-0.5">
-          <span class="text-[16px] font-semibold text-ink">{{ account.name }}</span>
-          <span class="text-[12.5px] text-ink-muted">{{ account.roleLabel }}</span>
-        </span>
+        <h2 class="text-[22px] leading-tight font-semibold tracking-[-0.01em] text-ink">
+          {{ account.name }}
+        </h2>
+        <span class="text-[13.5px] text-ink-muted">{{ account.roleLabel }}</span>
       </div>
       <dl
         class="flex flex-col gap-[9px] rounded-brand border border-line bg-subtle px-3.5 py-3 text-[13px]"
@@ -36,10 +46,10 @@ import { initialsOf } from '../../../core/utils/text.util';
         }
       </dl>
     }
-    <div class="flex justify-end">
+    <div class="dialog-actions">
       <button
         type="button"
-        class="rounded-control bg-brand px-4 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-brand-dark"
+        class="dialog-confirm bg-brand hover:bg-brand-dark"
         (click)="dialogRef.close()"
       >
         Fermer

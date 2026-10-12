@@ -524,8 +524,27 @@ html.dark {
 }
 
 .app-dialog-backdrop {
-  background-color: rgba(14, 22, 34, 0.44);
-  backdrop-filter: blur(3px);
+  background-color: color-mix(in srgb, var(--text-faint) 46%, transparent);
+  backdrop-filter: blur(16px);
+}
+
+@layer components {
+  /* Carte des dialogues : en-tête centré (`<app-dialog-head>`), actions centrées. */
+  .dialog-card {
+    @apply relative flex max-h-[calc(100vh-2rem)] animate-enter flex-col gap-5 overflow-y-auto rounded-[calc(var(--radius-brand)*2.4)] bg-card px-6 pt-9 pb-8 shadow-[0_24px_64px_-16px_rgba(14,22,34,0.28)] sm:px-10 sm:pt-10 sm:pb-9;
+  }
+
+  .dialog-actions {
+    @apply flex flex-wrap justify-center gap-3 pt-2;
+  }
+
+  .dialog-cancel {
+    @apply rounded-control border border-line-strong bg-card px-[18px] py-3 text-[13.5px] font-medium text-ink-secondary transition-colors hover:border-brand hover:text-brand-ink active:translate-y-px;
+  }
+
+  .dialog-confirm {
+    @apply rounded-control px-[18px] py-3 text-[13.5px] font-semibold whitespace-nowrap text-white transition active:translate-y-px disabled:bg-ink-faint disabled:opacity-100;
+  }
 }
 
 /* Carte-filtre du suivi : sa couleur vient du modificateur `.status-<clé>` (ou `.status-all`). */

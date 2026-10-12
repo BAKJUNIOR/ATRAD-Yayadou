@@ -203,7 +203,7 @@
               }}</span>
               <button
                 type="button"
-                class="flex size-7 items-center justify-center rounded-[calc(var(--radius-brand)*0.6)] border border-line bg-card text-[15px] leading-none text-ink-muted hover:border-danger-line hover:text-danger"
+                class="flex size-7 items-center justify-center rounded-[calc(var(--radius-brand)*0.6)] border border-danger-line bg-card text-[15px] leading-none text-danger-solid transition-colors hover:bg-danger-bg"
                 title="Retirer ce fichier"
                 [attr.aria-label]="'Retirer ' + piece.name"
                 (click)="facade.removePiece(piece)"

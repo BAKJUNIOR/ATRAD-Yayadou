@@ -312,6 +312,7 @@ export class LogoCouleursComponent implements LeaveAware {
     }
     return this.confirm.ask({
       title: 'Quitter sans enregistrer ?',
+      tone: 'warning',
       text: 'Le thème (logo et couleurs) a été modifié mais pas enregistré. Si vous quittez cet écran, cette saisie sera perdue.',
       okLabel: 'Quitter sans enregistrer',
       cancelLabel: 'Rester',

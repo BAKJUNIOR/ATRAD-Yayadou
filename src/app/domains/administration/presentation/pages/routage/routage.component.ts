@@ -302,6 +302,7 @@ export class RoutageComponent {
     }
     return this.confirm.ask({
       title: 'Quitter sans enregistrer ?',
+      tone: 'warning',
       text: 'Le paramétrage du routage a été modifié mais pas enregistré. Si vous quittez cet écran, cette saisie sera perdue.',
       okLabel: 'Quitter sans enregistrer',
       cancelLabel: 'Rester',
