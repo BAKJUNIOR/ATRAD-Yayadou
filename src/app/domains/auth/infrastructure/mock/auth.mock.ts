@@ -35,7 +35,7 @@ export const DEMO_ACCOUNTS: readonly Account[] = [
     ident: 'admin',
     name: 'Nadia Cissé',
     roleLabel: 'Administrateur — Système',
-    entity: 'Administration ATRAD',
+    entity: 'Administration',
   },
 ];
 

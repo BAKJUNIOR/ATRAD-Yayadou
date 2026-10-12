@@ -14,8 +14,8 @@ describe('BrandService', () => {
 
   it('should apply the default brand when nothing is stored', () => {
     const service = TestBed.inject(BrandService);
-    expect(service.appName()).toBe('ATRAD');
-    expect(service.initials()).toBe('A');
+    expect(service.appName()).toBe('YDXTrace — Démo');
+    expect(service.initials()).toBe('Y');
     expect(root.style.getPropertyValue('--brand-primary')).toBe(BRAND_DEFAULT.primary);
     expect(root.style.getPropertyValue('--brand-border-radius')).toBe('10px');
   });
@@ -37,7 +37,7 @@ describe('BrandService', () => {
     expect(JSON.parse(localStorage.getItem('atrad_brand_v1')!).appName).toBe('TraceBank');
 
     service.reset();
-    expect(service.appName()).toBe('ATRAD');
+    expect(service.appName()).toBe('YDXTrace — Démo');
     expect(localStorage.getItem('atrad_brand_v1')).toBeNull();
     expect(root.style.getPropertyValue('--brand-primary')).toBe(BRAND_DEFAULT.primary);
   });
