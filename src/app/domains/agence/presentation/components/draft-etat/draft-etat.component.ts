@@ -1,7 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { formatDateTime } from '../../../../../core/utils/date.util';
 import { IconComponent } from '../../../../../shared/ui/icon/icon.component';
-import { ACCUEIL_CENTRAL, Priorite } from '../../../../dossiers/domain/dossier-catalog';
+import { Priorite } from '../../../../dossiers/domain/dossier-catalog';
 import { DossierDetailsComponent } from '../../../../dossiers/presentation/components/dossier-details/dossier-details.component';
 import { CreerEtatFacade } from '../../creer-etat.facade';
 
@@ -21,7 +21,6 @@ const PRIORITY_TEXT: Record<Priorite, string> = {
 export class DraftEtatComponent {
   protected readonly facade = inject(CreerEtatFacade);
 
-  protected readonly destination = ACCUEIL_CENTRAL;
   protected readonly priorityText = PRIORITY_TEXT;
 
   private readonly expanded = signal<ReadonlySet<number>>(new Set());

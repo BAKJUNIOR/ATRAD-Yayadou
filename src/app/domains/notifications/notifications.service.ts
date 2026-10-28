@@ -4,6 +4,7 @@ import { StorageService } from '../../core/services/storage.service';
 import { formatStamp, isoDateToFr } from '../../core/utils/date.util';
 import { entityCode } from '../../core/utils/text.util';
 import { pendingEtats, pendingReturns, remainingCount } from '../accueil/domain/reception';
+import { ReceptionContext } from '../accueil/presentation/reception-context.service';
 import { isLocked } from '../dossiers/domain/workflow';
 import { TransmissionStore } from '../dossiers/infrastructure/store/transmission.store';
 import { isLate, unassigned } from '../traitement/domain/portfolio';
@@ -33,6 +34,7 @@ export class NotificationsService {
   private readonly store = inject(TransmissionStore);
   private readonly storage = inject(StorageService);
   private readonly traitement = inject(TraitementContext);
+  private readonly reception = inject(ReceptionContext);
 
   private readonly readMap = signal<Record<string, boolean>>(
     this.storage.get<Record<string, boolean>>(READ_KEY) ?? {},
@@ -49,7 +51,8 @@ export class NotificationsService {
         : account.role === 'accueil'
           ? this.forAccueil()
           : account.role === 'traitement'
-            ? this.forTraitement()
+            ? // Entité qui réceptionne aussi : ses notifications de réception s'ajoutent.
+              [...(this.reception.canReceive() ? this.forAccueil() : []), ...this.forTraitement()]
             : account.role === 'manager'
               ? this.forManager()
               : [];
@@ -61,7 +64,7 @@ export class NotificationsService {
 
   private forAccueil(): Omit<AppNotification, 'read'>[] {
     const found: Omit<AppNotification, 'read'>[] = [];
-    const pending = pendingEtats(this.store.etats());
+    const pending = pendingEtats(this.reception.etats());
     if (pending.length) {
       found.push({
         id: `pend:${pending.map((etat) => etat.ref + remainingCount(etat)).join(',')}`,
@@ -71,12 +74,12 @@ export class NotificationsService {
         tone: 'warn',
       });
     }
-    const returns = pendingReturns(this.store.dossiers());
+    const returns = pendingReturns(this.reception.dossiers());
     if (returns.length) {
       found.push({
         id: `ret:${returns.map((dossier) => dossier.ref).join(',')}`,
         label: `${returns.length} dossier(s) retourné(s) à traiter`,
-        meta: "Renvoi à l'agence en attente",
+        meta: "Renvoi à l'entité émettrice en attente",
         path: '/accueil-central/dossiers-retournes',
         tone: 'danger',
       });
@@ -169,7 +172,7 @@ export class NotificationsService {
       const refs = waiting.map((etat) => etat.ref).join(', ');
       found.push({
         id: `wait:${refs}`,
-        label: `${waiting.length} état(s) transmis en attente de réception à l'Accueil`,
+        label: `${waiting.length} état(s) transmis en attente de réception par l'entité réceptrice`,
         meta: refs,
         path: '/agence/suivi',
         tone: 'info',
@@ -180,7 +183,7 @@ export class NotificationsService {
         if (dossier.nonRec && !dossier.rec) {
           found.push({
             id: `nonrec:${dossier.ref}:${dossier.nonRec.at}`,
-            label: `Dossier ${dossier.ref} non reçu par l'Accueil`,
+            label: `Dossier ${dossier.ref} non reçu par l'entité réceptrice`,
             meta: `État ${etat.ref} · pointage du ${formatStamp(dossier.nonRec.at)}`,
             path: `/agence/suivi/${dossier.ref}`,
             tone: 'danger',

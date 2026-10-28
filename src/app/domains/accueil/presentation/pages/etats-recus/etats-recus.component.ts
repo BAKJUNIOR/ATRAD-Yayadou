@@ -5,7 +5,7 @@ import { Status } from '../../../../../shared/models/status';
 import { IconComponent } from '../../../../../shared/ui/icon/icon.component';
 import { StatusBadgeComponent } from '../../../../../shared/ui/status-badge/status-badge.component';
 import { DOSSIER_TYPES } from '../../../../dossiers/domain/dossier-catalog';
-import { TransmissionStore } from '../../../../dossiers/infrastructure/store/transmission.store';
+import { ReceptionContext } from '../../reception-context.service';
 import { ETAT_STATUS_OPTIONS, EtatCriteria, pendingEtats } from '../../../domain/reception';
 import { EtatSearchState } from '../../etat-search.state';
 
@@ -18,7 +18,7 @@ type TextCriterion = 'ref' | 'num' | 'prenom' | 'compte';
   templateUrl: './etats-recus.component.html',
 })
 export class EtatsRecusComponent {
-  private readonly store = inject(TransmissionStore);
+  private readonly reception = inject(ReceptionContext);
   private readonly router = inject(Router);
   protected readonly search = inject(EtatSearchState);
 
@@ -26,9 +26,9 @@ export class EtatsRecusComponent {
   protected readonly statuts = ETAT_STATUS_OPTIONS;
   protected readonly formatStamp = formatStamp;
 
-  protected readonly pendingCount = computed(() => pendingEtats(this.store.etats()).length);
+  protected readonly pendingCount = computed(() => pendingEtats(this.reception.etats()).length);
   protected readonly agences = computed(() => [
-    ...new Set(this.store.etats().map((etat) => etat.agence)),
+    ...new Set(this.reception.etats().map((etat) => etat.agence)),
   ]);
 
   protected readonly noResultMessage = computed(() => {

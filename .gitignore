@@ -42,3 +42,6 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Données confidentielles du jeu interne (jamais versionnées)
+/src/app/domains/dossiers/domain/datasets.interne.local.ts

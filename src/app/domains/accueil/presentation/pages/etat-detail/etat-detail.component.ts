@@ -9,6 +9,7 @@ import { IconComponent } from '../../../../../shared/ui/icon/icon.component';
 import { StatusBadgeComponent } from '../../../../../shared/ui/status-badge/status-badge.component';
 import { Priorite } from '../../../../dossiers/domain/dossier-catalog';
 import { EtatDossier } from '../../../../dossiers/domain/entities/dossier.entity';
+import { entityCode, etatInfo, recepOf } from '../../../../dossiers/domain/referentiel';
 import { entityOf, shortEntity } from '../../../../dossiers/domain/routing';
 import { TransmissionStore } from '../../../../dossiers/infrastructure/store/transmission.store';
 import { DossierDetailsComponent } from '../../../../dossiers/presentation/components/dossier-details/dossier-details.component';
@@ -16,6 +17,7 @@ import {
   ReceptionDialogComponent,
   ReceptionDialogData,
 } from '../../components/reception-dialog/reception-dialog.component';
+import { ReceptionContext } from '../../reception-context.service';
 
 const PRIORITY_TEXT: Record<Priorite, string> = {
   Normale: 'text-ink-muted',
@@ -36,6 +38,7 @@ function plural(count: number, word: string): string {
 })
 export class EtatDetailComponent {
   private readonly store = inject(TransmissionStore);
+  private readonly reception = inject(ReceptionContext);
   private readonly session = inject(SessionService);
   private readonly toast = inject(ToastService);
   private readonly dialog = inject(Dialog);
@@ -50,8 +53,26 @@ export class EtatDetailComponent {
   private readonly expanded = signal<ReadonlySet<string>>(new Set());
 
   protected readonly etat = computed(
-    () => this.store.etats().find((etat) => etat.ref === this.ref()) ?? null,
+    () => this.reception.etats().find((etat) => etat.ref === this.ref()) ?? null,
   );
+  /** Type d'état et entité réceptrice. */
+  protected readonly info = computed(() => etatInfo(this.etat()));
+
+  /** Les dossiers que l'entité réceptrice traite elle-même ne passent pas par le dispatch. */
+  private isDirect(type: string): boolean {
+    return entityCode(entityOf(type)) === recepOf(this.etat());
+  }
+
+  protected readonly helpLine = computed(() => {
+    const etat = this.etat();
+    const selfOnly =
+      this.reception.recepCode() === recepOf(etat) &&
+      this.session.role() === 'traitement' &&
+      !!etat?.dossiers.every((dossier) => this.isDirect(dossier.type));
+    return selfOnly
+      ? "Vous confirmez la réception physique des dossiers (type, client). Les dossiers reçus entrent directement dans la répartition interne de votre entité, où s'effectue le contrôle du contenu."
+      : `${this.session.role() === 'accueil' ? "L'Accueil" : "L'entité réceptrice"} confirme la réception du dossier (type, client). Le contrôle du contenu est effectué par l'entité de traitement.`;
+  });
   private readonly remaining = computed(() =>
     (this.etat()?.dossiers ?? []).filter((dossier) => !dossier.rec),
   );
@@ -64,7 +85,11 @@ export class EtatDetailComponent {
     const routed = new Map(this.store.dossiers().map((dossier) => [dossier.ref, dossier.entite]));
     return (etat?.dossiers ?? []).map((dossier) => ({
       dossier: { ...dossier, entite: routed.get(dossier.ref) },
-      entite: shortEntity(entityOf(dossier.type)) || '—',
+      entite: !entityOf(dossier.type)
+        ? '⚠ Aucune entité paramétrée'
+        : this.isDirect(dossier.type)
+          ? 'Traité ici'
+          : shortEntity(entityOf(dossier.type)),
       checked: this.picked().has(dossier.ref),
       open: this.expanded().has(dossier.ref),
       ...this.receptionOf(dossier, !!etat?.sentAt),
@@ -115,13 +140,21 @@ export class EtatDetailComponent {
       return;
     }
     const missing = this.remaining().filter((dossier) => !this.picked().has(dossier.ref));
+    const allDirect = picked.every((dossier) => this.isDirect(dossier.type));
     const data: ReceptionDialogData = {
       etatRef: etat.ref,
+      receivedTitle: allDirect
+        ? `Reçus — pris en charge directement par ${etatInfo(etat).dest}`
+        : 'Reçus — dispatchés vers leur entité de traitement',
       summary:
         plural(picked.length, 'reçu') +
         (missing.length ? `, ${plural(missing.length, 'non reçu')}` : ''),
       received: picked
-        .map((dossier) => `${dossier.ref} (${shortEntity(entityOf(dossier.type))})`)
+        .map((dossier) =>
+          this.isDirect(dossier.type)
+            ? dossier.ref
+            : `${dossier.ref} (→ ${shortEntity(entityOf(dossier.type))})`,
+        )
         .join(', '),
       missing: missing.map((dossier) => `${dossier.ref} — ${dossier.client}`).join(', '),
     };
@@ -137,15 +170,18 @@ export class EtatDetailComponent {
     const result = this.store.receive(
       etat.ref,
       picked.map((dossier) => dossier.ref),
-      this.session.account()?.name ?? '',
+      this.reception.by(),
+      this.reception.recepCode(),
     );
-    this.picked.set(new Set());
-    if (result) {
-      const at = formatStamp(this.etat()?.recLog?.at(-1)?.at ?? '');
-      this.toast.success(
-        `${result.received} dossier(s) reçu(s)${result.missing ? `, ${result.missing} non reçu(s)` : ''} le ${at} — routage : ${result.routing}.`,
-      );
+    if (!result.ok) {
+      this.toast.error(result.error);
+      return;
     }
+    this.picked.set(new Set());
+    const at = formatStamp(this.etat()?.recLog?.at(-1)?.at ?? '');
+    this.toast.success(
+      `${result.received} dossier(s) reçu(s)${result.missing ? `, ${result.missing} non reçu(s)` : ''} le ${at}${result.allDirect ? ` et pris en charge par ${etatInfo(this.etat()).dest}.` : ` — dispatch : ${result.routing}.`}`,
+    );
   }
 
   private receptionOf(dossier: EtatDossier, sent: boolean) {

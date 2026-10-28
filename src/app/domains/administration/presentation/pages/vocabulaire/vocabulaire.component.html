@@ -1,0 +1,66 @@
+<div class="flex max-w-[760px] animate-enter flex-col gap-[18px]">
+  <p
+    class="flex items-start gap-3 rounded-brand border border-info-line bg-info-bg px-4 py-[13px] text-[13px] leading-normal text-info"
+  >
+    <span
+      class="mt-px flex size-5 flex-none items-center justify-center rounded-full bg-info text-[12px] font-bold text-card"
+      aria-hidden="true"
+    >
+      i
+    </span>
+    <span>
+      Adaptez les mots de l'application à votre organisation. Les libellés s'appliquent aux
+      formulaires, tableaux, bordereaux et messages, pour tous les profils.
+    </span>
+  </p>
+
+  <!-- data-novocab : la saisie montre les libellés tels que tapés, sans conversion. -->
+  <section class="panel flex flex-col gap-4 p-5" data-novocab aria-label="Vocabulaire">
+    <div class="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4">
+      <label class="form-label gap-[5px]">
+        Libellé du tiers concerné *
+        <input
+          type="text"
+          class="form-control"
+          maxlength="30"
+          placeholder="Ex. Client, Patient, Fournisseur"
+          [value]="value().tiers"
+          (input)="set('tiers', $event)"
+        />
+        <span class="font-normal text-ink-muted">
+          Par défaut « Tiers ». Exemples : Client, Patient, Fournisseur.
+        </span>
+      </label>
+      <label class="form-label gap-[5px]">
+        Libellé du dossier *
+        <input
+          type="text"
+          class="form-control"
+          maxlength="30"
+          placeholder="Ex. Dossier, Demande"
+          [value]="value().dossier"
+          (input)="set('dossier', $event)"
+        />
+        <span class="font-normal text-ink-muted">Par défaut « Dossier ».</span>
+      </label>
+    </div>
+    <span class="text-[12.5px] text-ink-secondary">{{ preview() }}</span>
+    <div class="flex flex-wrap items-center justify-between gap-2.5 border-t border-line pt-3.5">
+      <button type="button" class="btn-outline px-3 py-2 text-[13px]" (click)="restoreDefaults()">
+        Valeurs par défaut
+      </button>
+      <div class="flex items-center gap-3">
+        <span class="text-[12.5px] text-ink-muted" aria-live="polite">{{ hint() }}</span>
+        <button
+          type="button"
+          class="btn-primary px-4 py-[9px] text-[13px]"
+          [disabled]="!canSave()"
+          [attr.title]="error() || null"
+          (click)="save()"
+        >
+          Enregistrer
+        </button>
+      </div>
+    </div>
+  </section>
+</div>

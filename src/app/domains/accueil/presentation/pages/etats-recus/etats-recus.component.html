@@ -106,7 +106,7 @@
           />
         </label>
         <label class="form-label gap-1.5 text-[12.5px]">
-          Agence émettrice
+          Entité émettrice
           <select class="form-control text-[13px]" (change)="onSelect('agence', $event)">
             <option value="" [selected]="!criteria.agence">Toutes les agences</option>
             @for (agence of agences(); track agence) {

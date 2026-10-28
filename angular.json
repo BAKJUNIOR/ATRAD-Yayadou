@@ -25,9 +25,7 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "src/styles.css"
-            ]
+            "styles": ["src/styles.css"]
           },
           "configurations": {
             "production": {
@@ -55,6 +53,14 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "interne": {
+              "fileReplacements": [
+                {
+                  "replace": "src/app/domains/dossiers/domain/datasets.interne.ts",
+                  "with": "src/app/domains/dossiers/domain/datasets.interne.local.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -67,6 +73,9 @@
             },
             "development": {
               "buildTarget": "ydxtrace-front:build:development"
+            },
+            "interne": {
+              "buildTarget": "ydxtrace-front:build:development,interne"
             }
           },
           "defaultConfiguration": "development"

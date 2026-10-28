@@ -4,6 +4,7 @@ import { TimelineEntry, TimelineTone } from '../../../shared/ui/timeline/timelin
 import { DossierType } from '../../dossiers/domain/dossier-catalog';
 import { EtatDossier, RoutedDossier } from '../../dossiers/domain/entities/dossier.entity';
 import { Etat } from '../../dossiers/domain/entities/etat.entity';
+import { etatInfo } from '../../dossiers/domain/referentiel';
 
 /** Dossier transmis, vu depuis l'agence : rattaché à son état, avec le statut qu'elle peut voir. */
 export interface SuiviDossier extends EtatDossier {
@@ -126,7 +127,7 @@ export interface ReceptionLabel {
   tone: 'brand' | 'danger' | 'warning';
 }
 
-/** État du pointage d'un dossier par l'Accueil. */
+/** État du pointage d'un dossier par l'entité réceptrice. */
 export function receptionLabel(etat: Etat, dossier: EtatDossier): ReceptionLabel {
   if (dossier.rec) {
     return { label: `Reçu le ${formatStamp(dossier.rec.at)}`, tone: 'brand' };
@@ -156,14 +157,24 @@ export function dossierHistory(dossier: SuiviDossier): TimelineEntry[] {
   for (const log of dossier.log.filter((entry) => entry.pre)) {
     push(log.at, log.label, log.who, log.tone);
   }
-  push(etat.sentAt, `État ${etat.ref} validé et transmis vers ${etat.dest}`, etat.emetteur, 'info');
+  push(
+    etat.sentAt,
+    `État ${etat.ref} validé et transmis vers ${etatInfo(etat).dest}`,
+    etat.emetteur,
+    'info',
+  );
   if (dossier.nonRec) {
     push(dossier.nonRec.at, 'Non reçu lors du pointage par l’Accueil', dossier.nonRec.by, 'danger');
   }
   if (dossier.rec) {
-    push(dossier.rec.at, `Reçu par ${dossier.rec.by}`, 'Accueil central', 'brand');
+    push(dossier.rec.at, `Reçu par ${dossier.rec.by}`, etatInfo(etat).dest, 'brand');
   } else if (!dossier.nonRec && etat.receivedAt) {
-    push(etat.receivedAt, "Réception confirmée par l'Accueil", etat.receivedBy ?? '', 'brand');
+    push(
+      etat.receivedAt,
+      "Réception confirmée par l'entité réceptrice",
+      etat.receivedBy ?? '',
+      'brand',
+    );
   }
   const routed = dossier.routed;
   if (routed) {
@@ -228,7 +239,7 @@ export function returnNotice(dossier: SuiviDossier, todayIso: string): ReturnNot
       text += ` · motif : ${routed.rejectReason}`;
     }
     if (sentBack && routed.renvoyeAt) {
-      text += ` · renvoyé par l'Accueil le ${formatStamp(routed.renvoyeAt)}`;
+      text += ` · renvoyé par l'entité réceptrice le ${formatStamp(routed.renvoyeAt)}`;
     }
   } else {
     title = sentBack ? "Renvoyé à l'agence (non-éligibilité)" : (MOTIF_TITLES[status] ?? '');

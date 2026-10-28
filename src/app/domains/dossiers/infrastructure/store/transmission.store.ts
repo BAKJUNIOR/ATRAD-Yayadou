@@ -2,7 +2,6 @@ import { Service, computed, effect, inject, signal } from '@angular/core';
 import { formatStamp, isoDateInDays, isoDateToFr, nowIso } from '../../../../core/utils/date.util';
 import { StorageService } from '../../../../core/services/storage.service';
 import { Account } from '../../../auth/domain/entities/account.entity';
-import { ACCUEIL_CENTRAL } from '../../domain/dossier-catalog';
 import {
   Dossier,
   DossierData,
@@ -11,12 +10,14 @@ import {
 } from '../../domain/entities/dossier.entity';
 import { Etat } from '../../domain/entities/etat.entity';
 import {
-  DELAI_PRIORITE,
-  ENTITES,
-  entitySettings,
-  entityOf,
-  shortEntity,
-} from '../../domain/routing';
+  entityCode,
+  entityLabel,
+  draftGroups,
+  normalizeEntity,
+  recepOf,
+} from '../../domain/referentiel';
+import { DELAI_PRIORITE, entitySettings, entityOf, shortEntity } from '../../domain/routing';
+import { ReferentielStore } from './referentiel.store';
 import {
   ATTENTE_DOCS,
   DOC_DELAI_JOURS,
@@ -52,12 +53,17 @@ const INITIAL_STATE: TransmissionState = {
   nextEtatRef: 401,
 };
 
-export interface ReceptionResult {
-  received: number;
-  missing: number;
-  /** Répartition des dossiers reçus : `Crédits (1), Réclamations (1)`. */
-  routing: string;
-}
+export type ReceptionResult =
+  | {
+      ok: true;
+      received: number;
+      missing: number;
+      /** Répartition des dossiers reçus : `Crédits (1), Réclamations (1)`. */
+      routing: string;
+      /** Tous les dossiers reçus sont traités par l'entité réceptrice elle-même. */
+      allDirect: boolean;
+    }
+  | { ok: false; error: string };
 
 /** Issue d'une opération sur un dossier : message à afficher, et succès ou refus. */
 export interface OperationResult {
@@ -65,7 +71,7 @@ export interface OperationResult {
   message: string;
 }
 
-export type TransmitResult = { ok: true; etat: Etat } | { ok: false; error: string };
+export type TransmitResult = { ok: true; etats: Etat[] } | { ok: false; error: string };
 
 /**
  * Dossiers et états de transmission, conservés dans le navigateur.
@@ -75,6 +81,8 @@ export type TransmitResult = { ok: true; etat: Etat } | { ok: false; error: stri
 @Service()
 export class TransmissionStore {
   private readonly storage = inject(StorageService);
+  // Le référentiel doit être en place pour remettre à jour les libellés d'entités.
+  private readonly referentiel = inject(ReferentielStore);
 
   private readonly state = signal<TransmissionState>({
     ...INITIAL_STATE,
@@ -90,7 +98,28 @@ export class TransmissionStore {
   readonly draftRef = computed(() => this.etatRef(this.state().nextEtatRef));
 
   constructor() {
+    this.normalizeEntities();
     effect(() => this.storage.set(STORE_KEY, this.state()));
+  }
+
+  /**
+   * Remet à jour le libellé des entités de traitement (renommées par l'administrateur) dans les
+   * dossiers et les états.
+   */
+  normalizeEntities(): void {
+    const fix = <T extends { entite?: string }>(dossier: T): T =>
+      dossier.entite && normalizeEntity(dossier.entite) !== dossier.entite
+        ? { ...dossier, entite: normalizeEntity(dossier.entite) }
+        : dossier;
+    const state = this.state();
+    const next: TransmissionState = {
+      ...state,
+      dossiers: state.dossiers.map(fix),
+      etats: state.etats.map((etat) => ({ ...etat, dossiers: etat.dossiers.map(fix) })),
+    };
+    if (JSON.stringify(next) !== JSON.stringify(state)) {
+      this.state.set(next);
+    }
   }
 
   addDossier(data: DossierData): Dossier {
@@ -132,8 +161,11 @@ export class TransmissionStore {
     });
   }
 
-  /** Valide l'état en cours et le transmet à l'Accueil central. Action définitive. */
-  transmit(emetteur: Account): TransmitResult {
+  /**
+   * Valide l'état en cours et le transmet : un état par type d'état, chacun vers son entité
+   * réceptrice. Action définitive.
+   */
+  transmit(emetteur: Account, etatTypeId: string): TransmitResult {
     const state = this.state();
     if (!state.draft.length) {
       return { ok: false, error: 'Ajoutez au moins un dossier avant de transmettre.' };
@@ -148,9 +180,12 @@ export class TransmissionStore {
       };
     }
 
-    let etatNumber = state.nextEtatRef;
-    while (state.etats.some((etat) => etat.ref === this.etatRef(etatNumber))) {
-      etatNumber++;
+    const { groups, miss } = draftGroups(state.draft, entityCode(emetteur.entity), etatTypeId);
+    if (miss.length) {
+      return {
+        ok: false,
+        error: `Transmission bloquée : ${miss.map((d) => `${d.ref} (${d.type})`).join(', ')} n'appartient à aucun type d'état autorisé pour votre entité.`,
+      };
     }
 
     const [, agence, code] = emetteur.entity.match(/^(.*) \(([^)]+)\)$/) ?? [
@@ -158,52 +193,83 @@ export class TransmissionStore {
       emetteur.entity,
       '',
     ];
-    const types = [...new Set(state.draft.map((dossier) => dossier.type))];
     const sentAt = nowIso();
-    const etat: Etat = {
-      ref: this.etatRef(etatNumber),
-      agence: agence ?? emetteur.entity,
-      code: code ?? '',
-      type: types.length > 1 ? `Mixte (${types.length} types)` : types[0],
-      createdAt: state.draftCreatedAt || sentAt,
-      sentAt,
-      status: 'Transmis',
-      receivedAt: '',
-      emetteur: emetteur.name,
-      dest: ACCUEIL_CENTRAL,
-      dossiers: state.draft.map((dossier) => ({
-        ...dossier,
+    let etatNumber = state.nextEtatRef;
+    const etats = groups.map(({ etatType, dossiers }): Etat => {
+      while (state.etats.some((etat) => etat.ref === this.etatRef(etatNumber))) {
+        etatNumber++;
+      }
+      const types = [...new Set(dossiers.map((dossier) => dossier.type))];
+      const ref = this.etatRef(etatNumber);
+      etatNumber++;
+      return {
+        ref,
+        agence: agence ?? emetteur.entity,
+        code: code ?? '',
+        type: types.length > 1 ? `Mixte (${types.length} types)` : types[0],
+        createdAt: state.draftCreatedAt || sentAt,
+        sentAt,
         status: 'Transmis',
-        transmisAt: sentAt,
-      })),
-      prints: [],
-    };
+        receivedAt: '',
+        emetteur: emetteur.name,
+        etType: etatType.id,
+        etTypeNom: etatType.nom,
+        recep: etatType.recep,
+        dest: entityLabel(etatType.recep),
+        dossiers: dossiers.map((dossier) => ({
+          ...dossier,
+          status: 'Transmis',
+          transmisAt: sentAt,
+        })),
+        prints: [],
+      };
+    });
 
     this.state.set({
       ...state,
-      etats: [...state.etats, etat],
+      etats: [...state.etats, ...etats],
       draft: [],
       draftCreatedAt: '',
-      nextEtatRef: etatNumber + 1,
+      nextEtatRef: etatNumber,
     });
-    return { ok: true, etat };
+    return { ok: true, etats };
   }
 
   /**
-   * Pointe les dossiers d'un état physiquement reçus par l'Accueil. Les dossiers pointés sont
-   * routés vers leur entité ; les autres sont marqués « Non reçu » et pourront l'être plus tard.
+   * Pointe les dossiers d'un état physiquement reçus par son entité réceptrice (`recepCode`). Les
+   * dossiers pointés sont dispatchés vers leur entité de traitement, ou pris en charge directement
+   * quand la réceptrice les traite elle-même ; les autres sont marqués « Non reçu » et pourront
+   * l'être plus tard.
    */
-  receive(etatRef: string, pickedRefs: readonly string[], by: string): ReceptionResult | null {
+  receive(
+    etatRef: string,
+    pickedRefs: readonly string[],
+    by: string,
+    recepCode: string,
+  ): ReceptionResult {
     const state = this.state();
     const etat = state.etats.find((candidate) => candidate.ref === etatRef);
     if (!etat) {
-      return null;
+      return { ok: false, error: 'État introuvable.' };
     }
     const remaining = etat.dossiers.filter((dossier) => !dossier.rec);
     const picked = new Set(pickedRefs);
     const received = remaining.filter((dossier) => picked.has(dossier.ref));
     if (!received.length) {
-      return null;
+      return { ok: false, error: 'Cochez au moins un dossier reçu.' };
+    }
+    if (recepOf(etat) !== recepCode) {
+      return {
+        ok: false,
+        error: `Réception impossible : cet état est destiné à ${entityLabel(recepOf(etat))}.`,
+      };
+    }
+    const orphans = received.filter((dossier) => !entityOf(dossier.type));
+    if (orphans.length) {
+      return {
+        ok: false,
+        error: `Réception bloquée : aucune entité de traitement n'est paramétrée pour ${orphans.map((d) => `${d.ref} (${d.type})`).join(', ')}. Complétez Administration › Routage & affectation.`,
+      };
     }
 
     const at = nowIso();
@@ -232,7 +298,7 @@ export class TransmissionStore {
     const alreadyRouted = new Set(state.dossiers.map((dossier) => dossier.ref));
     const routed = received
       .filter((dossier) => !alreadyRouted.has(dossier.ref))
-      .map((dossier) => this.route(dossier, updated, at, roundRobin));
+      .map((dossier) => this.route(dossier, updated, at, roundRobin, by));
 
     const counts = new Map<string, number>();
     for (const dossier of routed) {
@@ -247,10 +313,12 @@ export class TransmissionStore {
       roundRobin,
     });
     return {
+      ok: true,
       received: received.length,
       missing,
       routing:
         [...counts].map(([name, count]) => `${name} (${count})`).join(', ') || 'aucun dossier',
+      allDirect: routed.length > 0 && routed.every((dossier) => dossier.direct),
     };
   }
 
@@ -283,7 +351,7 @@ export class TransmissionStore {
             {
               at,
               who: by,
-              label: `Changement de statut : ${dossier.status} → Retourné en agence · retour confirmé par l'Accueil (${dossier.agence})${reason}`,
+              label: `Changement de statut : ${dossier.status} → Retourné en agence · retour confirmé par l'entité réceptrice (${dossier.agence})${reason}`,
               tone: 'success',
             },
           ],
@@ -305,7 +373,7 @@ export class TransmissionStore {
         message:
           dossier.status === 'Clôturé'
             ? 'Dossier clôturé : aucune modification possible.'
-            : "Dossier renvoyé vers l'Accueil : aucune modification possible.",
+            : "Dossier renvoyé vers l'entité réceptrice : aucune modification possible.",
       };
     }
     const at = nowIso();
@@ -369,7 +437,7 @@ export class TransmissionStore {
         message:
           dossier.status === 'Clôturé'
             ? 'Dossier clôturé : aucune modification possible.'
-            : "Dossier renvoyé vers l'Accueil : aucune action possible.",
+            : "Dossier renvoyé vers l'entité réceptrice : aucune action possible.",
       };
     }
     const target = targetOf(action);
@@ -437,11 +505,14 @@ export class TransmissionStore {
           {
             at,
             who: by,
-            label: `Retour pour non-éligibilité, renvoyé vers l'Accueil — motif : ${action.reason}`,
+            label: `Retour pour non-éligibilité, renvoyé vers l'entité réceptrice — motif : ${action.reason}`,
             tone: 'warning',
           },
         );
-        return { ok: true, message: `Dossier ${ref} renvoyé vers l'Accueil (Dossiers retournés).` };
+        return {
+          ok: true,
+          message: `Dossier ${ref} renvoyé vers l'entité réceptrice (Dossiers retournés).`,
+        };
       case 'rejet_info': {
         const deadlineIso = isoDateInDays(DOC_DELAI_JOURS);
         const deadline = isoDateToFr(deadlineIso);
@@ -489,13 +560,13 @@ export class TransmissionStore {
           {
             at,
             who: by,
-            label: `Changement de statut : ${ATTENTE_DOCS} → Dossier retourné · faute de document(s) : ${missing.join(', ') || '—'}${reason ? ` · motif : ${reason}` : ''} · renvoyé vers l'Accueil · agence notifiée`,
+            label: `Changement de statut : ${ATTENTE_DOCS} → Dossier retourné · faute de document(s) : ${missing.join(', ') || '—'}${reason ? ` · motif : ${reason}` : ''} · renvoyé vers l'entité réceptrice · agence notifiée`,
             tone: 'danger',
           },
         );
         return {
           ok: true,
-          message: `Dossier ${ref} retourné faute de document(s) — visible dans « Dossiers retournés » de l'Accueil.`,
+          message: `Dossier ${ref} retourné faute de document(s) — visible dans « Dossiers retournés » de l'entité réceptrice.`,
         };
       }
     }
@@ -569,8 +640,10 @@ export class TransmissionStore {
     etat: Etat,
     at: string,
     roundRobin: Record<string, number>,
+    by: string,
   ): RoutedDossier {
-    const entite = entityOf(dossier.type) || ENTITES[0].name;
+    const entite = entityOf(dossier.type);
+    const direct = entityCode(entite) === recepOf(etat);
     const days = DELAI_PRIORITE[dossier.prio];
     const routed: RoutedDossier = {
       ...dossier,
@@ -579,12 +652,23 @@ export class TransmissionStore {
       etat: etat.ref,
       entite,
       affecte: at,
-      affectedBy: 'Routage automatique',
+      affectedBy: direct ? 'Réception directe' : 'Routage automatique',
+      direct,
       echeanceIso: isoDateInDays(days),
       delai: `${days} j (priorité ${dossier.prio.toLowerCase()})`,
       gest: '',
       gestAt: '',
-      log: [...dossier.log],
+      log: [
+        ...dossier.log,
+        direct
+          ? { at, who: by, label: `Reçu et pris en charge par ${entite}`, tone: 'brand' }
+          : {
+              at,
+              who: 'Système',
+              label: `Reçu par ${entityLabel(recepOf(etat))} et dispatché vers ${entite}`,
+              tone: 'info',
+            },
+      ],
     };
 
     const settings = entitySettings(entite);

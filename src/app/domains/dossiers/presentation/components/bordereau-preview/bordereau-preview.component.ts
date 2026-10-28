@@ -7,6 +7,7 @@ import { formatStamp, nowIso } from '../../../../../core/utils/date.util';
 import { ButtonComponent } from '../../../../../shared/ui/button/button.component';
 import { IconComponent } from '../../../../../shared/ui/icon/icon.component';
 import { canPrintEtat } from '../../../domain/entities/etat.entity';
+import { entityCode, etatInfo, recepOf } from '../../../domain/referentiel';
 import { entityOfDossier } from '../../../domain/routing';
 import { TransmissionStore } from '../../../infrastructure/store/transmission.store';
 
@@ -30,6 +31,17 @@ export class BordereauPreviewComponent {
   protected readonly etat = computed(
     () => this.store.etats().find((etat) => etat.ref === this.etatRef) ?? null,
   );
+
+  /** Type d'état et entité réceptrice. */
+  protected readonly info = computed(() => etatInfo(this.etat()));
+
+  /** Inutile quand l'entité réceptrice traite elle-même tous les dossiers de l'état. */
+  protected readonly showEntity = computed(() => {
+    const etat = this.etat();
+    return !!etat?.dossiers.some(
+      (dossier) => entityCode(entityOfDossier(dossier)) !== recepOf(etat),
+    );
+  });
 
   protected readonly rows = computed(() =>
     (this.etat()?.dossiers ?? []).map((dossier, index) => ({

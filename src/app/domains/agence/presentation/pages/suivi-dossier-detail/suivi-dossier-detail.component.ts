@@ -6,6 +6,7 @@ import { entityCode } from '../../../../../core/utils/text.util';
 import { StatusBadgeComponent } from '../../../../../shared/ui/status-badge/status-badge.component';
 import { TimelineComponent } from '../../../../../shared/ui/timeline/timeline.component';
 import { Priorite } from '../../../../dossiers/domain/dossier-catalog';
+import { etatInfo } from '../../../../dossiers/domain/referentiel';
 import { entityOf } from '../../../../dossiers/domain/routing';
 import { TransmissionStore } from '../../../../dossiers/infrastructure/store/transmission.store';
 import { dossierHistory, receptionLabel, returnNotice, suiviDossiers } from '../../../domain/suivi';
@@ -22,6 +23,8 @@ interface DetailField {
   label: string;
   value: string;
   classes?: string;
+  /** Précision affichée sous la valeur. */
+  sub?: string;
 }
 
 /** Fiche d'un dossier transmis et historique de son parcours. */
@@ -74,13 +77,14 @@ export class SuiviDossierDetailComponent {
         label: 'État de transmission',
         value: dossier.etat.ref,
         classes: 'font-mono text-heading',
+        sub: `« ${etatInfo(dossier.etat).nom} » · réceptionné par ${etatInfo(dossier.etat).dest}`,
       },
       {
         label: 'Entité de traitement',
         value: dossier.entite || `${entityOf(dossier.type) || '—'} (prévue)`,
       },
       {
-        label: 'Réception Accueil',
+        label: 'Réception',
         value: reception.label,
         classes: `font-medium ${RECEPTION_TEXT[reception.tone]}`,
       },

@@ -4,7 +4,7 @@ import { Priorite } from '../../../../dossiers/domain/dossier-catalog';
 import { RoutedDossier } from '../../../../dossiers/domain/entities/dossier.entity';
 import { ENTITES } from '../../../../dossiers/domain/routing';
 import { RoutingStore } from '../../../../dossiers/infrastructure/store/routing.store';
-import { TransmissionStore } from '../../../../dossiers/infrastructure/store/transmission.store';
+import { ReceptionContext } from '../../reception-context.service';
 import {
   isUnassigned,
   routingRules,
@@ -25,7 +25,7 @@ const PRIORITY_TEXT: Record<Priorite, string> = {
   templateUrl: './suivi-statistiques.component.html',
 })
 export class SuiviStatistiquesComponent {
-  private readonly store = inject(TransmissionStore);
+  private readonly reception = inject(ReceptionContext);
   private readonly routing = inject(RoutingStore);
 
   protected readonly entites = ENTITES;
@@ -40,10 +40,14 @@ export class SuiviStatistiquesComponent {
   protected readonly query = signal('');
   protected readonly pendingOnly = signal(false);
 
-  protected readonly kpis = computed(() => trackingKpis(this.store.etats(), this.store.dossiers()));
-  protected readonly empty = computed(() => trackedDossiers(this.store.dossiers()).length === 0);
+  protected readonly kpis = computed(() =>
+    trackingKpis(this.reception.etats(), this.reception.dossiers()),
+  );
+  protected readonly empty = computed(
+    () => trackedDossiers(this.reception.dossiers()).length === 0,
+  );
   protected readonly groups = computed(() =>
-    trackingGroups(this.store.dossiers(), {
+    trackingGroups(this.reception.dossiers(), {
       entite: this.entite(),
       query: this.query(),
       pendingOnly: this.pendingOnly(),

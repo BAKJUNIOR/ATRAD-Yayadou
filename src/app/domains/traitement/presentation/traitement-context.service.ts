@@ -2,7 +2,15 @@ import { Service, computed, inject } from '@angular/core';
 import { SessionService } from '../../../core/services/session.service';
 import { DemoClock } from '../../../core/services/demo-clock.service';
 import { entityCode } from '../../../core/utils/text.util';
-import { ENTITES, MODE_LABEL, functionsOf, shortEntity } from '../../dossiers/domain/routing';
+import { entiteOf, normalizeEntity } from '../../dossiers/domain/referentiel';
+import {
+  ENTITES,
+  MODE_LABEL,
+  entitySettings,
+  functionsOf,
+  shortEntity,
+} from '../../dossiers/domain/routing';
+import { ReferentielStore } from '../../dossiers/infrastructure/store/referentiel.store';
 import { RoutingStore } from '../../dossiers/infrastructure/store/routing.store';
 import { TransmissionStore } from '../../dossiers/infrastructure/store/transmission.store';
 
@@ -16,9 +24,13 @@ export class TraitementContext {
   private readonly session = inject(SessionService);
   private readonly store = inject(TransmissionStore);
   private readonly routing = inject(RoutingStore);
+  private readonly referentiel = inject(ReferentielStore);
 
   /** Réglages de l'entité, tels que paramétrés par l'administrateur. */
-  private readonly settings = computed(() => this.routing.config().ent[this.entite()]);
+  private readonly settings = computed(() => {
+    this.routing.config();
+    return entitySettings(this.entite());
+  });
 
   private readonly clock = inject(DemoClock);
 
@@ -29,8 +41,11 @@ export class TraitementContext {
 
   /** Entité de l'agent ; à défaut de correspondance, la première du référentiel. */
   readonly entite = computed(() => {
-    const entity = this.session.account()?.entity ?? '';
-    return ENTITES.some((candidate) => candidate.name === entity) ? entity : ENTITES[0].name;
+    this.referentiel.value();
+    const entity = normalizeEntity(this.session.account()?.entity ?? '');
+    return ENTITES.some((candidate) => candidate.name === entity)
+      ? entity
+      : (ENTITES[0]?.name ?? entity);
   });
   readonly entiteShort = computed(() => shortEntity(this.entite()));
   readonly team = computed(() => this.settings()?.team ?? []);
@@ -59,7 +74,7 @@ export class TraitementContext {
   );
 
   setEntite(entite: string): void {
-    this.impersonate(entite, this.routing.config().ent[entite]?.team[0] ?? this.user());
+    this.impersonate(entite, entitySettings(entite)?.team[0] ?? this.user());
   }
 
   setUser(user: string): void {
@@ -75,7 +90,7 @@ export class TraitementContext {
       ...account,
       name: user,
       entity: entite,
-      roleLabel: `Agent entité de traitement — ${shortEntity(entite)}`,
+      roleLabel: `${entiteOf(entite)?.recep ? 'Entité réceptrice + traitement' : 'Entité de traitement'} — ${shortEntity(entite)}`,
     });
   }
 }

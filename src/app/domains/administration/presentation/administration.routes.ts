@@ -23,8 +23,28 @@ export const ADMINISTRATION_ROUTES: Routes = [
     loadComponent: () =>
       import('./pages/routage/routage.component').then((m) => m.RoutageComponent),
   },
-  // Non construits dans le prototype (« prévu à une étape suivante »).
-  { path: 'agences-entites', title: 'Agences & entités', loadComponent: placeholder },
+  {
+    path: 'entites',
+    title: 'Entités',
+    canDeactivate: [unsavedChangesGuard],
+    loadComponent: () =>
+      import('./pages/entites/entites.component').then((m) => m.EntitesComponent),
+  },
+  {
+    path: 'types-etat',
+    title: "Types d'état de transmission",
+    canDeactivate: [unsavedChangesGuard],
+    loadComponent: () =>
+      import('./pages/types-etat/types-etat.component').then((m) => m.TypesEtatComponent),
+  },
+  {
+    path: 'vocabulaire',
+    title: 'Vocabulaire',
+    canDeactivate: [unsavedChangesGuard],
+    loadComponent: () =>
+      import('./pages/vocabulaire/vocabulaire.component').then((m) => m.VocabulaireComponent),
+  },
+  // Non construit dans le prototype (« prévu à une étape suivante »).
   { path: 'utilisateurs', title: 'Utilisateurs', loadComponent: placeholder },
   {
     path: 'journal-audit',

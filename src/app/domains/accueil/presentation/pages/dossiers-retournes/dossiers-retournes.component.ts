@@ -7,6 +7,7 @@ import { entityCode } from '../../../../../core/utils/text.util';
 import { IconComponent } from '../../../../../shared/ui/icon/icon.component';
 import { ENTITES, bareEntity } from '../../../../dossiers/domain/routing';
 import { TransmissionStore } from '../../../../dossiers/infrastructure/store/transmission.store';
+import { ReceptionContext } from '../../reception-context.service';
 import { pendingReturns } from '../../../domain/reception';
 
 /** Parcours accueil : renvoyer à leur agence les dossiers retournés par une entité. */
@@ -17,6 +18,7 @@ import { pendingReturns } from '../../../domain/reception';
 })
 export class DossiersRetournesComponent {
   private readonly store = inject(TransmissionStore);
+  private readonly reception = inject(ReceptionContext);
   private readonly session = inject(SessionService);
   private readonly confirm = inject(ConfirmService);
   private readonly toast = inject(ToastService);
@@ -29,7 +31,7 @@ export class DossiersRetournesComponent {
   protected readonly query = signal('');
   private readonly picked = signal<ReadonlySet<number>>(new Set());
 
-  protected readonly pending = computed(() => pendingReturns(this.store.dossiers()));
+  protected readonly pending = computed(() => pendingReturns(this.reception.dossiers()));
 
   /** Entités ayant au moins un dossier à renvoyer, avec leur nombre. */
   protected readonly entiteOptions = computed(() =>

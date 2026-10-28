@@ -5,7 +5,7 @@ import { SessionService } from '../../../../../core/services/session.service';
 import { AuthPageLayoutComponent } from '../../../../../layout/auth-page-layout/auth-page-layout.component';
 import { ButtonComponent } from '../../../../../shared/ui/button/button.component';
 import { Account } from '../../../domain/entities/account.entity';
-import { AuthMock, DEMO_ACCOUNTS } from '../../../infrastructure/mock/auth.mock';
+import { AuthMock, demoAccounts } from '../../../infrastructure/mock/auth.mock';
 
 /** Mot de passe prérempli des comptes de démonstration (la connexion simulée accepte tout). */
 const DEMO_PASSWORD = 'demo1234';
@@ -20,7 +20,7 @@ export class SignInComponent {
   private readonly session = inject(SessionService);
   private readonly router = inject(Router);
 
-  protected readonly demoAccounts = DEMO_ACCOUNTS;
+  protected readonly demoAccounts = demoAccounts();
   protected readonly error = signal('');
 
   private readonly credentials = signal({ ident: '', password: '' });

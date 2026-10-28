@@ -85,37 +85,6 @@ export function targetOf(action: DossierAction): Status {
   }
 }
 
-/** Pièces attendues par type de dossier, proposées lors d'une demande de documents. */
-export const PIECES_PAR_TYPE: Record<DossierType, readonly string[]> = {
-  'Ouverture de compte': [
-    "Pièce d'identité",
-    'Justificatif de domicile',
-    "Photo d'identité",
-    "Formulaire d'ouverture signé",
-  ],
-  'Demande de prêt': [
-    "Pièce d'identité",
-    'Bulletins de salaire (3 derniers mois)',
-    'Relevés bancaires',
-    'Attestation de travail',
-  ],
-  Réclamation: [
-    'Formulaire de réclamation signé',
-    "Justificatif de l'opération",
-    'Relevé de compte',
-  ],
-  'Mise à jour KYC': [
-    "Pièce d'identité en cours de validité",
-    'Justificatif de domicile récent',
-    'Fiche KYC signée',
-  ],
-  'Clôture de compte': [
-    'Lettre de demande de clôture signée',
-    "Pièce d'identité",
-    'RIB du compte de destination',
-  ],
-};
-
 /** Délai, en jours, accordé à l'agence pour fournir des documents complémentaires. */
 export const DOC_DELAI_JOURS = 7;
 
@@ -128,7 +97,7 @@ export function lockReason(dossier: Pick<RoutedDossier, 'status'>): string {
       return 'dossier clôturé, non modifiable';
     case 'Dossier retourné':
     case 'Rejeté':
-      return "dossier renvoyé vers l'Accueil";
+      return "dossier renvoyé vers l'entité réceptrice";
     case 'Validé':
       return 'dossier déjà validé';
     default:

@@ -6,6 +6,8 @@ export interface ReceptionDialogData {
   etatRef: string;
   /** `2 dossiers reçus, 1 dossier non reçu` */
   summary: string;
+  /** Intitulé des dossiers pointés : dispatchés, ou pris en charge directement. */
+  receivedTitle: string;
   /** Dossiers pointés, avec leur entité de destination. */
   received: string;
   /** Dossiers non pointés ; vide si tout est reçu. */
@@ -30,7 +32,7 @@ export interface ReceptionDialogData {
     <div
       class="flex flex-col gap-1 rounded-control border border-brand-tint-line bg-brand-tint-soft px-3 py-2.5 text-[12.5px] text-brand-ink"
     >
-      <span class="font-semibold">Reçus — routés vers leur entité</span>
+      <span class="font-semibold">{{ data.receivedTitle }}</span>
       <span>{{ data.received }}</span>
     </div>
     @if (data.missing) {

@@ -1,4 +1,5 @@
 import { Role } from '../../domains/auth/domain/entities/account.entity';
+import { EntityCapability } from '../../domains/dossiers/domain/datasets';
 import { MemberFunction } from '../../domains/dossiers/domain/routing';
 
 export interface NavItem {
@@ -21,7 +22,14 @@ export interface NavMenu {
   items: NavItem[];
 }
 
-const HOME: NavItem = { id: 'accueil', label: 'Accueil', icon: '◱', path: '/' };
+export const HOME: NavItem = { id: 'accueil', label: 'Accueil', icon: '◱', path: '/' };
+
+/** Capacité que l'entité du profil doit avoir pour en ouvrir les écrans. */
+export const ROLE_CAPABILITY: Partial<Record<Role, EntityCapability>> = {
+  agence: 'emet',
+  accueil: 'recep',
+  traitement: 'trait',
+};
 
 /** Menu de chaque profil. Les chemins doivent correspondre aux routes des domaines. */
 export const NAVIGATION: Record<Role, NavMenu> = {
@@ -140,11 +148,18 @@ export const NAVIGATION: Record<Role, NavMenu> = {
             icon: '⇆',
             path: '/administration/routage',
           },
+          { id: 'entites', label: 'Entités', icon: '⌗', path: '/administration/entites' },
           {
-            id: 'agences',
-            label: 'Agences & entités',
-            icon: '⌗',
-            path: '/administration/agences-entites',
+            id: 'typesetat',
+            label: "Types d'état",
+            icon: '▦',
+            path: '/administration/types-etat',
+          },
+          {
+            id: 'vocab',
+            label: 'Vocabulaire',
+            icon: 'Aa',
+            path: '/administration/vocabulaire',
           },
         ],
       },

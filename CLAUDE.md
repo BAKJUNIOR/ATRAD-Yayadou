@@ -77,7 +77,7 @@ src/app/
     └── ui/                # Primitives : button, icon, status-badge, stat-card, theme-toggle, ...
 ```
 
-- **Profils** : `agence`, `accueil`, `traitement`, `manager`, `admin`. Chaque profil a son menu (`core/navigation/navigation.ts`) et ses routes, protégées par `roleGuard`.
+- **Profils** : `agence` (entité émettrice), `accueil` (entité réceptrice), `traitement`, `manager`, `admin`. Chaque profil a son menu (`core/navigation/navigation.ts`) et ses routes, protégées par `roleGuard`. Le profil `manager` n'est plus proposé à la connexion (prototype du 24/10) ; ses écrans restent en place.
 - **Nouvel écran** : créer la page dans `domains/<domaine>/presentation/pages/`, puis remplacer `placeholder` par son `loadComponent` dans `<domaine>.routes.ts`. Le `title` d'une route ne contient que le nom de l'écran.
 - **Données** : aucune consommation d'API pour l'instant. Les données fictives vivent dans `infrastructure/mock/` ; `provideHttpClient` n'est pas encore déclaré.
 - **Nommage des fichiers** : suffixes explicites (`*.component.ts`, `*.service.ts`, `*.guard.ts`), configurés dans `angular.json`.
@@ -94,9 +94,19 @@ src/app/
 
 `@angular/cdk`, `apexcharts` + `ng-apexcharts` (graphiques), `flatpickr` (dates). Ne pas ajouter de dépendance sans demander.
 
+## Référentiel et jeux de données
+
+- **Jeux de données** (`domains/dossiers/domain/datasets.ts`) : `interne`, `neutre`, `entreprise`. Chacun définit entités, types d'état, types de dossier, champs et libellés du formulaire, équipes et comptes de démonstration. Le jeu est choisi dans « Réinitialiser les données de démo » (clé `atrad_dataset_v1`) et appliqué au rechargement ; à défaut : `neutre` si des données existent, sinon `interne`.
+- **Référentiel** (`domain/referentiel.ts`, store `ReferentielStore`, clé `atrad_referentiel_v1`) : entités et leurs capacités (`emet`, `recep`, `trait`), types d'état (une entité réceptrice, des entités émettrices), circuit de chaque type de dossier (type d'état + entité de traitement), mode de saisie (`choix` / `auto`) et vocabulaire. Fonctions pures lisant un paramétrage de module, comme `routing.ts`.
+- Une entité est désignée par son code (`AG-014`) ; son libellé `Nom (CODE)` est stocké sur les dossiers et remis à jour par `TransmissionStore.normalizeEntities()` après un renommage.
+- `DOSSIER_TYPES`, `PRODUITS` et `ENTITES` sont des listes mises à jour sur place ; les champs d'un type se lisent avec `fieldsOf()`, ses pièces avec `piecesOf()`. Ne plus écrire « Accueil central » : lire `etatInfo(etat)` (type d'état et réceptrice).
+- **Vocabulaire** : `VocabularyService` réécrit tout le texte affiché (« Client » → libellé du tiers, « Dossier », « agence » → « entité émettrice ») avec `applyVocabulary()` ; une zone `data-novocab` est épargnée.
+- Une entité privée de la capacité de son profil ne voit que l'accueil (`ROLE_CAPABILITY`).
+
 ## Parcours agence (premiers écrans construits)
 
 - `domains/dossiers/` est le socle partagé par tous les profils : entités `Dossier` / `Etat`, catalogue des types et de leurs champs (`dossier-catalog.ts`), routage par défaut (`routing.ts`), bordereau imprimable.
+- Créer un état : choix du type d'état (seuls ses types de dossier sont proposés) ou, en mode `auto`, un état généré par type d'état à la validation (`draftGroups()`). `TransmissionStore.transmit()` renvoie les états produits.
 - `TransmissionStore` (`domains/dossiers/infrastructure/store/`) tient lieu de backend : dossiers et états sont conservés dans le `localStorage` (clé `atrad_live_data_v1`), le contenu des pièces jointes dans IndexedDB. Chaque méthode correspond à un futur appel d'API.
 - Les règles métier sont des fonctions pures dans `domains/<domaine>/domain/` (ex. `dossier-form.rules.ts`, `suivi.ts`), testées sans composant.
 - Un écran riche expose son état par une façade fournie par la page (`creer-etat.facade.ts`), partagée par ses composants.
@@ -108,7 +118,8 @@ src/app/
 
 ## Parcours accueil
 
-- Réception : `TransmissionStore.receive()` pointe les dossiers reçus d'un état, les route vers leur entité (`RoutedDossier`) et les affecte selon le mode de l'entité (`ENTITY_SETTINGS` dans `routing.ts` : tour de rôle, pool ou répartiteur). Les dossiers non pointés passent « Non reçu » et restent pointables.
+- Réception : `TransmissionStore.receive()` pointe les dossiers reçus d'un état par son entité réceptrice, les dispatche vers leur entité de traitement (`RoutedDossier`) — ou les prend en charge directement quand la réceptrice les traite (`direct`) — et les affecte selon le mode de l'entité (tour de rôle, pool ou répartiteur). Elle est refusée à une autre entité et pour un type sans entité de traitement. Les dossiers non pointés passent « Non reçu » et restent pointables.
+- `ReceptionContext` : entité réceptrice de l'utilisateur (agent d'accueil, ou agent de traitement dont l'entité réceptionne) et ses seuls états/dossiers. `receptionGuard` ouvre `accueil-central` à ce second cas, dont le menu se divise en « Réception » et « Traitement ».
 - Écrans : `etats-recus` (recherche, état conservé dans `EtatSearchState`), `etats-recus/:ref` (pointage), `suivi-statistiques`, `dossiers-retournes`. Leurs règles sont dans `domains/accueil/domain/reception.ts`.
 - Menu latéral : chaque entrée de `navigation.ts` porte le glyphe du prototype (`icon`), et non une icône SVG.
 - Détail d'un dossier côté agence : l'encart « motif du retour / documents attendus » vient de `returnNotice()` (`domains/agence/domain/suivi.ts`).
@@ -132,12 +143,12 @@ src/app/
 
 ## Parcours administration et marque blanche
 
-- Écrans : `logo-couleurs`, `routage` (type → entité, répartition interne), `journal-audit` ; « Agences & entités » et « Utilisateurs » restent sur le gabarit d'attente (non construits dans le prototype).
-- Routage : `RoutingStore` (clé `atrad_routing_v1`) remplace la configuration par défaut de `routing.ts` ; un changement ne s'applique qu'aux réceptions suivantes. Pool partagé : écran `traitement/pool`, `TransmissionStore.take()`.
+- Écrans : `logo-couleurs`, `routage` (circuit des types de dossier, répartition interne), `entites`, `types-etat` (et mode de saisie), `vocabulaire`, `journal-audit` ; « Utilisateurs » reste sur le gabarit d'attente.
+- Routage : le circuit de chaque type de dossier est dans le référentiel ; `RoutingStore` (clé `atrad_routing_v1`) ne garde que la répartition interne, par code d'entité. Un changement ne s'applique qu'aux réceptions suivantes. Pool partagé : écran `traitement/pool`, `TransmissionStore.take()`.
 - Marque blanche : `BrandService` (`core/services`, clé `atrad_brand_v1`) pose les variables `--brand-*` sur `<html>`, charge la police, remplace le favicon et fournit nom, organisation et logos. Ne jamais écrire « ATRAD » ou « YAYADOU » en dur dans un écran : lire `BrandService`.
 - Modèle, palettes et dérivation des couleurs : `core/branding/brand.ts` et `core/utils/color.util.ts`. L'aperçu de l'écran applique le brouillon sur le seul bloc `.brand-preview` (`styles.css`).
 - Mode sombre par défaut de la marque : suivi par `ThemeService` tant que l'utilisateur n'a pas choisi lui-même (`followBrandDefault`, `clearChoice`).
-- « Réinitialiser les données de démo » rétablit aussi le routage, la marque et le choix de thème.
+- « Réinitialiser les données de démo » (dialogue avec choix du jeu de données) efface aussi le référentiel, le routage, la marque et le choix de thème, puis recharge l'application.
 
 ## Profil de l'utilisateur
 

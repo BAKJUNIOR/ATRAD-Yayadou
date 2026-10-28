@@ -14,9 +14,31 @@
       </h2>
     </div>
     <p class="text-[13px] leading-[1.55] text-success">
-      L'état <strong>{{ etat.ref }}</strong> a été transmis à l'{{ etat.dest }}, qui le routera vers
-      : {{ entities() }}. Une notification a été envoyée à l'entité centrale.
+      {{ line() }} Entités de traitement prévues : {{ entities() }}.
     </p>
+    @if (etats().length > 1) {
+      <ul class="flex flex-col gap-1.5">
+        @for (sent of etats(); track sent.ref) {
+          <li
+            class="flex flex-wrap items-center justify-between gap-2.5 rounded-control border border-success-line bg-card px-3 py-2.5 text-[12.5px]"
+          >
+            <span class="flex min-w-0 flex-[1_1_220px] flex-col gap-0.5 leading-[1.4]">
+              <span class="font-mono font-semibold text-heading">{{ sent.ref }}</span>
+              <span class="text-ink-muted">
+                « {{ sent.etTypeNom }} » · {{ sent.dossiers.length }} dossier(s) → {{ sent.dest }}
+              </span>
+            </span>
+            <button
+              type="button"
+              class="btn-outline px-3 py-[7px] text-[12.5px]"
+              (click)="print.emit(sent.ref)"
+            >
+              Imprimer le bordereau
+            </button>
+          </li>
+        }
+      </ul>
+    }
 
     <dl
       class="flex flex-col gap-[7px] rounded-control border border-success-line bg-card px-3.5 py-3 text-[12.5px] text-ink"
@@ -41,7 +63,7 @@
       </div>
       <div class="flex items-baseline justify-between gap-3">
         <dt class="flex-none whitespace-nowrap text-ink-muted">Accusé de réception</dt>
-        <dd class="text-warning">En attente de l'Accueil</dd>
+        <dd class="text-warning">En attente de réception</dd>
       </div>
     </dl>
 
@@ -51,7 +73,7 @@
         <span
           class="rounded-full bg-soft px-[9px] py-0.5 text-[12px] font-semibold whitespace-nowrap text-ink-secondary"
         >
-          {{ etat.dossiers.length }} dossier(s)
+          {{ rows().length }} dossier(s)
         </span>
       </div>
       <div class="overflow-x-auto">
@@ -96,7 +118,7 @@
       <button
         type="button"
         class="inline-flex items-center gap-[7px] rounded-control border border-success-line bg-card px-[15px] py-2.5 text-[13.5px] font-medium text-success transition-colors hover:border-success hover:bg-success-bg"
-        (click)="print.emit()"
+        (click)="print.emit(etat.ref)"
       >
         <app-icon name="printer" [size]="15" [strokeWidth]="2" />
         Imprimer le bordereau

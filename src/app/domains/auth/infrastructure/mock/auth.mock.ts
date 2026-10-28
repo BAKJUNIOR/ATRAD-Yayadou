@@ -1,43 +1,45 @@
 import { Service } from '@angular/core';
+import { dataset } from '../../../dossiers/domain/dossier-catalog';
 import { Account } from '../../domain/entities/account.entity';
 
-export const DEMO_ACCOUNTS: readonly Account[] = [
-  {
-    role: 'agence',
-    ident: 'a.diallo',
-    name: 'Aminata Diallo',
-    roleLabel: "Agent d'agence — Agence Plateau",
-    entity: 'Agence Plateau (AG-014)',
-  },
-  {
-    role: 'accueil',
-    ident: 'm.kone',
-    name: 'Moussa Koné',
-    roleLabel: 'Agent Accueil — Entité centrale',
-    entity: 'Accueil central (EC-001)',
-  },
-  {
-    role: 'traitement',
-    ident: 'f.bamba',
-    name: 'Fatou Bamba',
-    roleLabel: 'Agent entité de traitement — Crédits',
-    entity: 'Entité Crédits (ET-007)',
-  },
-  {
-    role: 'manager',
-    ident: 's.traore',
-    name: 'Serge Traoré',
-    roleLabel: 'Responsable — Direction des opérations',
-    entity: 'Direction des opérations',
-  },
-  {
-    role: 'admin',
-    ident: 'admin',
-    name: 'Nadia Cissé',
-    roleLabel: 'Administrateur — Système',
-    entity: 'Administration',
-  },
-];
+/**
+ * Comptes de démonstration, rattachés aux entités du jeu de données actif. Le profil Pilotage
+ * n'est plus proposé à la connexion (prototype du 24/10) ; ses écrans restent en place.
+ */
+export function demoAccounts(): Account[] {
+  const { agence, accueil, traitement } = dataset().accounts;
+  const nameOf = (label: string): string => label.replace(/ \([^)]+\)$/, '');
+  return [
+    {
+      role: 'agence',
+      ident: 'a.diallo',
+      name: 'Aminata Diallo',
+      roleLabel: `Entité émettrice — ${nameOf(agence)}`,
+      entity: agence,
+    },
+    {
+      role: 'accueil',
+      ident: 'm.kone',
+      name: 'Moussa Koné',
+      roleLabel: `Entité réceptrice — ${nameOf(accueil)}`,
+      entity: accueil,
+    },
+    {
+      role: 'traitement',
+      ident: 'f.bamba',
+      name: 'Fatou Bamba',
+      roleLabel: 'Entité de traitement',
+      entity: traitement,
+    },
+    {
+      role: 'admin',
+      ident: 'admin',
+      name: 'Nadia Cissé',
+      roleLabel: 'Administrateur — Système',
+      entity: 'Administration',
+    },
+  ];
+}
 
 export type AuthResult = { ok: true; account: Account } | { ok: false; error: string };
 
@@ -49,7 +51,7 @@ export type AuthResult = { ok: true; account: Account } | { ok: false; error: st
 @Service()
 export class AuthMock {
   authenticate(ident: string, password: string): AuthResult {
-    const account = DEMO_ACCOUNTS.find(
+    const account = demoAccounts().find(
       (candidate) => candidate.ident === ident.trim().toLowerCase(),
     );
     if (!account) {

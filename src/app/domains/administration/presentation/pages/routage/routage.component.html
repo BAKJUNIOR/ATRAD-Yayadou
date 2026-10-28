@@ -27,7 +27,15 @@
       [attr.aria-selected]="tab() === 'map'"
       (click)="pickTab('map')"
     >
-      Type de dossier → Entité de traitement
+      Circuit des types
+      @if (missing().length) {
+        <span
+          class="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-danger-solid px-[5px] text-[11px] font-semibold text-white"
+          title="Champs à corriger"
+        >
+          {{ missing().length }}
+        </span>
+      }
     </button>
     <button
       type="button"
@@ -47,27 +55,125 @@
 
   @if (tab() === 'map') {
     <section class="panel overflow-hidden" aria-labelledby="map-title">
-      <header class="flex flex-col gap-[3px] border-b border-line px-5 py-4">
-        <h2 id="map-title" class="text-[14.5px] font-semibold tracking-[-0.01em] text-ink">
-          Type de dossier → Entité de traitement
-        </h2>
-        <span class="text-[12.5px] text-ink-muted">
-          Un type de dossier est rattaché à une seule entité. Modifiez une ligne à la fois : chaque
-          enregistrement ne concerne que la ligne modifiée.
-        </span>
+      <header
+        class="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4"
+      >
+        <div class="flex min-w-0 flex-[1_1_260px] flex-col gap-[3px]">
+          <h2 id="map-title" class="text-[14.5px] font-semibold tracking-[-0.01em] text-ink">
+            Circuit des types de dossier
+          </h2>
+          <span class="text-[12.5px] text-ink-muted">
+            Une ligne par type de dossier : un seul type d'état et une seule entité de traitement.
+            L'écran « Types d'état » se met à jour automatiquement.
+          </span>
+        </div>
+        <button
+          type="button"
+          class="btn-primary gap-[7px] px-3.5 py-2 text-[13px] disabled:opacity-50"
+          [disabled]="busy()"
+          [attr.title]="busy() ? lockTip : 'Ajouter un type de dossier'"
+          (click)="startNewType()"
+        >
+          <app-icon name="plus" [size]="14" [strokeWidth]="2.4" />
+          Ajouter un type de dossier
+        </button>
       </header>
-      <table class="grid-table text-[13.5px]">
+
+      @if (missing().length) {
+        <p
+          role="status"
+          class="mx-5 mt-3 rounded-brand border border-warning-line bg-warning-bg px-3.5 py-2.5 text-[12.5px] leading-normal text-warning"
+        >
+          ⚠ {{ missing().length }} type(s) de dossier incomplet(s) (sans type d'état ou sans entité
+          de traitement) : {{ missing().join(', ') }}.
+        </p>
+      }
+
+      @if (newType(); as draft) {
+        <div
+          class="animate-enter mx-5 mt-3 flex flex-col gap-3 rounded-brand border border-brand p-3.5 ring-3 ring-brand/16"
+        >
+          <div class="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3">
+            <label class="form-label flex min-w-0 flex-col gap-[5px]">
+              Nom du type de dossier *
+              <input
+                type="text"
+                class="form-control px-2.5 py-2 text-[13px]"
+                placeholder="Ex. CARTE BANCAIRE"
+                [value]="draft.nom"
+                (input)="onNewTypeName($event)"
+              />
+            </label>
+            <label class="form-label flex min-w-0 flex-col gap-[5px]">
+              <span>
+                Type d'état
+                <span class="font-normal text-ink-muted">(facultatif : sinon « À rattacher »)</span>
+              </span>
+              <select
+                class="form-control px-2.5 py-2 text-[13px]"
+                (change)="onNewTypeEtatType($event)"
+              >
+                @for (option of etatTypeOptions(); track option.value) {
+                  <option [value]="option.value" [selected]="option.value === draft.et">
+                    {{ option.label }}
+                  </option>
+                }
+              </select>
+            </label>
+            <label class="form-label flex min-w-0 flex-col gap-[5px]">
+              Entité de traitement *
+              <select
+                class="form-control px-2.5 py-2 text-[13px]"
+                (change)="onNewTypeTrait($event)"
+              >
+                @for (option of traitOptions(); track option.value) {
+                  <option [value]="option.value" [selected]="option.value === draft.trait">
+                    {{ option.label }}
+                  </option>
+                }
+              </select>
+            </label>
+          </div>
+          @if (newTypeError()) {
+            <span role="alert" class="text-[12px] font-medium text-danger">
+              ⚠ {{ newTypeError() }}
+            </span>
+          }
+          <div class="flex justify-end gap-2">
+            <button
+              type="button"
+              class="rounded-control px-3 py-[7px] text-[12.5px] whitespace-nowrap text-ink-muted hover:bg-soft hover:text-ink"
+              (click)="newType.set(null)"
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              class="btn-primary px-3.5 py-[7px] text-[12.5px]"
+              [disabled]="!!newTypeError()"
+              [attr.title]="newTypeError() || null"
+              (click)="saveNewType()"
+            >
+              Ajouter
+            </button>
+          </div>
+        </div>
+      }
+
+      <table class="grid-table mt-3 text-[13px]">
         <thead>
-          <tr class="map-grid grid-head py-2.5">
+          <tr class="circuit-grid grid-head border-t border-line py-2.5">
             <th scope="col">Type de dossier</th>
+            <th scope="col">Type d'état</th>
             <th scope="col">Entité de traitement</th>
-            <th scope="col" class="text-end!">Action</th>
+            <th scope="col" class="min-w-[72px] text-end!">Actions</th>
           </tr>
         </thead>
         <tbody>
           @for (row of typeRows(); track row.type) {
+            @let edit = mapEdit();
             <tr
-              class="map-grid items-center border-b border-soft px-5 py-3 last:border-b-0"
+              class="circuit-grid items-center border-b border-soft px-5 py-[11px] last:border-b-0"
               [class]="
                 row.editing
                   ? 'bg-brand-tint-soft ring-1 ring-brand ring-inset'
@@ -76,40 +182,66 @@
                     : ''
               "
             >
-              <td class="font-medium text-ink">{{ row.type }}</td>
-              <td>
-                @if (row.editing) {
-                  <div class="flex min-w-0 flex-col gap-[5px]">
-                    <select
-                      class="w-full min-w-0 rounded-control border border-brand bg-card px-[11px] py-[9px] text-[13px] text-ink ring-3 ring-brand/16 outline-none"
-                      [attr.aria-label]="'Entité de traitement pour ' + row.type"
-                      (change)="onMapValue($event)"
-                    >
-                      @for (entite of entites; track entite.name) {
-                        <option [value]="entite.name" [selected]="entite.name === mapEdit()?.value">
-                          {{ entite.name }}
-                        </option>
-                      }
-                    </select>
-                    @if (row.changed) {
-                      <span class="text-[12px] text-ink-muted">Actuellement : {{ row.value }}</span>
-                    }
-                    @if (row.error) {
-                      <span class="text-[12px] font-medium text-danger" role="alert">
-                        {{ row.error }}
-                      </span>
-                    }
-                  </div>
-                } @else {
-                  <span
-                    class="inline-flex max-w-full items-center gap-[7px] truncate rounded-full bg-soft px-2.5 py-1 text-[13px] whitespace-nowrap text-ink"
-                  >
-                    <span class="size-[7px] flex-none rounded-full bg-brand"></span>
-                    {{ row.value }}
-                  </span>
+              <td class="flex min-w-0 flex-wrap items-center gap-1.5">
+                <span class="min-w-0 font-medium break-words text-ink">{{ row.type }}</span>
+                @if (row.check) {
+                  <span class="tag-warning">À vérifier</span>
+                }
+                @if (row.toAttach) {
+                  <span class="tag-warning">À rattacher</span>
                 }
               </td>
-              <td class="flex flex-wrap justify-end gap-1.5">
+              @if (row.editing && edit) {
+                <td>
+                  <select
+                    class="form-control border-brand px-2.5 py-2 text-[13px]"
+                    [attr.aria-label]="'Type d\'état pour ' + row.type"
+                    (change)="onMapEtatType($event)"
+                  >
+                    @for (option of etatTypeOptions(); track option.value) {
+                      <option [value]="option.value" [selected]="option.value === edit.et">
+                        {{ option.label }}
+                      </option>
+                    }
+                  </select>
+                </td>
+                <td class="flex min-w-0 flex-col gap-[5px]">
+                  <select
+                    class="form-control px-2.5 py-2 text-[13px]"
+                    [attr.aria-label]="'Entité de traitement pour ' + row.type"
+                    (change)="onMapTrait($event)"
+                  >
+                    @for (option of traitOptions(); track option.value) {
+                      <option [value]="option.value" [selected]="option.value === edit.trait">
+                        {{ option.label }}
+                      </option>
+                    }
+                  </select>
+                  @if (row.error) {
+                    <span class="text-[12px] font-medium text-danger" role="alert">
+                      {{ row.error }}
+                    </span>
+                  }
+                </td>
+              } @else {
+                <td class="flex min-w-0 flex-col gap-0.5">
+                  <span
+                    [class]="row.toAttach ? 'font-semibold text-warning' : 'font-medium text-ink'"
+                  >
+                    {{ row.etLabel }}
+                  </span>
+                  @if (row.etSub) {
+                    <span class="text-[11.5px] text-ink-muted">{{ row.etSub }}</span>
+                  }
+                </td>
+                <td
+                  class="min-w-0"
+                  [class]="row.hasTrait ? 'text-ink' : 'font-semibold text-warning'"
+                >
+                  {{ row.traitLabel }}
+                </td>
+              }
+              <td class="flex min-w-[72px] justify-end gap-1.5">
                 @if (row.editing) {
                   <button
                     type="button"
@@ -132,17 +264,23 @@
                 } @else {
                   <button
                     type="button"
-                    class="btn-outline gap-1.5 px-3 py-[7px] text-[12.5px] font-medium disabled:opacity-45"
+                    class="icon-button size-8 disabled:opacity-45"
                     [disabled]="row.locked"
-                    [attr.title]="
-                      row.locked
-                        ? 'Terminez d\'abord la modification en cours (Enregistrer ou Annuler).'
-                        : 'Modifier'
-                    "
+                    [attr.title]="row.editTip"
+                    [attr.aria-label]="row.editTip"
                     (click)="startMapEdit(row.type)"
                   >
-                    <app-icon name="pencil" class="text-info" [size]="13" [strokeWidth]="2" />
-                    Modifier
+                    <app-icon name="pencil" class="text-info" [size]="14" [strokeWidth]="2" />
+                  </button>
+                  <button
+                    type="button"
+                    class="icon-button size-8 disabled:opacity-40"
+                    [disabled]="row.deleteBlocked"
+                    [attr.title]="row.deleteTip"
+                    [attr.aria-label]="row.deleteTip"
+                    (click)="deleteType(row.type)"
+                  >
+                    <app-icon name="trash" class="text-danger" [size]="14" [strokeWidth]="2" />
                   </button>
                 }
               </td>

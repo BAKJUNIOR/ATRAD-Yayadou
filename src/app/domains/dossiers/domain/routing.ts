@@ -1,40 +1,52 @@
-import { DossierType, Priorite } from './dossier-catalog';
+import { DossierType, Priorite, dataset } from './dossier-catalog';
+import {
+  entityCode,
+  labelOf,
+  normalizeEntity,
+  shortName,
+  traitEntites,
+  traitLabelOf,
+} from './referentiel';
 
 export interface EntiteTraitement {
+  /** Libellé complet : `Service Crédits (ET-007)`. */
   name: string;
   short: string;
 }
 
-export const ENTITES: readonly EntiteTraitement[] = [
-  { name: 'Entité Crédits (ET-007)', short: 'Crédits' },
-  { name: 'Entité Monétique (ET-012)', short: 'Monétique' },
-  { name: 'Service Réclamations (ET-020)', short: 'Réclamations' },
-  { name: 'Entité Conformité (ET-031)', short: 'Conformité' },
-];
+// Entités de traitement du référentiel, mises à jour sur place par `syncEntites()` pour que
+// leurs lecteurs gardent la même référence.
+const entitesTraitement: EntiteTraitement[] = [];
 
-/**
- * Routage par défaut d'un type de dossier vers son entité de traitement.
- * Deviendra paramétrable par l'administrateur (écran « Routage & affectation »).
- */
-const DEFAULT_MAPPING: Record<DossierType, string> = {
-  'Ouverture de compte': 'Entité Crédits (ET-007)',
-  'Demande de prêt': 'Entité Crédits (ET-007)',
-  Réclamation: 'Service Réclamations (ET-020)',
-  'Mise à jour KYC': 'Entité Conformité (ET-031)',
-  'Clôture de compte': 'Entité Crédits (ET-007)',
-};
+export const ENTITES: readonly EntiteTraitement[] = entitesTraitement;
 
+/** Recalcule la liste des entités de traitement après un changement du référentiel. */
+export function syncEntites(): void {
+  entitesTraitement.splice(
+    0,
+    entitesTraitement.length,
+    ...traitEntites().map((entite) => ({ name: labelOf(entite), short: shortName(entite.nom) })),
+  );
+}
+
+syncEntites();
+
+/** Entité de traitement prévue pour un type de dossier (circuit de l'administrateur). */
 export function entityOf(type: DossierType): string {
-  return current.map[type] ?? '';
+  return traitLabelOf(type);
 }
 
 /** Entité effective d'un dossier : celle du routage réel s'il a eu lieu, sinon celle prévue. */
 export function entityOfDossier(dossier: { type: DossierType; entite?: string }): string {
-  return dossier.entite || entityOf(dossier.type) || '—';
+  return normalizeEntity(dossier.entite ?? '') || entityOf(dossier.type) || '—';
 }
 
 export function shortEntity(name: string): string {
-  return ENTITES.find((entite) => entite.name === name)?.short ?? name;
+  const label = normalizeEntity(name);
+  return (
+    ENTITES.find((entite) => entite.name === label)?.short ??
+    shortName(label.replace(/ \([^)]*\)$/, ''))
+  );
 }
 
 /** `Crédits (2), Réclamations (1)` */
@@ -87,35 +99,17 @@ export interface EntitySettings {
   searchers: string[];
 }
 
-/**
- * Paramétrage par défaut des entités (mode de répartition, équipe et droits).
- */
-const DEFAULT_ENTITY_SETTINGS: Record<string, EntitySettings> = {
-  'Entité Crédits (ET-007)': {
-    mode: 'disp',
-    team: ['Fatou Bamba', 'Éric Tanoh', 'Clarisse Yao'],
-    dispatchers: ['Éric Tanoh'],
-    searchers: ['Fatou Bamba', 'Éric Tanoh'],
-  },
-  'Entité Monétique (ET-012)': {
-    mode: 'auto',
-    team: ['Éric Tanoh'],
-    dispatchers: [],
-    searchers: [],
-  },
-  'Service Réclamations (ET-020)': {
-    mode: 'auto',
-    team: ['Fatou Bamba', 'Ismaël Ouédraogo'],
-    dispatchers: [],
-    searchers: [],
-  },
-  'Entité Conformité (ET-031)': {
-    mode: 'auto',
-    team: ['Clarisse Yao', 'Ismaël Ouédraogo'],
-    dispatchers: [],
-    searchers: ['Clarisse Yao'],
-  },
-};
+/** Réglages par défaut d'une entité de traitement, selon le jeu de données (par code). */
+function defaultSettings(code: string): EntitySettings {
+  const { modes, teams, dispatchers, searchers } = dataset().teams;
+  const team = [...(teams[code] ?? [])];
+  return {
+    mode: modes[code] ?? 'auto',
+    team,
+    dispatchers: team.filter((user) => dispatchers[code]?.includes(user)),
+    searchers: team.filter((user) => searchers[code]?.includes(user)),
+  };
+}
 
 /** Gestionnaires pouvant être rattachés à une entité. */
 export const ALL_GESTIONNAIRES: readonly string[] = [
@@ -125,14 +119,17 @@ export const ALL_GESTIONNAIRES: readonly string[] = [
   'Ismaël Ouédraogo',
 ];
 
-/** Paramétrage du routage : entité de chaque type de dossier, et réglages de chaque entité. */
+/** Répartition interne de chaque entité de traitement, par code d'entité. */
 export interface RoutingConfig {
-  map: Record<DossierType, string>;
   ent: Record<string, EntitySettings>;
 }
 
 export function defaultRouting(): RoutingConfig {
-  return structuredClone({ map: DEFAULT_MAPPING, ent: DEFAULT_ENTITY_SETTINGS });
+  return {
+    ent: Object.fromEntries(
+      traitEntites().map((entite) => [entite.code, defaultSettings(entite.code)]),
+    ),
+  };
 }
 
 // Paramétrage en vigueur. `RoutingStore` le remplace par celui de l'administrateur ; les
@@ -143,8 +140,13 @@ export function setRoutingConfig(config: RoutingConfig): void {
   current = config;
 }
 
+/** Réglages d'une entité désignée par son libellé ou son code ; ceux du jeu à défaut. */
 export function entitySettings(entite: string): EntitySettings | undefined {
-  return current.ent[entite];
+  const code = entityCode(entite);
+  if (!traitEntites().some((candidate) => candidate.code === code)) {
+    return undefined;
+  }
+  return current.ent[code] ?? defaultSettings(code);
 }
 
 /** Droits d'un membre, tels qu'affichés à l'administrateur : `Traiter · Affecter`. */
@@ -173,7 +175,7 @@ export interface MemberFunctions {
 export type MemberFunction = keyof MemberFunctions;
 
 export function functionsOf(user: string, entite: string): MemberFunctions {
-  const settings = current.ent[entite];
+  const settings = entitySettings(entite);
   if (!settings?.team.includes(user)) {
     return { traiter: false, pool: false, affecter: false, rechercher: false };
   }
@@ -188,7 +190,7 @@ export function functionsOf(user: string, entite: string): MemberFunctions {
 /** Délai de traitement, en jours, selon la priorité du dossier. */
 export const DELAI_PRIORITE: Record<Priorite, number> = { Urgente: 1, Haute: 3, Normale: 5 };
 
-/** `Entité Crédits (ET-007)` → `Crédits` (retire aussi le préfixe des entités hors référentiel). */
+/** `Service Crédits (ET-007)` → `Crédits` (retire aussi le préfixe des entités hors référentiel). */
 export function bareEntity(name: string): string {
-  return (name || '—').replace(/^(Entité|Service) /, '').replace(/ \(.*\)$/, '');
+  return shortName((name || '—').replace(/ \(.*\)$/, ''));
 }

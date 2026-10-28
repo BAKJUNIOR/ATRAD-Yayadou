@@ -1,6 +1,13 @@
 import { Service, inject, signal } from '@angular/core';
 import { StorageService } from '../../../../core/services/storage.service';
-import { RoutingConfig, defaultRouting, setRoutingConfig } from '../../domain/routing';
+import { entityCode } from '../../domain/referentiel';
+import {
+  EntitySettings,
+  RoutingConfig,
+  defaultRouting,
+  setRoutingConfig,
+} from '../../domain/routing';
+import { ReferentielStore } from './referentiel.store';
 
 const ROUTING_KEY = 'atrad_routing_v1';
 
@@ -11,6 +18,8 @@ const ROUTING_KEY = 'atrad_routing_v1';
 @Service()
 export class RoutingStore {
   private readonly storage = inject(StorageService);
+  // Le référentiel (jeu de données, entités) doit être en place avant les réglages par défaut.
+  private readonly referentiel = inject(ReferentielStore);
 
   private readonly current = signal<RoutingConfig>(this.load());
 
@@ -34,13 +43,17 @@ export class RoutingStore {
     this.current.set(defaults);
   }
 
-  /** Paramétrage enregistré, complété par les valeurs par défaut pour ce qui manquerait. */
+  /**
+   * Paramétrage enregistré, complété par les valeurs par défaut pour ce qui manquerait. Les
+   * réglages enregistrés par libellé d'entité (avant les codes) sont repris sous leur code.
+   */
   private load(): RoutingConfig {
     const defaults = defaultRouting();
     const stored = this.storage.get<Partial<RoutingConfig>>(ROUTING_KEY);
-    return {
-      map: { ...defaults.map, ...(stored?.map ?? {}) },
-      ent: { ...defaults.ent, ...(stored?.ent ?? {}) },
-    };
+    const ent: Record<string, EntitySettings> = {};
+    for (const [key, settings] of Object.entries(stored?.ent ?? {})) {
+      ent[entityCode(key)] = settings;
+    }
+    return { ent: { ...defaults.ent, ...ent } };
   }
 }

@@ -1,6 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { Account } from '../../../auth/domain/entities/account.entity';
+import { DATASET_KEY } from '../../domain/datasets';
 import { DossierData } from '../../domain/entities/dossier.entity';
+import { Etat } from '../../domain/entities/etat.entity';
+import { ReferentielStore } from './referentiel.store';
 import { TransmissionStore } from './transmission.store';
 
 const AGENT: Account = {
@@ -30,14 +33,26 @@ function dossier(type: DossierData['type']): DossierData {
 
 describe('TransmissionStore', () => {
   let store: TransmissionStore;
+  let referentiel: ReferentielStore;
 
   beforeEach(() => {
     localStorage.clear();
+    localStorage.setItem(DATASET_KEY, 'neutre');
+    referentiel = TestBed.inject(ReferentielStore);
     store = TestBed.inject(TransmissionStore);
   });
 
+  /** Transmet le brouillon et renvoie le premier état produit. */
+  function send(etatTypeId = 'TE-01'): Etat {
+    const sent = store.transmit(AGENT, etatTypeId);
+    if (!sent.ok) {
+      throw new Error(sent.error);
+    }
+    return sent.etats[0];
+  }
+
   it('refuses to transmit an empty state', () => {
-    expect(store.transmit(AGENT).ok).toBe(false);
+    expect(store.transmit(AGENT, 'TE-01').ok).toBe(false);
   });
 
   it('numbers dossiers and dates the draft from its first dossier', () => {
@@ -51,43 +66,116 @@ describe('TransmissionStore', () => {
     expect(store.draftCreatedAt()).toBe('');
   });
 
-  it('routes received dossiers and keeps the others as not received', () => {
+  it('sends the draft to the receiving entity of the chosen state type', () => {
+    store.addDossier(dossier('Demande de prêt'));
+    store.addDossier(dossier('Ouverture de compte'));
+    const expectedRef = store.draftRef();
+
+    const etat = send('TE-01');
+
+    expect(etat.ref).toBe(expectedRef);
+    expect(etat.agence).toBe('Agence Plateau');
+    expect(etat.code).toBe('AG-014');
+    expect(etat.type).toBe('Mixte (2 types)');
+    expect(etat.etType).toBe('TE-01');
+    expect(etat.recep).toBe('EC-001');
+    expect(etat.dest).toBe('Accueil central (EC-001)');
+    expect(etat.dossiers.every((d) => d.status === 'Transmis')).toBe(true);
+    expect(store.draft()).toEqual([]);
+    expect(store.draftRef()).not.toBe(expectedRef);
+  });
+
+  it('blocks a dossier that the chosen state type does not accept', () => {
+    store.addDossier(dossier('Réclamation'));
+    const result = store.transmit(AGENT, 'TE-01');
+    expect(result.ok).toBe(false);
+    expect(store.draft()).toHaveLength(1);
+  });
+
+  it('produces one state per state type in automatic mode', () => {
+    referentiel.save({ saisieMode: 'auto' });
     store.addDossier(dossier('Réclamation'));
     store.addDossier(dossier('Demande de prêt'));
-    const sent = store.transmit(AGENT);
-    if (!sent.ok) {
-      throw new Error(sent.error);
-    }
-    const [reclamation, pret] = sent.etat.dossiers;
 
-    const result = store.receive(sent.etat.ref, [reclamation.ref], 'Moussa Koné');
+    const sent = store.transmit(AGENT, '');
 
-    expect(result).toEqual({ received: 1, missing: 1, routing: 'Réclamations (1)' });
-    const etat = store.etats()[0];
-    expect(etat.status).toBe('Reçu partiellement');
-    expect(etat.dossiers.find((d) => d.ref === pret.ref)?.nonRec?.by).toBe('Moussa Koné');
-    // Le Service Réclamations répartit automatiquement : le dossier a déjà un gestionnaire.
+    expect(sent.ok && sent.etats.map((etat) => [etat.etType, etat.recep])).toEqual([
+      ['TE-02', 'ET-020'],
+      ['TE-01', 'EC-001'],
+    ]);
+  });
+
+  it('dispatches received dossiers and keeps the others as not received', () => {
+    store.addDossier(dossier('Demande de prêt'));
+    store.addDossier(dossier('Ouverture de compte'));
+    const etat = send();
+    const [pret, ouverture] = etat.dossiers;
+
+    const result = store.receive(etat.ref, [pret.ref], 'Moussa Koné', 'EC-001');
+
+    expect(result).toEqual({
+      ok: true,
+      received: 1,
+      missing: 1,
+      routing: 'Crédits (1)',
+      allDirect: false,
+    });
+    expect(store.etats()[0].status).toBe('Reçu partiellement');
+    expect(store.etats()[0].dossiers.find((d) => d.ref === ouverture.ref)?.nonRec?.by).toBe(
+      'Moussa Koné',
+    );
+    // Le Service Crédits passe par un répartiteur : le dossier attend dans le bac.
+    const credit = store.dossiers()[0];
+    expect(credit.entite).toBe('Service Crédits (ET-007)');
+    expect(credit.direct).toBe(false);
+    expect(credit.gest).toBe('');
+    expect(credit.status).toBe('Reçu');
+
+    store.receive(etat.ref, [ouverture.ref], 'Moussa Koné', 'EC-001');
+    expect(store.etats()[0].status).toBe('Reçu');
+  });
+
+  it('lets a receiving entity that also processes take its dossiers in charge directly', () => {
+    store.addDossier(dossier('Réclamation'));
+    const etat = send('TE-02');
+
+    const result = store.receive(etat.ref, [etat.dossiers[0].ref], 'Fatou Bamba', 'ET-020');
+
+    expect(result.ok && result.allDirect).toBe(true);
     const routed = store.dossiers()[0];
     expect(routed.entite).toBe('Service Réclamations (ET-020)');
+    expect(routed.affectedBy).toBe('Réception directe');
+    // Répartition automatique du Service Réclamations : un gestionnaire est déjà désigné.
     expect(routed.gest).toBe('Fatou Bamba');
     expect(routed.status).toBe('En cours');
+  });
 
-    // Second pointage : le dossier restant part dans le bac de répartition des Crédits.
-    store.receive(sent.etat.ref, [pret.ref], 'Moussa Koné');
-    expect(store.etats()[0].status).toBe('Reçu');
-    const credit = store.dossiers().find((d) => d.ref === pret.ref);
-    expect(credit?.entite).toBe('Entité Crédits (ET-007)');
-    expect(credit?.gest).toBe('');
-    expect(credit?.status).toBe('Reçu');
+  it('refuses a reception by another entity than the receiving one', () => {
+    store.addDossier(dossier('Demande de prêt'));
+    const etat = send();
+    const result = store.receive(etat.ref, [etat.dossiers[0].ref], 'Fatou Bamba', 'ET-020');
+    expect(result.ok).toBe(false);
+    expect(store.dossiers()).toEqual([]);
+  });
+
+  it('blocks the reception of a dossier type without processing entity', () => {
+    store.addDossier(dossier('Demande de prêt'));
+    const etat = send();
+    const circuits = referentiel.value().circuits;
+    referentiel.save({
+      circuits: { ...circuits, 'Demande de prêt': { et: 'TE-01', trait: '', check: false } },
+    });
+
+    const result = store.receive(etat.ref, [etat.dossiers[0].ref], 'Moussa Koné', 'EC-001');
+
+    expect(result.ok).toBe(false);
+    expect(store.etats()[0].status).toBe('Transmis');
   });
 
   it('applies processing actions only where the circuit allows them', () => {
     store.addDossier(dossier('Demande de prêt'));
-    const sent = store.transmit(AGENT);
-    if (!sent.ok) {
-      throw new Error(sent.error);
-    }
-    store.receive(sent.etat.ref, [sent.etat.dossiers[0].ref], 'Moussa Koné');
+    const etat = send();
+    store.receive(etat.ref, [etat.dossiers[0].ref], 'Moussa Koné', 'EC-001');
     const id = store.dossiers()[0].id;
 
     // Clôturer avant validation est refusé par le circuit.
@@ -105,33 +193,14 @@ describe('TransmissionStore', () => {
     expect(returned.complements).toBe('Relevés bancaires');
     // Un dossier retourné n'accepte plus d'action de l'entité…
     expect(store.applyAction(id, { kind: 'valider' }, 'Fatou').ok).toBe(false);
-    // …et c'est l'Accueil qui le renvoie à l'agence.
+    // …et c'est l'entité réceptrice qui le renvoie à l'entité émettrice.
     expect(store.renvoyer([id], 'Moussa Koné')).toHaveLength(1);
     expect(store.dossiers()[0].status).toBe('Retourné en agence');
   });
 
   it('ignores a reception with no dossier checked', () => {
-    store.addDossier(dossier('Réclamation'));
-    const sent = store.transmit(AGENT);
-    expect(sent.ok && store.receive(sent.etat.ref, [], 'Moussa Koné')).toBeNull();
-  });
-
-  it('transmits the draft as a new state and empties it', () => {
-    store.addDossier(dossier('Réclamation'));
     store.addDossier(dossier('Demande de prêt'));
-    const expectedRef = store.draftRef();
-
-    const result = store.transmit(AGENT);
-
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.etat.ref).toBe(expectedRef);
-      expect(result.etat.agence).toBe('Agence Plateau');
-      expect(result.etat.code).toBe('AG-014');
-      expect(result.etat.type).toBe('Mixte (2 types)');
-      expect(result.etat.dossiers.every((d) => d.status === 'Transmis')).toBe(true);
-    }
-    expect(store.draft()).toEqual([]);
-    expect(store.draftRef()).not.toBe(expectedRef);
+    const etat = send();
+    expect(store.receive(etat.ref, [], 'Moussa Koné', 'EC-001').ok).toBe(false);
   });
 });

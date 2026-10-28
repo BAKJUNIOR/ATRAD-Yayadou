@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard } from './core/guards/auth.guard';
 import { roleGuard } from './core/guards/role.guard';
+import { receptionGuard } from './domains/accueil/presentation/reception.guard';
 
 // `title` ne porte que le nom de l'écran : PageTitleStrategy ajoute le nom de l'application.
 export const routes: Routes = [
@@ -36,7 +37,7 @@ export const routes: Routes = [
       },
       {
         path: 'accueil-central',
-        canActivate: [roleGuard('accueil')],
+        canActivate: [roleGuard('accueil', 'traitement'), receptionGuard],
         loadChildren: () =>
           import('./domains/accueil/presentation/accueil.routes').then((m) => m.ACCUEIL_ROUTES),
       },

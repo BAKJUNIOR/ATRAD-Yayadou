@@ -1,15 +1,18 @@
 import { Component, computed, inject } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
-import { NAVIGATION } from '../../../../../core/navigation/navigation';
+import { Router } from '@angular/router';
+import { NAVIGATION, ROLE_CAPABILITY } from '../../../../../core/navigation/navigation';
 import { SessionService } from '../../../../../core/services/session.service';
+import { ToastService } from '../../../../../core/services/toast.service';
 import { formatDate, formatStamp, isoDateToFr } from '../../../../../core/utils/date.util';
 import { entityCode } from '../../../../../core/utils/text.util';
 import { IconComponent, IconName } from '../../../../../shared/ui/icon/icon.component';
 import { StatCardComponent } from '../../../../../shared/ui/stat-card/stat-card.component';
 import { StatusBadgeComponent } from '../../../../../shared/ui/status-badge/status-badge.component';
 import { pendingEtats, remainingCount } from '../../../../accueil/domain/reception';
+import { ReceptionContext } from '../../../../accueil/presentation/reception-context.service';
+import { hasCapability } from '../../../../dossiers/domain/referentiel';
 import { Account, Role } from '../../../../auth/domain/entities/account.entity';
-import { DEMO_ACCOUNTS } from '../../../../auth/infrastructure/mock/auth.mock';
+import { demoAccounts } from '../../../../auth/infrastructure/mock/auth.mock';
 import { Etat } from '../../../../dossiers/domain/entities/etat.entity';
 import { isLocked } from '../../../../dossiers/domain/workflow';
 import { TransmissionStore } from '../../../../dossiers/infrastructure/store/transmission.store';
@@ -20,14 +23,16 @@ import { Dashboard, DashboardAction } from '../../../domain/entities/dashboard.e
 import { DASHBOARD_MOCK } from '../../../infrastructure/mock/dashboard.mock';
 
 const LIFECYCLE = [
-  { title: 'Agence', description: "Crée les dossiers et constitue l'état de transmission." },
   {
-    title: 'Accueil / entité centrale',
+    title: 'Entité émettrice',
+    description: "Crée les dossiers et constitue l'état de transmission (agence, service…).",
+  },
+  {
+    title: 'Entité réceptrice',
     description:
-      'Confirme la réception ; chaque dossier est routé automatiquement vers son entité.',
+      'Confirme la réception ; chaque dossier est dispatché vers son entité de traitement, ou pris en charge directement si elle le traite.',
   },
   { title: 'Entité de traitement', description: 'Instruit, valide puis clôture le dossier.' },
-  { title: 'Pilotage', description: 'Suit les KPI, les délais et la charge par entité.' },
 ];
 
 const PRIMARY_ICON: Record<Role, IconName> = {
@@ -39,8 +44,8 @@ const PRIMARY_ICON: Record<Role, IconName> = {
 };
 
 const ROLE_SHORT: Record<Role, string> = {
-  agence: 'Agence',
-  accueil: 'Accueil',
+  agence: 'Émettrice',
+  accueil: 'Réceptrice',
   traitement: 'Traitement',
   manager: 'Pilotage',
   admin: 'Admin',
@@ -49,7 +54,7 @@ const ROLE_SHORT: Record<Role, string> = {
 /** Accueil commun à tous les profils : son contenu dépend du rôle connecté. */
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, IconComponent, StatCardComponent, StatusBadgeComponent],
+  imports: [IconComponent, StatCardComponent, StatusBadgeComponent],
   templateUrl: './home.component.html',
 })
 export class HomeComponent {
@@ -57,9 +62,11 @@ export class HomeComponent {
   private readonly store = inject(TransmissionStore);
   private readonly router = inject(Router);
   private readonly traitement = inject(TraitementContext);
+  private readonly reception = inject(ReceptionContext);
+  private readonly toast = inject(ToastService);
 
   protected readonly lifecycle = LIFECYCLE;
-  protected readonly demoAccounts = DEMO_ACCOUNTS;
+  protected readonly demoAccounts = demoAccounts();
   protected readonly roleShort = ROLE_SHORT;
   protected readonly role = this.session.role;
 
@@ -93,6 +100,20 @@ export class HomeComponent {
     const role = this.session.role();
     return role ? PRIMARY_ICON[role] : 'plus';
   });
+
+  /** Écran principal du profil, refusé si l'entité n'a pas la capacité correspondante. */
+  protected openPrimary(): void {
+    const account = this.session.account();
+    const capability = account ? ROLE_CAPABILITY[account.role] : undefined;
+    const entity = account?.role === 'traitement' ? this.traitement.entite() : account?.entity;
+    if (capability && !hasCapability(entity ?? '', capability)) {
+      this.toast.warning(
+        "Votre entité n'a pas la capacité requise (Administration › Paramétrage › Entités).",
+      );
+      return;
+    }
+    void this.router.navigateByUrl(this.primaryPath());
+  }
 
   protected runAction(actions: DashboardAction[], event: Event): void {
     const select = event.target as HTMLSelectElement;
@@ -132,7 +153,7 @@ export class HomeComponent {
         {
           label: 'En attente de réception',
           value: String(etats.filter((etat) => !etat.receivedAt).length),
-          hint: "non confirmés par l'Accueil",
+          hint: "non confirmés par l'entité réceptrice",
           tone: 'danger',
         },
         {
@@ -155,8 +176,8 @@ export class HomeComponent {
   }
 
   private accueilDashboard(): Partial<Dashboard> {
-    const etats = this.store.etats();
-    const dossiers = this.store.dossiers();
+    const etats = this.reception.etats();
+    const dossiers = this.reception.dossiers();
     const pending = pendingEtats(etats).length;
     const routedRefs = new Set(dossiers.map((dossier) => dossier.ref));
     const toAssign = etats

@@ -81,9 +81,9 @@
             aria-labelledby="view-as-label"
             (change)="onEntite($event)"
           >
-            @for (entite of entites; track entite.name) {
+            @for (entite of entites(); track entite.name) {
               <option [value]="entite.name" [selected]="entite.name === traitement.entite()">
-                {{ entite.short }}
+                {{ entite.label }}
               </option>
             }
           </select>

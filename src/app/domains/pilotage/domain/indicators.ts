@@ -173,7 +173,7 @@ export function kpiCards(
       bar: percent(late.length, total),
     },
     {
-      label: "Non reçus à l'Accueil",
+      label: 'Non reçus à la réception',
       value: String(notReceived.length),
       hint: `${partial} état(s) reçu(s) partiellement`,
       tone: 'warning',

@@ -1,31 +1,14 @@
-export const DOSSIER_TYPES = [
-  'Ouverture de compte',
-  'Demande de prêt',
-  'Réclamation',
-  'Mise à jour KYC',
-  'Clôture de compte',
-] as const;
+import { Dataset, DatasetId, datasetOf } from './datasets';
 
-export type DossierType = (typeof DOSSIER_TYPES)[number];
+/** Type de dossier : propre au jeu de données, complété par l'administrateur. */
+export type DossierType = string;
 
-export const PRODUITS = [
-  'Compte courant',
-  'Compte épargne',
-  'Prêt habitat',
-  'Prêt conso',
-  'Prêt auto',
-  'Carte Visa Classic',
-  'Assurance vie',
-] as const;
-
-export type Produit = (typeof PRODUITS)[number];
+/** Produit (ou nature d'opération) du dossier, selon le jeu de données. */
+export type Produit = string;
 
 export const PRIORITES = ['Normale', 'Haute', 'Urgente'] as const;
 
 export type Priorite = (typeof PRIORITES)[number];
-
-/** Destinataire unique des états émis par les agences. */
-export const ACCUEIL_CENTRAL = 'Accueil central (EC-001)';
 
 export type TypeFieldKind = 'select' | 'number' | 'text' | 'date';
 
@@ -42,85 +25,48 @@ export interface TypeField {
   unit?: 'FCFA' | 'mois';
 }
 
-export const TYPE_FIELDS: Record<DossierType, readonly TypeField[]> = {
-  'Ouverture de compte': [
-    {
-      key: 'typeCompte',
-      label: 'Type de compte souhaité',
-      kind: 'select',
-      options: ['Courant', 'Épargne'],
-    },
-    {
-      key: 'depot',
-      label: 'Montant du dépôt initial',
-      kind: 'number',
-      unit: 'FCFA',
-      placeholder: 'Ex. 50000',
-    },
-  ],
-  'Demande de prêt': [
-    {
-      key: 'montantPret',
-      label: 'Montant demandé',
-      kind: 'number',
-      unit: 'FCFA',
-      placeholder: 'Ex. 5000000',
-    },
-    { key: 'duree', label: 'Durée souhaitée', kind: 'number', unit: 'mois', placeholder: 'Ex. 36' },
-    {
-      key: 'apport',
-      label: 'Apport personnel',
-      kind: 'number',
-      unit: 'FCFA',
-      placeholder: 'Ex. 500000',
-      zeroOk: true,
-    },
-  ],
-  Réclamation: [
-    {
-      key: 'objet',
-      label: 'Objet de la réclamation',
-      kind: 'select',
-      options: ['Erreur de prélèvement', 'Carte bloquée', 'Frais contestés', 'Autre'],
-    },
-    {
-      key: 'refOp',
-      label: "Référence de l'opération concernée",
-      kind: 'text',
-      placeholder: 'Ex. OP-2026-000123',
-      optional: true,
-    },
-  ],
-  'Mise à jour KYC': [
-    {
-      key: 'piece',
-      label: "Type de pièce d'identité",
-      kind: 'select',
-      options: ['CNI', 'Passeport', "Attestation d'identité"],
-    },
-    { key: 'expiration', label: "Date d'expiration de la pièce", kind: 'date' },
-  ],
-  'Clôture de compte': [
-    {
-      key: 'motifCloture',
-      label: 'Motif de la clôture',
-      kind: 'text',
-      placeholder: "Ex. Déménagement à l'étranger",
-    },
-    {
-      key: 'compteDest',
-      label: 'Compte de destination du solde',
-      kind: 'text',
-      placeholder: 'Ex. CPT-0000000 ou IBAN',
-    },
-  ],
-};
+// Jeu de données actif. `ReferentielStore` l'active au démarrage ; le jeu neutre sert par défaut
+// (et aux tests). Les listes ci-dessous sont mises à jour sur place pour que leurs lecteurs
+// gardent la même référence.
+let active: Dataset = datasetOf('neutre');
+const types: string[] = [...active.types];
+const produits: string[] = [...active.produits];
+
+/** Types de dossier en vigueur. */
+export const DOSSIER_TYPES: readonly DossierType[] = types;
+
+export const PRODUITS: readonly Produit[] = produits;
+
+export function dataset(): Dataset {
+  return active;
+}
+
+export function activateDataset(id: DatasetId): void {
+  active = datasetOf(id);
+  produits.splice(0, produits.length, ...active.produits);
+  setDossierTypes(active.types);
+}
+
+/** Remplace la liste des types de dossier (paramétrage de l'administrateur). */
+export function setDossierTypes(list: readonly DossierType[]): void {
+  const next = list.length ? list : active.types;
+  types.splice(0, types.length, ...next);
+}
+
+/** Champs propres à un type ; un type ajouté par l'administrateur reçoit ceux du jeu. */
+export function fieldsOf(type: DossierType): readonly TypeField[] {
+  return active.typeFields[type] ?? active.addedTypeFields;
+}
 
 /** Champ dont la valeur devient le montant du dossier, pour les types qui en ont un. */
-export const MONTANT_FIELD: Partial<Record<DossierType, string>> = {
-  'Demande de prêt': 'montantPret',
-  'Ouverture de compte': 'depot',
-};
+export function montantFieldOf(type: DossierType): string | undefined {
+  return active.montantField[type];
+}
+
+/** Pièces attendues pour un type de dossier, proposées lors d'une demande de documents. */
+export function piecesOf(type: DossierType): readonly string[] {
+  return active.pieces[type] ?? [];
+}
 
 /** `1250000` → `1 250 000` */
 export function formatNumber(value: string | number): string {

@@ -19,7 +19,7 @@ export const DASHBOARD_MOCK: Record<Role, Dashboard> = {
       {
         ref: 'ET-2026-0412',
         label: 'Ouverture de compte — 4 dossiers',
-        meta: 'Créé le 17/09/2026 à 09:12 · destination Accueil central',
+        meta: 'Créé le 17/09/2026 à 09:12',
         status: 'Temporaire',
       },
       {
@@ -37,7 +37,7 @@ export const DASHBOARD_MOCK: Record<Role, Dashboard> = {
       {
         ref: 'ET-2026-0396',
         label: 'Ouverture de compte — 5 dossiers',
-        meta: 'Instruction en cours — Entité Crédits',
+        meta: 'Instruction en cours — Service Crédits',
         status: 'En cours',
       },
       {
@@ -86,7 +86,7 @@ export const DASHBOARD_MOCK: Record<Role, Dashboard> = {
       {
         ref: 'ET-2026-0407',
         label: 'Agence Cocody — 6 dossiers',
-        meta: "Routé vers l'Entité Crédits",
+        meta: 'Dispatché vers le Service Crédits',
         status: 'En cours',
       },
       {
@@ -102,7 +102,7 @@ export const DASHBOARD_MOCK: Record<Role, Dashboard> = {
     subline: '12 dossiers vous sont affectés, dont 2 dépassent le délai de traitement.',
     primaryLabel: 'Ouvrir mes dossiers affectés',
     stats: [
-      { label: 'Dossiers affectés', value: '12', hint: 'Entité Crédits', tone: 'heading' },
+      { label: 'Dossiers affectés', value: '12', hint: 'Service Crédits', tone: 'heading' },
       { label: "En cours d'instruction", value: '6', hint: 'délai moyen 2,4 j', tone: 'warning' },
       { label: 'En retard', value: '2', hint: 'action requise', tone: 'danger' },
       { label: 'Validés cette semaine', value: '9', hint: 'dont 7 clôturés', tone: 'success' },
@@ -161,7 +161,7 @@ export const DASHBOARD_MOCK: Record<Role, Dashboard> = {
       },
       {
         ref: 'ET-007',
-        label: 'Entité Crédits — 31 dossiers en cours',
+        label: 'Service Crédits — 31 dossiers en cours',
         meta: 'Charge la plus élevée du réseau',
         status: 'En cours',
       },

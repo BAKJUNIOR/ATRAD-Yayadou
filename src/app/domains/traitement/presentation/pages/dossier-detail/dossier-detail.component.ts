@@ -121,8 +121,8 @@ export class DossierDetailComponent {
       canRequestDocs: next.includes(ATTENTE_DOCS),
       notAllowedTip: `Non autorisé par le circuit « ${dossier.type} » depuis le statut « ${dossier.status} »`,
       returnLabel: waitingDocs
-        ? "Retourner faute de document(s) (vers l'Accueil)"
-        : "Retourner pour non-éligibilité (vers l'Accueil)",
+        ? "Retourner faute de document(s) (vers l'entité réceptrice)"
+        : "Retourner pour non-éligibilité (vers l'entité réceptrice)",
       validateTip: canValidate ? null : `Action impossible : ${reason}`,
       closeTip: canClose
         ? null
@@ -244,7 +244,7 @@ export class DossierDetailComponent {
     }
     const rejectedAt = dossier.rejectedAt ? formatStamp(dossier.rejectedAt) : '—';
     return (
-      `Dossier renvoyé vers l'Accueil le ${rejectedAt} — consultation seule. Motif : ${dossier.rejectReason || '—'}` +
+      `Dossier renvoyé vers l'entité réceptrice le ${rejectedAt} — consultation seule. Motif : ${dossier.rejectReason || '—'}` +
       (dossier.complements ? ` · Compléments attendus : ${dossier.complements}` : '')
     );
   }

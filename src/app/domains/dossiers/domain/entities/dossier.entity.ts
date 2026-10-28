@@ -73,7 +73,7 @@ export interface EtatDossier extends Dossier {
 }
 
 /**
- * Dossier réceptionné par l'Accueil et routé vers son entité de traitement.
+ * Dossier réceptionné par l'entité réceptrice et dispatché vers son entité de traitement.
  * Il vit désormais indépendamment de l'état qui l'a transmis.
  */
 export interface RoutedDossier extends Dossier {
@@ -86,6 +86,8 @@ export interface RoutedDossier extends Dossier {
   /** Date du routage vers l'entité. */
   affecte: string;
   affectedBy: string;
+  /** Traité par l'entité réceptrice elle-même : pas d'étape de dispatch. */
+  direct?: boolean;
   /** Échéance de traitement (`yyyy-MM-dd`), déduite de la priorité. */
   echeanceIso: string;
   delai: string;
