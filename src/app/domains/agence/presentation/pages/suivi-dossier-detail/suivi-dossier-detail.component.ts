@@ -1,6 +1,8 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
 import { RouterLink } from '@angular/router';
+import { RealtimeService } from '../../../../../core/realtime/realtime.service';
 import { Clock } from '../../../../../core/services/clock.service';
 import { StatusBadgeComponent } from '../../../../../shared/ui/status-badge/status-badge.component';
 import { TimelineComponent } from '../../../../../shared/ui/timeline/timeline.component';
@@ -56,11 +58,16 @@ export class SuiviDossierDetailComponent {
 
   constructor() {
     effect(() => void this.load(this.id()));
+    inject(RealtimeService)
+      .changes$.pipe(takeUntilDestroyed())
+      .subscribe(() => void this.load(this.id(), true));
   }
 
-  /** Fiche du dossier, puis son état d'origine pour le pointage de réception. */
-  private async load(id: string): Promise<void> {
-    this.loaded.set(false);
+  /** Fiche du dossier, puis son état d'origine pour le pointage de réception (`quiet` : relecture sans attente). */
+  private async load(id: string, quiet = false): Promise<void> {
+    if (!quiet) {
+      this.loaded.set(false);
+    }
     try {
       const detail = await firstValueFrom(this.suiviApi.dossier(id));
       const etatId = detail.dossier.etatOrigineId;

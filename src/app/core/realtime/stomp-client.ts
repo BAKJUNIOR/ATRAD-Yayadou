@@ -9,7 +9,8 @@ export interface StompOptions {
   url: string;
   /** En-têtes de la trame CONNECT, relus à chaque (re)connexion (jeton à jour). */
   connectHeaders: () => Record<string, string>;
-  destination: string;
+  /** Files abonnées après la connexion ; `headers.destination` dit d'où vient chaque message. */
+  destinations: readonly string[];
   onMessage: (message: StompMessage) => void;
   /** Connexion établie et abonnement fait : l'appelant peut rattraper ce qui a été manqué. */
   onConnected?: () => void;
@@ -26,7 +27,7 @@ const MAX_DELAY_MS = 30_000;
 
 /**
  * Client STOMP 1.2 minimal sur le WebSocket du navigateur, sans dépendance : connexion avec en-têtes (jeton), un
- * abonnement, lecture des messages. Reconnexion bornée et progressive, comme le client Socket.IO d'ATHL ; une
+ * abonnements, lecture des messages. Reconnexion bornée et progressive, comme le client Socket.IO d'ATHL ; une
  * trame `ERROR` du serveur (jeton refusé) arrête les tentatives.
  */
 export class StompClient {
@@ -64,13 +65,19 @@ export class StompClient {
     this.socket = socket;
     socket.onopen = () =>
       socket.send(
-        frame('CONNECT', { 'accept-version': '1.2', 'heart-beat': '0,0', ...this.options.connectHeaders() }),
+        frame('CONNECT', {
+          'accept-version': '1.2',
+          'heart-beat': '0,0',
+          ...this.options.connectHeaders(),
+        }),
       );
     socket.onmessage = (event) => {
       for (const raw of String(event.data).split(NUL)) {
         const parsed = parse(raw);
         if (parsed?.command === 'CONNECTED') {
-          socket.send(frame('SUBSCRIBE', { id: 'sub-0', destination: this.options.destination }));
+          this.options.destinations.forEach((destination, index) =>
+            socket.send(frame('SUBSCRIBE', { id: `sub-${index}`, destination })),
+          );
           this.attempts = 0;
           this.options.onConnected?.();
         } else if (parsed?.command === 'MESSAGE') {
@@ -122,7 +129,9 @@ function frame(command: string, headers: Record<string, string>, body = ''): str
   return `${command}\n${lines.join('\n')}\n\n${body}${NUL}`;
 }
 
-function parse(raw: string): { command: string; headers: Record<string, string>; body: string } | null {
+function parse(
+  raw: string,
+): { command: string; headers: Record<string, string>; body: string } | null {
   const text = raw.replace(/^\n+/, '');
   if (!text) {
     return null;

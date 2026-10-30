@@ -1,12 +1,15 @@
 import { Component, computed, effect, inject, untracked } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink, RouterOutlet } from '@angular/router';
 import { NAVIGATION } from '../../core/navigation/navigation';
+import { RealtimeService } from '../../core/realtime/realtime.service';
 import { BrandService } from '../../core/services/brand.service';
 import { PageTitleStrategy } from '../../core/services/page-title.strategy';
 import { SessionService } from '../../core/services/session.service';
 import { SidebarService } from '../../core/services/sidebar.service';
 import { ReceptionContext } from '../../domains/accueil/presentation/reception-context.service';
 import { BrouillonStore } from '../../domains/agence/infrastructure/store/brouillon.store';
+import { Role } from '../../domains/auth/domain/entities/account.entity';
 import { TraitementContext } from '../../domains/traitement/presentation/traitement-context.service';
 import { AppHeaderComponent } from '../app-header/app-header.component';
 import { AppSidebarComponent } from '../app-sidebar/app-sidebar.component';
@@ -81,20 +84,26 @@ export class AppLayoutComponent {
   private readonly traitement = inject(TraitementContext);
 
   constructor() {
-    // Données du profil connecté, lues dans l'API à l'ouverture de la session (pastilles du menu, accueil).
+    // Données du profil connecté, lues dans l'API à l'ouverture de la session (pastilles du menu, accueil), puis
+    // relues à chaque modification signalée en temps réel.
     effect(() => {
       const account = this.session.account();
-      untracked(() => {
-        if (account?.role === 'agence') {
-          void this.brouillon.load().catch(() => undefined);
-        }
-        if (account?.role === 'traitement') {
-          void this.traitement.load();
-        }
-        if (this.reception.canReceive()) {
-          this.reception.load();
-        }
-      });
+      untracked(() => this.loadProfileData(account?.role));
     });
+    inject(RealtimeService)
+      .changes$.pipe(takeUntilDestroyed())
+      .subscribe(() => this.loadProfileData(this.session.account()?.role));
+  }
+
+  private loadProfileData(role: Role | undefined): void {
+    if (role === 'agence') {
+      void this.brouillon.load().catch(() => undefined);
+    }
+    if (role === 'traitement') {
+      void this.traitement.load();
+    }
+    if (this.reception.canReceive()) {
+      this.reception.load();
+    }
   }
 }

@@ -2,7 +2,9 @@ import { Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { catchError, forkJoin, of } from 'rxjs';
 import { Router } from '@angular/router';
+import { Account, Role } from '../../../../auth/domain/entities/account.entity';
 import { NAVIGATION, ROLE_CAPABILITY } from '../../../../../core/navigation/navigation';
+import { RealtimeService } from '../../../../../core/realtime/realtime.service';
 import { SessionService } from '../../../../../core/services/session.service';
 import { ToastService } from '../../../../../core/services/toast.service';
 import { formatDate, formatStamp, isoDateToFr } from '../../../../../core/utils/date.util';
@@ -12,7 +14,6 @@ import { StatusBadgeComponent } from '../../../../../shared/ui/status-badge/stat
 import { pendingEtats, remainingCount } from '../../../../accueil/domain/reception';
 import { ReceptionContext } from '../../../../accueil/presentation/reception-context.service';
 import { hasCapability, referentiel } from '../../../../dossiers/domain/referentiel';
-import { Account, Role } from '../../../../auth/domain/entities/account.entity';
 import { Etat } from '../../../../dossiers/domain/entities/etat.entity';
 import { isLocked } from '../../../../dossiers/domain/workflow';
 import { UtilisateurApi } from '../../../../administration/infrastructure/api/utilisateur.api';
@@ -256,10 +257,12 @@ export class HomeComponent {
   /** Indicateurs du réseau calculés par l'API (tableau de bord et retards). */
   private readonly pilotage = toSignal(
     this.session.role() === 'manager'
-      ? forkJoin({
-          tableau: this.pilotageApi.tableauDeBord(),
-          delais: this.pilotageApi.delais(),
-        }).pipe(catchError(() => of(null)))
+      ? inject(RealtimeService).live(() =>
+          forkJoin({
+            tableau: this.pilotageApi.tableauDeBord(),
+            delais: this.pilotageApi.delais(),
+          }),
+        )
       : of(null),
     { initialValue: null },
   );

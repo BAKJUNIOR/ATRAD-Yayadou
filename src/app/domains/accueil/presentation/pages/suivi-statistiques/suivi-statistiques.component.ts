@@ -1,5 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { RealtimeService } from '../../../../../core/realtime/realtime.service';
 import { formatStamp } from '../../../../../core/utils/date.util';
 import { Status } from '../../../../../shared/models/status';
 import { Priorite } from '../../../../dossiers/domain/dossier-catalog';
@@ -42,9 +43,12 @@ interface TrackingGroup {
 export class SuiviStatistiquesComponent {
   private readonly api = inject(AccueilApi);
 
-  private readonly suivi = toSignal<ApiSuiviAccueil | null>(this.api.suivi(), {
-    initialValue: null,
-  });
+  private readonly suivi = toSignal<ApiSuiviAccueil | null>(
+    inject(RealtimeService).live(() => this.api.suivi()),
+    {
+      initialValue: null,
+    },
+  );
 
   protected readonly rules = computed(() => routingRules());
   protected readonly formatStamp = formatStamp;

@@ -85,9 +85,12 @@ export const endpoints = {
     nonLues: 'api/v1/notifications/non-lues',
     lue: (id: string) => `api/v1/notifications/${id}/lue`,
     toutesLues: 'api/v1/notifications/lues',
-    /** Point de connexion WebSocket (STOMP) et file personnelle des notifications. */
+  },
+  /** Point de connexion WebSocket (STOMP) et files personnelles : notifications, données modifiées. */
+  tempsReel: {
     socket: 'ws/websocket',
-    file: '/user/queue/notifications',
+    notifications: '/user/queue/notifications',
+    donnees: '/user/queue/donnees',
   },
   suivi: {
     agence: 'api/v1/suivi/agence',

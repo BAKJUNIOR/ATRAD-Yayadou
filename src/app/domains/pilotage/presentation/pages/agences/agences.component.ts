@@ -1,9 +1,9 @@
 import { Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { catchError, of } from 'rxjs';
 import { agenceComparisonFromApi } from '../../../domain/indicators';
 import { PilotageApi } from '../../../infrastructure/api/pilotage.api';
 import { TONE_BAR, TONE_TEXT } from '../../tone';
+import { RealtimeService } from '../../../../../core/realtime/realtime.service';
 
 /** Pilotage : comparatif des agences d'origine. */
 @Component({
@@ -67,9 +67,7 @@ export class AgencesComponent {
 
   /** Comparatif calculé par l'API, de l'agence la plus en retard à la moins en retard. */
   private readonly agences = toSignal(
-    inject(PilotageApi)
-      .agences()
-      .pipe(catchError(() => of([]))),
+    inject(RealtimeService).live(() => inject(PilotageApi).agences()),
     {
       initialValue: [],
     },

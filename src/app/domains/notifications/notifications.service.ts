@@ -1,10 +1,9 @@
 import { Service, computed, effect, inject, signal, untracked } from '@angular/core';
-import { environment } from '../../../environments/environment';
-import { StompClient } from '../../core/realtime/stomp-client';
-import { AppConfigService } from '../../core/services/app-config.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Role } from '../auth/domain/entities/account.entity';
+import { RealtimeService } from '../../core/realtime/realtime.service';
 import { SessionService } from '../../core/services/session.service';
 import { formatStamp } from '../../core/utils/date.util';
-import { Role } from '../auth/domain/entities/account.entity';
 import {
   ApiNotification,
   EvenementNotification,
@@ -29,12 +28,9 @@ const TONE: Record<ApiNotification['niveau'], NotificationTone> = {
   DANGER: 'danger',
 };
 
-/** État de la connexion temps réel. */
-export type RealtimeState = 'off' | 'connecting' | 'live' | 'refused';
-
 /**
  * Notifications de l'utilisateur connecté, tenues par l'API : la liste et le nombre de non-lues sont lus à
- * l'ouverture de la session, puis tenus à jour en temps réel (WebSocket STOMP, file `/user/queue/notifications`).
+ * l'ouverture de la session, puis tenus à jour en temps réel (`RealtimeService`, file `/user/queue/notifications`).
  * Le serveur signale les nouvelles notifications, les lectures et « tout lu », avec le nombre de non-lues : tous
  * les onglets de l'utilisateur restent alignés. À chaque reconnexion, liste et compteur sont relus.
  */
@@ -42,12 +38,10 @@ export type RealtimeState = 'off' | 'connecting' | 'live' | 'refused';
 export class NotificationsService {
   private readonly session = inject(SessionService);
   private readonly api = inject(NotificationApi);
-  private readonly config = inject(AppConfigService);
+  private readonly realtime = inject(RealtimeService);
 
   private readonly list = signal<ApiNotification[]>([]);
   private readonly unread = signal(0);
-  private readonly state = signal<RealtimeState>('off');
-  private socket: StompClient | null = null;
 
   readonly items = computed<AppNotification[]>(() => {
     const role = this.session.role();
@@ -62,13 +56,15 @@ export class NotificationsService {
   });
 
   readonly unreadCount = this.unread.asReadonly();
-  readonly realtime = this.state.asReadonly();
 
   constructor() {
     effect(() => {
       const token = this.session.token();
-      untracked(() => (token ? this.open() : this.close()));
+      untracked(() => (token ? this.refresh() : this.clear()));
     });
+    this.realtime.notifications$.pipe(takeUntilDestroyed()).subscribe((body) => this.receive(body));
+    // Rattrapage de ce qui est arrivé pendant une coupure.
+    this.realtime.reconnected$.pipe(takeUntilDestroyed()).subscribe(() => this.refresh());
   }
 
   markRead(id: string): void {
@@ -89,33 +85,7 @@ export class NotificationsService {
     });
   }
 
-  private open(): void {
-    this.refresh();
-    this.socket?.stop();
-    this.state.set('connecting');
-    let first = true;
-    this.socket = new StompClient({
-      url: this.socketUrl(),
-      connectHeaders: () => ({ Authorization: `Bearer ${this.session.token() ?? ''}` }),
-      destination: environment.endpoints.notifications.file,
-      onMessage: (message) => this.receive(message.body),
-      onConnected: () => {
-        this.state.set('live');
-        // Rattrapage de ce qui est arrivé pendant la coupure.
-        if (!first) {
-          this.refresh();
-        }
-        first = false;
-      },
-      onDisconnected: (refused) => this.state.set(refused ? 'refused' : 'connecting'),
-    });
-    this.socket.start();
-  }
-
-  private close(): void {
-    this.socket?.stop();
-    this.socket = null;
-    this.state.set('off');
+  private clear(): void {
     this.list.set([]);
     this.unread.set(0);
   }
@@ -157,15 +127,7 @@ export class NotificationsService {
   }
 
   private setRead(id: string): void {
-    this.list.update((list) =>
-      list.map((item) => (item.id === id ? { ...item, lu: true } : item)),
-    );
-  }
-
-  /** `ws(s)://` sur l'adresse de l'API, ou sur l'origine du front quand elle est vide (proxy). */
-  private socketUrl(): string {
-    const base = this.config.apiBaseUrl || window.location.origin;
-    return `${base.replace(/^http/, 'ws')}/${environment.endpoints.notifications.socket}`;
+    this.list.update((list) => list.map((item) => (item.id === id ? { ...item, lu: true } : item)));
   }
 }
 

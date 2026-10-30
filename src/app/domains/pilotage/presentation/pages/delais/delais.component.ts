@@ -1,6 +1,6 @@
 import { Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { catchError, of } from 'rxjs';
+import { RealtimeService } from '../../../../../core/realtime/realtime.service';
 import { KpiCardComponent } from '../../../../../shared/ui/kpi-card/kpi-card.component';
 import { SLA_TARGET, agenceRankingFromApi, lateDossiersFromApi } from '../../../domain/indicators';
 import { PilotageApi } from '../../../infrastructure/api/pilotage.api';
@@ -15,9 +15,7 @@ import { TONE_BAR, TONE_TEXT } from '../../tone';
 export class DelaisComponent {
   /** Respect des délais calculé par l'API. */
   private readonly delais = toSignal(
-    inject(PilotageApi)
-      .delais()
-      .pipe(catchError(() => of(null))),
+    inject(RealtimeService).live(() => inject(PilotageApi).delais()),
     {
       initialValue: null,
     },
