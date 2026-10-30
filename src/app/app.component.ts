@@ -16,8 +16,8 @@ export class AppComponent {
   private readonly theme = inject(ThemeService);
   // Instancié avant tout calcul de date : il efface l'ancien décalage de la date de démonstration.
   private readonly clock = inject(Clock);
-  // Instancié avant tout écran : il active le jeu de données et le paramétrage de l'administrateur
-  // (entités, types d'état, circuits), lus par les règles métier.
+  // Instancié avant tout écran : il publie le paramétrage de l'administrateur (entités, types d'état,
+  // circuits), lu dans l'API et utilisé par les règles métier.
   private readonly referentiel = inject(ReferentielStore);
 
   constructor() {

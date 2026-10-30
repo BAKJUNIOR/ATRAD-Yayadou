@@ -5,10 +5,42 @@ import {
   fieldError,
   formValueOf,
 } from './dossier-form.rules';
+import { TypeField } from '../../dossiers/domain/dossier-catalog';
+import { emptyReferentiel, setReferentiel } from '../../dossiers/domain/referentiel';
 
 const TODAY = '2026-10-12';
 
+/** Champs des types de dossier, tels que l'API les décrit. */
+const TYPE_FIELDS: Record<string, TypeField[]> = {
+  'Ouverture de compte': [
+    {
+      key: 'typeCompte',
+      label: 'Type de compte souhaité',
+      kind: 'select',
+      options: ['Courant', 'Épargne'],
+    },
+    { key: 'depot', label: 'Montant du dépôt initial', kind: 'number', unit: 'FCFA' },
+  ],
+  'Demande de prêt': [
+    { key: 'montantPret', label: 'Montant demandé', kind: 'number', unit: 'FCFA' },
+    { key: 'duree', label: 'Durée souhaitée', kind: 'number', unit: 'mois' },
+    { key: 'apport', label: 'Apport personnel', kind: 'number', unit: 'FCFA', zeroOk: true },
+  ],
+  Réclamation: [],
+  'Mise à jour KYC': [{ key: 'expiration', label: "Date d'expiration de la pièce", kind: 'date' }],
+};
+
 describe('dossier form rules', () => {
+  beforeEach(() =>
+    setReferentiel({
+      ...emptyReferentiel(),
+      dossierTypes: Object.keys(TYPE_FIELDS),
+      typeFields: TYPE_FIELDS,
+    }),
+  );
+
+  afterEach(() => setReferentiel(emptyReferentiel()));
+
   it('requires a 12-digit client number', () => {
     expect(fieldError('client', '', 'Réclamation', TODAY)).toBe('Champ obligatoire.');
     expect(fieldError('client', '123', 'Réclamation', TODAY)).toContain('(3/12)');

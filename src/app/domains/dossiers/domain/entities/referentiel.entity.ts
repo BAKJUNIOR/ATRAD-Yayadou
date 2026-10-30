@@ -1,6 +1,5 @@
-import { Entite, EtatType } from '../datasets';
 import { DossierType, ProduitOption, TypeField } from '../dossier-catalog';
-import { Circuit, SaisieMode } from '../referentiel';
+import { Circuit, Entite, EtatType, SaisieMode } from '../referentiel';
 import type { ApiTransition } from './dossier-api.entity';
 
 /** Entité de l'organisation, telle que renvoyée par l'API (`entites.base`). */

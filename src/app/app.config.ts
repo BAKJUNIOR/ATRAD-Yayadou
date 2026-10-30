@@ -13,6 +13,7 @@ import { AppConfigService } from './core/services/app-config.service';
 import { BrandService } from './core/services/brand.service';
 import { PageTitleStrategy } from './core/services/page-title.strategy';
 import { SessionService } from './core/services/session.service';
+import { ThemeService } from './core/services/theme.service';
 import { ReferentielStore } from './domains/dossiers/infrastructure/store/referentiel.store';
 
 export const appConfig: ApplicationConfig = {
@@ -27,12 +28,17 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => {
       const config = inject(AppConfigService);
       const brand = inject(BrandService);
+      const theme = inject(ThemeService);
       const session = inject(SessionService);
       const referentiel = inject(ReferentielStore);
-      return config
-        .loadConfig()
-        .then(() => brand.refresh())
-        .then(() => (session.isAuthenticated() ? referentiel.refresh() : undefined));
+      return (
+        config
+          .loadConfig()
+          .then(() => brand.refresh())
+          // Mode sombre par défaut de la marque, tant que l'utilisateur n'a pas choisi.
+          .then(() => theme.followBrandDefault())
+          .then(() => (session.isAuthenticated() ? referentiel.refresh() : undefined))
+      );
     }),
   ],
 };

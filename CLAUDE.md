@@ -105,7 +105,7 @@ src/app/
 
 - **Référentiel** (`domain/referentiel.ts`, store `ReferentielStore`) : lu dans l'API après la connexion (`refresh()`), gardé dans le navigateur (`atrad_referentiel_v1`) pour s'afficher aussitôt au rechargement. Il contient les entités (avec leur `id`), les types d'état, les types de dossier et leur circuit, le mode de saisie (`choix` / `auto`), les champs, pièces et produits de chaque type (formulaire de l'API), les motifs de retour et les circuits de statuts (`workflows`). Conversion : `referentielFromApi()` (`domain/entities/referentiel.entity.ts`).
 - Le front désigne une entité par son code (`AG-014`, libellé `Nom (CODE)`) et un type de dossier par son nom ; les UUID de l'API sont gardés à côté (`entite.id`, `typeIds`) pour les appels.
-- `fieldsOf()`, `piecesOf()`, `produitsOf()` lisent le formulaire de l'API (à défaut, le jeu de données). Les jeux de données (`datasets.ts`) ne fournissent plus que les libellés du formulaire de saisie.
+- `fieldsOf()`, `piecesOf()`, `produitsOf()` lisent le formulaire de l'API ; sans réponse, ils rendent des listes vides. Aucun jeu de données côté front : paramétrage, marque et répartition viennent uniquement de l'API et ne sont gardés qu'en mémoire (pas de copie en localStorage). Les libellés du formulaire de saisie sont fixes (`DOSSIER_FORM`).
 - `nextStatuses()` et `actionCodeTo()` (`workflow.ts`) suivent le circuit de statuts du backend.
 - **Vocabulaire** : réglé dans « Logo & Couleurs » avec la marque (`Brand.vocab`) ; `VocabularyService` réécrit tout le texte affiché, une zone `data-novocab` est épargnée.
 

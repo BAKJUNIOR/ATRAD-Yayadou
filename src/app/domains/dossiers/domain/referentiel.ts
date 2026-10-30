@@ -3,13 +3,36 @@ import {
   DossierType,
   ProduitOption,
   TypeField,
-  dataset,
   setDossierTypes,
   setTypeCatalog,
 } from './dossier-catalog';
-import { Entite, EntityCapability, EtatType } from './datasets';
 import type { ApiTransition } from './entities/dossier-api.entity';
 import type { MotifOption } from './entities/referentiel.entity';
+
+/** Capacités d'une entité : émettre des états, les réceptionner, traiter des dossiers. */
+export type EntityCapability = 'emet' | 'recep' | 'trait';
+
+export interface Entite {
+  /** Identifiant (UUID) dans l'API. */
+  id?: string;
+  /** Code au format `AA-000`, identifiant stable de l'entité. */
+  code: string;
+  nom: string;
+  nature: string;
+  emet: boolean;
+  recep: boolean;
+  trait: boolean;
+}
+
+/** Type d'état de transmission : une entité réceptrice et les entités autorisées à émettre. */
+export interface EtatType {
+  id: string;
+  nom: string;
+  /** Code de l'entité réceptrice. */
+  recep: string;
+  /** Codes des entités émettrices autorisées. */
+  emet: string[];
+}
 
 /** Circuit d'un type de dossier : type d'état qui le transmet et entité qui le traite. */
 export interface Circuit {
@@ -43,9 +66,9 @@ export interface Referentiel {
   circuits: Record<DossierType, Circuit>;
   saisieMode: SaisieMode;
   vocab: Vocabulary;
-  /** Identifiant (UUID) de chaque type de dossier dans l'API ; vide pour les jeux de démonstration. */
+  /** Identifiant (UUID) de chaque type de dossier dans l'API. */
   typeIds: Record<DossierType, string>;
-  /** Champs et pièces de chaque type lus dans l'API ; à défaut, ceux du jeu de données. */
+  /** Champs, pièces et produits de chaque type lus dans l'API. */
   typeFields: Record<DossierType, TypeField[]>;
   typePieces: Record<DossierType, string[]>;
   typeOperations: Record<DossierType, ProduitOption[]>;
@@ -62,21 +85,13 @@ export const CAPABILITIES: readonly { key: EntityCapability; label: string; chip
   { key: 'trait', label: 'Peut traiter des dossiers', chip: 'Traite' },
 ];
 
-/** Paramétrage initial du jeu de données actif. */
-export function defaultReferentiel(): Referentiel {
-  const data = dataset();
-  const entites = structuredClone(data.entites);
-  const etatTypes = data.etatTypes.map(({ dossiers: _dossiers, ...type }) => structuredClone(type));
-  const circuits: Record<DossierType, Circuit> = {};
-  for (const type of data.types) {
-    const etatType = data.etatTypes.find((candidate) => candidate.dossiers.includes(type));
-    circuits[type] = initialCircuit(entites, etatType, data.mapping[type] ?? '');
-  }
+/** Paramétrage vide, en attendant celui de l'API (rien n'est affiché tant qu'elle n'a pas répondu). */
+export function emptyReferentiel(): Referentiel {
   return {
-    entites,
-    etatTypes,
-    dossierTypes: [...data.types],
-    circuits,
+    entites: [],
+    etatTypes: [],
+    dossierTypes: [],
+    circuits: {},
     saisieMode: 'choix',
     vocab: { ...DEFAULT_VOCABULARY },
     typeIds: {},
@@ -89,32 +104,9 @@ export function defaultReferentiel(): Referentiel {
   };
 }
 
-/**
- * Circuit d'un type : l'entité prévue si elle traite ; à défaut, la réceptrice de son type
- * d'état quand elle traite elle-même.
- */
-export function initialCircuit(
-  entites: readonly Entite[],
-  etatType: EtatType | undefined,
-  traitCode: string,
-): Circuit {
-  const find = (code: string): Entite | undefined => entites.find((e) => e.code === code);
-  let trait = traitCode;
-  let check = false;
-  if (trait && !find(trait)?.trait) {
-    trait = '';
-    check = true;
-  }
-  const recep = etatType ? find(etatType.recep) : undefined;
-  if (etatType && !trait && recep?.trait) {
-    trait = recep.code;
-  }
-  return { et: etatType?.id ?? '', trait, check };
-}
-
 // Paramétrage en vigueur. `ReferentielStore` le remplace par celui de l'administrateur ; les
 // fonctions de ce fichier le lisent pour rester utilisables hors injection.
-let current: Referentiel = defaultReferentiel();
+let current: Referentiel = emptyReferentiel();
 
 export function setReferentiel(referentiel: Referentiel): void {
   current = referentiel;
@@ -249,9 +241,9 @@ export function traitLabelOf(type: DossierType): string {
 
 // --------------------------------------------------------- Saisie et envoi
 
-/** Entité réceptrice d'un état ; les états antérieurs aux types d'état vont à celle du jeu. */
+/** Entité réceptrice d'un état (code), vide si l'état n'en a pas. */
 export function recepOf(etat: { recep?: string } | null | undefined): string {
-  return etat?.recep || entityCode(dataset().accounts.accueil);
+  return etat?.recep || '';
 }
 
 /** Types de dossier qu'une entité peut saisir, selon le mode de saisie et le type d'état choisi. */

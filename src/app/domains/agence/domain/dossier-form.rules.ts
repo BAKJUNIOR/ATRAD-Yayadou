@@ -5,7 +5,7 @@ import {
   Priorite,
   Produit,
   TypeField,
-  dataset,
+  DOSSIER_FORM,
   displayValue,
   fieldsOf,
   formatNumber,
@@ -36,7 +36,7 @@ export const CLIENT_NUMBER_LENGTH = 12;
 
 /** Le n° client n'accepte que des chiffres (jeu neutre) : la saisie est filtrée. */
 export function filterClientInput(raw: string): string {
-  const { clientRule, clientMax } = dataset().form;
+  const { clientRule, clientMax } = DOSSIER_FORM;
   return clientRule === 'digits12'
     ? raw.replace(/\D/g, '').slice(0, clientMax)
     : raw.slice(0, clientMax);
@@ -59,7 +59,7 @@ export function emptyDossierForm(type: DossierType = DOSSIER_TYPES[0] ?? ''): Do
 /** Message d'erreur d'un champ, ou chaîne vide s'il est valide. */
 export function fieldError(key: string, raw: string, type: DossierType, todayIso: string): string {
   const value = (raw ?? '').trim();
-  const form = dataset().form;
+  const form = DOSSIER_FORM;
   if (form.clientRule === 'objet') {
     if (key === 'client') {
       return !value

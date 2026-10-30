@@ -1,5 +1,5 @@
 import { Role } from '../../domains/auth/domain/entities/account.entity';
-import { EntityCapability } from '../../domains/dossiers/domain/datasets';
+import { EntityCapability } from '../../domains/dossiers/domain/referentiel';
 import { MemberFunction } from '../../domains/dossiers/domain/routing';
 
 export interface NavItem {

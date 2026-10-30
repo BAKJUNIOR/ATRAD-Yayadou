@@ -38,17 +38,6 @@ export class SessionService {
     this.store({ token, account });
   }
 
-  /**
-   * « Voir en tant que » de l'entité de traitement (démonstration) : change le compte affiché sans toucher au
-   * jeton. Disparaît au branchement du parcours traitement.
-   */
-  impersonate(account: Account): void {
-    const session = this.current();
-    if (session) {
-      this.store({ ...session, account });
-    }
-  }
-
   signOut(): void {
     this.store(null);
   }

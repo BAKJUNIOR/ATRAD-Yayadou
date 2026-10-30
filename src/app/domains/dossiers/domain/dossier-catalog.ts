@@ -1,10 +1,9 @@
 import { isoDateToFr } from '../../../core/utils/date.util';
-import { Dataset, DatasetId, datasetOf } from './datasets';
 
-/** Type de dossier : propre au jeu de données, complété par l'administrateur. */
+/** Type de dossier, paramétré par l'administrateur dans l'API. */
 export type DossierType = string;
 
-/** Produit (ou nature d'opération) du dossier, selon le jeu de données. */
+/** Produit (opération) du dossier, paramétré pour chaque type dans l'API. */
 export type Produit = string;
 
 /** Produit proposé pour un type de dossier, avec son identifiant d'opération dans l'API. */
@@ -32,14 +31,48 @@ export interface TypeField {
   unit?: 'FCFA' | 'mois';
 }
 
-// Jeu de données actif. `ReferentielStore` l'active au démarrage ; le jeu neutre sert par défaut
-// (et aux tests). Les listes ci-dessous sont mises à jour sur place pour que leurs lecteurs
-// gardent la même référence.
-let active: Dataset = datasetOf('neutre');
-const types: string[] = [...active.types];
-const produits: string[] = [...active.produits];
+/** Libellés et règles du formulaire de saisie d'un dossier. */
+export interface DossierFormLabels {
+  type: string;
+  produit: string;
+  client: string;
+  clientPlaceholder: string;
+  /** Saisie du n° client : 12 chiffres, numéro + clé, ou objet libre. */
+  clientRule: 'digits12' | 'numeroCle' | 'objet';
+  clientMax: number;
+  prenom: string;
+  nom: string;
+  compte: string;
+  comptePlaceholder: string;
+  showProduit: boolean;
+  showPrenom: boolean;
+  showCompte: boolean;
+  showPrio: boolean;
+  /** Prénom, nom et compte obligatoires. */
+  identityRequired: boolean;
+}
 
-// Champs et pièces lus dans l'API pour chaque type ; à défaut, ceux du jeu de données.
+export const DOSSIER_FORM: DossierFormLabels = {
+  type: 'Type de dossier',
+  produit: 'Type de produit',
+  client: 'Numéro client',
+  clientPlaceholder: '12 chiffres, ex. 000123456789',
+  clientRule: 'digits12',
+  clientMax: 12,
+  prenom: 'Prénom du client',
+  nom: 'Nom du client',
+  compte: 'N° de compte',
+  comptePlaceholder: 'CPT-0000000',
+  showProduit: true,
+  showPrenom: true,
+  showCompte: true,
+  showPrio: true,
+  identityRequired: false,
+};
+
+// Catalogue lu dans l'API (`setReferentiel`). La liste des types est mise à jour sur place pour que ses lecteurs
+// gardent la même référence ; tant que l'API n'a pas répondu, tout est vide.
+const types: string[] = [];
 let typeFields: Record<string, readonly TypeField[]> = {};
 let typePieces: Record<string, readonly string[]> = {};
 let typeProduits: Record<string, readonly ProduitOption[]> = {};
@@ -47,22 +80,9 @@ let typeProduits: Record<string, readonly ProduitOption[]> = {};
 /** Types de dossier en vigueur. */
 export const DOSSIER_TYPES: readonly DossierType[] = types;
 
-export const PRODUITS: readonly Produit[] = produits;
-
-export function dataset(): Dataset {
-  return active;
-}
-
-export function activateDataset(id: DatasetId): void {
-  active = datasetOf(id);
-  produits.splice(0, produits.length, ...active.produits);
-  setDossierTypes(active.types);
-}
-
 /** Remplace la liste des types de dossier (paramétrage de l'administrateur). */
 export function setDossierTypes(list: readonly DossierType[]): void {
-  const next = list.length ? list : active.types;
-  types.splice(0, types.length, ...next);
+  types.splice(0, types.length, ...list);
 }
 
 /** Champs et pièces des types de dossier, tels que paramétrés dans l'API. */
@@ -76,13 +96,12 @@ export function setTypeCatalog(
   typeProduits = produits;
 }
 
-/** Produits proposés pour un type ; à défaut de paramétrage dans l'API, la liste du jeu de données. */
+/** Produits proposés pour un type, vide si l'API n'en paramètre aucun. */
 export function produitsOf(type: DossierType): readonly Produit[] {
-  const options = typeProduits[type];
-  return options?.length ? options.map((option) => option.label) : PRODUITS;
+  return (typeProduits[type] ?? []).map((option) => option.label);
 }
 
-/** Identifiant d'opération d'un produit pour un type (vide pour un produit du jeu de données). */
+/** Identifiant d'opération d'un produit pour un type. */
 export function operationIdOf(type: DossierType, produit: Produit): string | null {
   return typeProduits[type]?.find((option) => option.label === produit)?.id ?? null;
 }
@@ -94,19 +113,21 @@ export function produitLabelOf(type: DossierType, operationId: string | null): P
   );
 }
 
-/** Champs propres à un type ; un type ajouté par l'administrateur reçoit ceux du jeu. */
+/** Champs propres à un type, tels que paramétrés dans l'API. */
 export function fieldsOf(type: DossierType): readonly TypeField[] {
-  return typeFields[type] ?? active.typeFields[type] ?? active.addedTypeFields;
+  return typeFields[type] ?? [];
 }
 
-/** Champ dont la valeur devient le montant du dossier, pour les types qui en ont un. */
+/** Champ dont la valeur devient le montant du dossier : le premier montant en FCFA qui ne peut pas être nul. */
 export function montantFieldOf(type: DossierType): string | undefined {
-  return active.montantField[type];
+  return fieldsOf(type).find(
+    (field) => field.kind === 'number' && field.unit === 'FCFA' && !field.zeroOk,
+  )?.key;
 }
 
 /** Pièces attendues pour un type de dossier, proposées lors d'une demande de documents. */
 export function piecesOf(type: DossierType): readonly string[] {
-  return typePieces[type] ?? active.pieces[type] ?? [];
+  return typePieces[type] ?? [];
 }
 
 /** Valeur d'un champ propre au type, mise en forme pour l'affichage (nombre groupé et unité, date française). */

@@ -4,10 +4,11 @@ import { firstValueFrom } from 'rxjs';
 import { ConfirmService } from '../../../../../core/services/confirm.service';
 import { ToastService } from '../../../../../core/services/toast.service';
 import { IconComponent } from '../../../../../shared/ui/icon/icon.component';
-import { Entite, EntityCapability } from '../../../../dossiers/domain/datasets';
 import {
   CAPABILITIES,
+  Entite,
   EntiteDraft,
+  EntityCapability,
   NATURES,
   entiteByCode,
   entiteErrors,

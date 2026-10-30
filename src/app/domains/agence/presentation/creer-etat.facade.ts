@@ -3,7 +3,7 @@ import { ConfirmService } from '../../../core/services/confirm.service';
 import { SessionService } from '../../../core/services/session.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { nowIso, todayIsoDate } from '../../../core/utils/date.util';
-import { DossierType, dataset, fieldsOf, produitsOf } from '../../dossiers/domain/dossier-catalog';
+import { DOSSIER_FORM, DossierType, fieldsOf, produitsOf } from '../../dossiers/domain/dossier-catalog';
 import { Dossier, PieceJointe } from '../../dossiers/domain/entities/dossier.entity';
 import { Etat } from '../../dossiers/domain/entities/etat.entity';
 import { screenPieces } from '../../dossiers/domain/piece.rules';
@@ -52,8 +52,8 @@ export class CreerEtatFacade {
   private readonly bordereau = inject(BordereauService);
   private readonly referentiel = inject(ReferentielStore);
 
-  /** Libellés et règles du formulaire propres au jeu de données. */
-  readonly labels = dataset().form;
+  /** Libellés et règles du formulaire de saisie. */
+  readonly labels = DOSSIER_FORM;
 
   // --- Type d'état et types de dossier autorisés pour l'entité émettrice
   private readonly emetCode = computed(() => entityCode(this.session.account()?.entity ?? ''));

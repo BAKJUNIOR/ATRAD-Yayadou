@@ -1,4 +1,4 @@
-import { DossierType, Priorite, dataset } from './dossier-catalog';
+import { DossierType, Priorite } from './dossier-catalog';
 import {
   entityCode,
   labelOf,
@@ -99,54 +99,31 @@ export interface EntitySettings {
   searchers: string[];
 }
 
-/** Réglages par défaut d'une entité de traitement, selon le jeu de données (par code). */
-function defaultSettings(code: string): EntitySettings {
-  const { modes, teams, dispatchers, searchers } = dataset().teams;
-  const team = [...(teams[code] ?? [])];
-  return {
-    mode: modes[code] ?? 'auto',
-    team,
-    dispatchers: team.filter((user) => dispatchers[code]?.includes(user)),
-    searchers: team.filter((user) => searchers[code]?.includes(user)),
-  };
+/** Réglages d'une entité dont l'API n'a pas encore donné la répartition : aucune équipe. */
+function emptySettings(): EntitySettings {
+  return { mode: 'auto', team: [], dispatchers: [], searchers: [] };
 }
-
-/** Gestionnaires pouvant être rattachés à une entité. */
-export const ALL_GESTIONNAIRES: readonly string[] = [
-  'Fatou Bamba',
-  'Éric Tanoh',
-  'Clarisse Yao',
-  'Ismaël Ouédraogo',
-];
 
 /** Répartition interne de chaque entité de traitement, par code d'entité. */
 export interface RoutingConfig {
   ent: Record<string, EntitySettings>;
 }
 
-export function defaultRouting(): RoutingConfig {
-  return {
-    ent: Object.fromEntries(
-      traitEntites().map((entite) => [entite.code, defaultSettings(entite.code)]),
-    ),
-  };
-}
-
 // Paramétrage en vigueur. `RoutingStore` le remplace par celui de l'administrateur ; les
 // fonctions de ce fichier le lisent pour rester utilisables hors injection.
-let current: RoutingConfig = defaultRouting();
+let current: RoutingConfig = { ent: {} };
 
 export function setRoutingConfig(config: RoutingConfig): void {
   current = config;
 }
 
-/** Réglages d'une entité désignée par son libellé ou son code ; ceux du jeu à défaut. */
+/** Réglages d'une entité désignée par son libellé ou son code (répartition lue dans l'API). */
 export function entitySettings(entite: string): EntitySettings | undefined {
   const code = entityCode(entite);
   if (!traitEntites().some((candidate) => candidate.code === code)) {
     return undefined;
   }
-  return current.ent[code] ?? defaultSettings(code);
+  return current.ent[code] ?? emptySettings();
 }
 
 /** Droits d'un membre, tels qu'affichés à l'administrateur : `Traiter · Affecter`. */

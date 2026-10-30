@@ -1,4 +1,4 @@
-import { setReferentiel, defaultReferentiel } from '../referentiel';
+import { emptyReferentiel, setReferentiel } from '../referentiel';
 import {
   ApiDossier,
   ApiEtat,
@@ -36,7 +36,7 @@ const api: ApiDossier = {
 describe('dossier-api.entity', () => {
   beforeEach(() => {
     setReferentiel({
-      ...defaultReferentiel(),
+      ...emptyReferentiel(),
       entites: [
         {
           id: 'b-plateau',
@@ -79,7 +79,7 @@ describe('dossier-api.entity', () => {
     });
   });
 
-  afterEach(() => setReferentiel(defaultReferentiel()));
+  afterEach(() => setReferentiel(emptyReferentiel()));
 
   it('should map API status codes to the front labels', () => {
     expect(statusOf('EN_ATTENTE_DOCUMENTS')).toBe('En attente de document(s) complémentaire(s)');

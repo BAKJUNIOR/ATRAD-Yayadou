@@ -13,23 +13,21 @@ import { configurationOf } from '../branding/marque.entity';
 
 const BRAND_LOGO_KEYS: readonly BrandLogoKey[] = ['logoFull', 'logoIcon', 'favicon'];
 import { initialsOf } from '../utils/text.util';
-import { StorageService } from './storage.service';
 
-const BRAND_KEY = 'atrad_brand_v1';
+/** Ancienne copie locale de la marque, effacée au démarrage. */
+const LEGACY_BRAND_KEY = 'atrad_brand_v1';
 const FAVICON_MARK = 'data-atrad';
 
 /**
  * Marque blanche : nom, logos, couleurs, police et rayon appliqués à toute l'application. La marque vient de
- * l'API (`refresh()`, au démarrage) ; une copie locale l'applique dès le chargement, sans flash des couleurs par
- * défaut.
+ * l'API (`refresh()`, avant le premier affichage) ; si elle ne répond pas, la marque par défaut reste appliquée.
  */
 @Service()
 export class BrandService {
   private readonly document = inject(DOCUMENT);
-  private readonly storage = inject(StorageService);
   private readonly api = inject(BrandingApi);
 
-  private readonly current = signal<Brand>(this.read());
+  private readonly current = signal<Brand>({ ...BRAND_DEFAULT });
   private defaultFavicon: string | null = null;
 
   readonly brand = this.current.asReadonly();
@@ -40,18 +38,22 @@ export class BrandService {
   );
 
   constructor() {
+    try {
+      localStorage.removeItem(LEGACY_BRAND_KEY);
+    } catch {
+      // Stockage indisponible : rien à effacer.
+    }
     this.apply(this.current());
   }
 
-  /** Lit la marque de l'API ; en cas d'échec (serveur injoignable), la copie locale reste appliquée. */
+  /** Lit la marque de l'API ; en cas d'échec (serveur injoignable), la marque en place est gardée. */
   async refresh(): Promise<void> {
     try {
       const brand = await firstValueFrom(this.api.brand());
-      this.storage.set(BRAND_KEY, brand);
       this.current.set(brand);
       this.apply(brand);
     } catch {
-      // Marque locale conservée.
+      // Marque en place conservée.
     }
   }
 
@@ -76,7 +78,6 @@ export class BrandService {
   /** Revient à la marque par défaut, dans l'API puis à l'écran. */
   async reset(): Promise<void> {
     await firstValueFrom(this.api.reinitialiser());
-    this.storage.remove(BRAND_KEY);
     await this.refresh();
   }
 
@@ -118,12 +119,5 @@ export class BrandService {
       link.setAttribute('href', this.defaultFavicon ?? '');
       link.removeAttribute(FAVICON_MARK);
     }
-  }
-
-  private read(): Brand {
-    const stored = this.storage.get<Partial<Brand>>(BRAND_KEY);
-    return stored && typeof stored === 'object'
-      ? { ...BRAND_DEFAULT, ...stored }
-      : { ...BRAND_DEFAULT };
   }
 }

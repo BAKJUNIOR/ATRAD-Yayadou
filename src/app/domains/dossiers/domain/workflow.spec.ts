@@ -1,4 +1,4 @@
-import { defaultReferentiel, setReferentiel } from './referentiel';
+import { emptyReferentiel, setReferentiel } from './referentiel';
 import { ATTENTE_DOCS, actionCodeTo, isLocked, nextStatuses, targetOf } from './workflow';
 
 describe('workflow', () => {
@@ -37,7 +37,7 @@ describe('workflow', () => {
 
   it('follows the circuit read from the API when there is one', () => {
     setReferentiel({
-      ...defaultReferentiel(),
+      ...emptyReferentiel(),
       typeCircuits: { 'Demande de prêt': 'STANDARD' },
       workflows: {
         STANDARD: [
@@ -62,6 +62,6 @@ describe('workflow', () => {
     expect(nextStatuses(dossier)).toEqual(['Validé']);
     expect(actionCodeTo(dossier, 'Validé')).toBe('VALIDER');
     expect(actionCodeTo(dossier, 'Clôturé')).toBe('');
-    setReferentiel(defaultReferentiel());
+    setReferentiel(emptyReferentiel());
   });
 });

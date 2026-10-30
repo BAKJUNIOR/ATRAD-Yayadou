@@ -74,14 +74,6 @@
                   "with": "src/environments/environment.demo.ts"
                 }
               ]
-            },
-            "interne": {
-              "fileReplacements": [
-                {
-                  "replace": "src/app/domains/dossiers/domain/datasets.interne.ts",
-                  "with": "src/app/domains/dossiers/domain/datasets.interne.local.ts"
-                }
-              ]
             }
           },
           "defaultConfiguration": "production"
@@ -100,9 +92,6 @@
             },
             "demo": {
               "buildTarget": "ydxtrace-front:build:demo"
-            },
-            "interne": {
-              "buildTarget": "ydxtrace-front:build:development,interne"
             }
           },
           "defaultConfiguration": "development"

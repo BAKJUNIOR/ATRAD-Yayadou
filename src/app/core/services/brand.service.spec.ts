@@ -52,7 +52,7 @@ describe('BrandService', () => {
     expect(root.style.getPropertyValue('--brand-border-radius')).toBe('10px');
   });
 
-  it('should apply and cache the brand read from the API', async () => {
+  it('should apply the brand read from the API, without keeping a local copy', async () => {
     const service = TestBed.inject(BrandService);
     const http = TestBed.inject(HttpTestingController);
     const done = service.refresh();
@@ -62,7 +62,7 @@ describe('BrandService', () => {
     expect(service.brand().vocab).toEqual({ tiers: 'Client', dossier: 'Demande' });
     expect(root.style.getPropertyValue('--brand-primary')).toBe('#FF7518');
     expect(root.style.getPropertyValue('--brand-border-radius')).toBe('4px');
-    expect(JSON.parse(localStorage.getItem('atrad_brand_v1')!).appName).toBe('TraceBank');
+    expect(localStorage.getItem('atrad_brand_v1')).toBeNull();
   });
 
   it('should send the configuration, then the chosen logo, and reread the brand', async () => {
@@ -109,9 +109,18 @@ describe('BrandService', () => {
     expect(colorChange('accent', '#abcdef')).toEqual({ accent: '#ABCDEF', palette: 'custom' });
   });
 
-  it('should use the brand dark default until the user picks a theme', () => {
-    localStorage.setItem('atrad_brand_v1', JSON.stringify({ darkDefault: true }));
+  it('should use the brand dark default until the user picks a theme', async () => {
+    const service = TestBed.inject(BrandService);
+    const http = TestBed.inject(HttpTestingController);
     const theme = TestBed.inject(ThemeService);
+    expect(theme.isDark()).toBe(false);
+    const done = service.refresh();
+    http.expectOne('/api/v1/branding').flush({
+      success: true,
+      data: { ...MARQUE, configuration: { ...MARQUE.configuration, modeSombreParDefaut: true } },
+    });
+    await done;
+    theme.followBrandDefault();
     expect(theme.isDark()).toBe(true);
 
     theme.setTheme('light');

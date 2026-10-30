@@ -62,7 +62,7 @@ export class AppHeaderComponent {
     return unread ? `Notifications, ${unread} non lue(s)` : 'Notifications';
   });
 
-  /** `Lundi 12 octobre 2026` ; suit la date de démonstration. */
+  /** `Lundi 12 octobre 2026` */
   protected readonly today = computed(() => {
     const text = new Intl.DateTimeFormat('fr-FR', {
       weekday: 'long',
