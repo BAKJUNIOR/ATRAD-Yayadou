@@ -23,7 +23,7 @@ import { PilotageApi } from '../../../../pilotage/infrastructure/api/pilotage.ap
 import { isLate } from '../../../../traitement/domain/portfolio';
 import { TraitementContext } from '../../../../traitement/presentation/traitement-context.service';
 import { Dashboard, DashboardAction } from '../../../domain/entities/dashboard.entity';
-import { DASHBOARD_MOCK } from '../../../infrastructure/mock/dashboard.mock';
+import { DASHBOARD_TEXTS } from '../../../domain/dashboard.texts';
 
 const LIFECYCLE = [
   {
@@ -71,7 +71,7 @@ export class HomeComponent {
     }
     // Textes de l'écran propres au profil ; la salutation reprend le prénom du compte connecté.
     const base = {
-      ...DASHBOARD_MOCK[account.role],
+      ...DASHBOARD_TEXTS[account.role],
       greeting: `Bonjour ${account.name.split(' ')[0]}`,
     };
     // Les profils dont le parcours est construit affichent les données réelles.

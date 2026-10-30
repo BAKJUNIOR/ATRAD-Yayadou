@@ -1,13 +1,13 @@
 const pad = (value: number): string => String(value).padStart(2, '0');
 
-/** Décalage de la date de démonstration, en jours (voir `DemoClock`). */
+/** Décalage de la date du jour, en jours ; toujours nul depuis le branchement de l'API (voir `Clock`). */
 let dayOffset = 0;
 
 export function setDayOffset(days: number): void {
   dayOffset = days;
 }
 
-/** Instant courant, décalé de la date de démonstration. */
+/** Instant courant. */
 function now(): Date {
   const date = new Date();
   date.setDate(date.getDate() + dayOffset);

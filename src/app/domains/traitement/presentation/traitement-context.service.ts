@@ -1,5 +1,5 @@
 import { Service, computed, inject } from '@angular/core';
-import { DemoClock } from '../../../core/services/demo-clock.service';
+import { Clock } from '../../../core/services/clock.service';
 import { SessionService } from '../../../core/services/session.service';
 import { entityCode } from '../../dossiers/domain/referentiel';
 import { AssignmentMode, MODE_LABEL, shortEntity } from '../../dossiers/domain/routing';
@@ -20,7 +20,7 @@ const MODE_OF: Record<ApiModeRepartition, AssignmentMode> = {
 export class TraitementContext {
   private readonly session = inject(SessionService);
   private readonly store = inject(TraitementStore);
-  private readonly clock = inject(DemoClock);
+  private readonly clock = inject(Clock);
 
   /** Date du jour (`yyyy-MM-dd`). */
   get today(): string {

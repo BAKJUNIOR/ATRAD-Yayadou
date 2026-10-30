@@ -1,7 +1,7 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { RouterLink } from '@angular/router';
-import { DemoClock } from '../../../../../core/services/demo-clock.service';
+import { Clock } from '../../../../../core/services/clock.service';
 import { StatusBadgeComponent } from '../../../../../shared/ui/status-badge/status-badge.component';
 import { TimelineComponent } from '../../../../../shared/ui/timeline/timeline.component';
 import { Priorite } from '../../../../dossiers/domain/dossier-catalog';
@@ -43,7 +43,7 @@ interface DetailField {
 export class SuiviDossierDetailComponent {
   private readonly suiviApi = inject(SuiviAgenceApi);
   private readonly etatApi = inject(EtatApi);
-  private readonly clock = inject(DemoClock);
+  private readonly clock = inject(Clock);
 
   /** Identifiant du dossier, lu dans l'URL (`/agence/suivi/:id`). */
   readonly id = input.required<string>();

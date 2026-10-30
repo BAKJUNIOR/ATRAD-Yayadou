@@ -1,7 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { catchError, of, switchMap } from 'rxjs';
-import { DemoClock } from '../../../../../core/services/demo-clock.service';
+import { Clock } from '../../../../../core/services/clock.service';
 import { KpiCardComponent } from '../../../../../shared/ui/kpi-card/kpi-card.component';
 import { DOSSIER_TYPES, DossierType } from '../../../../dossiers/domain/dossier-catalog';
 import { entiteOf, entites, labelOf, referentiel } from '../../../../dossiers/domain/referentiel';
@@ -26,7 +26,7 @@ import { TONE_BAR, TONE_TEXT } from '../../tone';
 })
 export class TableauDeBordComponent {
   private readonly api = inject(PilotageApi);
-  private readonly clock = inject(DemoClock);
+  private readonly clock = inject(Clock);
 
   protected readonly types = DOSSIER_TYPES;
   protected readonly target = SLA_TARGET;
