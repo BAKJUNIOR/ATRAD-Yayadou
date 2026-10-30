@@ -67,7 +67,11 @@ export class HomeComponent {
     if (!account) {
       return null;
     }
-    const base = DASHBOARD_MOCK[account.role];
+    // Textes de l'écran propres au profil ; la salutation reprend le prénom du compte connecté.
+    const base = {
+      ...DASHBOARD_MOCK[account.role],
+      greeting: `Bonjour ${account.name.split(' ')[0]}`,
+    };
     // Les profils dont le parcours est construit affichent les données réelles.
     if (account.role === 'agence') {
       return { ...base, ...this.agenceDashboard(account) };

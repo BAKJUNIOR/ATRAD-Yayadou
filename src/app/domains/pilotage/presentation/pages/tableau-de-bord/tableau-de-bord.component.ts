@@ -1,19 +1,21 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { catchError, of, switchMap } from 'rxjs';
 import { DemoClock } from '../../../../../core/services/demo-clock.service';
 import { KpiCardComponent } from '../../../../../shared/ui/kpi-card/kpi-card.component';
 import { DOSSIER_TYPES, DossierType } from '../../../../dossiers/domain/dossier-catalog';
-import { TransmissionStore } from '../../../../dossiers/infrastructure/store/transmission.store';
+import { entiteOf, entites, labelOf, referentiel } from '../../../../dossiers/domain/referentiel';
 import {
   PeriodId,
   SLA_TARGET,
-  agencePerformance,
-  averageTreatmentDelay,
-  byStatus,
-  byType,
-  inScope,
-  kpiCards,
+  agencePerformanceFromApi,
+  byStatusFromApi,
+  byTypeFromApi,
+  delayLabel,
+  kpiCardsFromApi,
   periods,
 } from '../../../domain/indicators';
+import { FiltrePilotage, PilotageApi } from '../../../infrastructure/api/pilotage.api';
 import { TONE_BAR, TONE_TEXT } from '../../tone';
 
 /** Pilotage : indicateurs du réseau sur un périmètre (agence, période, type de dossier). */
@@ -23,7 +25,7 @@ import { TONE_BAR, TONE_TEXT } from '../../tone';
   templateUrl: './tableau-de-bord.component.html',
 })
 export class TableauDeBordComponent {
-  private readonly store = inject(TransmissionStore);
+  private readonly api = inject(PilotageApi);
   private readonly clock = inject(DemoClock);
 
   protected readonly types = DOSSIER_TYPES;
@@ -36,30 +38,48 @@ export class TableauDeBordComponent {
   protected readonly periodId = signal<PeriodId>('all');
 
   protected readonly periodOptions = computed(() => periods(this.clock.today()));
-  protected readonly agences = computed(() => [
-    ...new Set(this.store.dossiers().map((dossier) => dossier.agence)),
-  ]);
+  /** Entités émettrices proposées dans le filtre, au format `Nom (CODE)`. */
+  protected readonly agences = computed(() =>
+    entites()
+      .filter((entite) => entite.emet)
+      .map((entite) => labelOf(entite)),
+  );
 
-  private readonly scope = computed(() => ({
-    agence: this.agence(),
-    type: this.type(),
-    period:
-      this.periodOptions().find((period) => period.id === this.periodId()) ??
-      this.periodOptions()[3],
-  }));
-  protected readonly scoped = computed(() => inScope(this.store.dossiers(), this.scope()));
+  /** Filtres de l'écran, traduits en paramètres de l'API. */
+  private readonly filtre = computed<FiltrePilotage>(() => {
+    const period =
+      this.periodOptions().find((candidate) => candidate.id === this.periodId()) ??
+      this.periodOptions()[3];
+    return {
+      agenceId: entiteOf(this.agence())?.id,
+      typeDossierId: this.type() ? referentiel().typeIds[this.type()] : undefined,
+      dateDebut: period?.from,
+      dateFin: period?.to,
+    };
+  });
+
+  private readonly tableau = toSignal(
+    toObservable(this.filtre).pipe(
+      switchMap((filtre) => this.api.tableauDeBord(filtre).pipe(catchError(() => of(null)))),
+    ),
+    { initialValue: null },
+  );
 
   protected readonly cards = computed(() =>
-    kpiCards(this.scoped(), this.store.etats(), this.scope(), this.clock.today()),
+    this.tableau() ? kpiCardsFromApi(this.tableau()!) : [],
   );
-  protected readonly statuses = computed(() => byStatus(this.scoped()));
-  protected readonly volumes = computed(() => byType(this.scoped()));
-  protected readonly averageDelay = computed(() =>
-    averageTreatmentDelay(this.scoped(), this.clock.today()),
+  protected readonly statuses = computed(() =>
+    this.tableau() ? byStatusFromApi(this.tableau()!) : [],
   );
+  protected readonly volumes = computed(() =>
+    this.tableau() ? byTypeFromApi(this.tableau()!) : [],
+  );
+  protected readonly averageDelay = computed(() => delayLabel(this.tableau()?.delaiMoyenJours));
   protected readonly performance = computed(() =>
-    agencePerformance(this.scoped(), this.clock.today()),
+    agencePerformanceFromApi(this.tableau()?.parAgence ?? []),
   );
+  /** Nombre de dossiers du périmètre. */
+  protected readonly scoped = computed(() => ({ length: this.tableau()?.total ?? 0 }));
 
   protected onAgence(event: Event): void {
     this.agence.set((event.target as HTMLSelectElement).value);
