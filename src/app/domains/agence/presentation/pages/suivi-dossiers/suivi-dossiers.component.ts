@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
 import { Router, RouterLink } from '@angular/router';
+import { RealtimeService } from '../../../../../core/realtime/realtime.service';
 import { formatDate, formatTime } from '../../../../../core/utils/date.util';
 import { STATUS_KEYS, Status } from '../../../../../shared/models/status';
 import { IconComponent, IconName } from '../../../../../shared/ui/icon/icon.component';
@@ -58,14 +59,18 @@ export class SuiviDossiersComponent {
   protected readonly statusFilter = signal<Status | null>(null);
   private readonly pickedEtat = signal('');
 
+  private readonly realtime = inject(RealtimeService);
+
   /** Dossiers de l'agence lus dans l'API, du plus récemment saisi au plus ancien. */
   private readonly all = toSignal(
-    this.suiviApi.dossiers().pipe(map((suivi) => suivi.dossiers.map(suiviRowFromApi))),
+    this.realtime
+      .live(() => this.suiviApi.dossiers())
+      .pipe(map((suivi) => suivi.dossiers.map(suiviRowFromApi))),
     { initialValue: [] },
   );
   /** États émis par l'agence, pour l'impression de leur bordereau. */
   private readonly etats = toSignal(
-    this.etatApi.emis().pipe(map((etats) => etats.map(etatFromApi))),
+    this.realtime.live(() => this.etatApi.emis()).pipe(map((etats) => etats.map(etatFromApi))),
     {
       initialValue: [],
     },

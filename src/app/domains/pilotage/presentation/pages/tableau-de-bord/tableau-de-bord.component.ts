@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { catchError, of, switchMap } from 'rxjs';
+import { switchMap } from 'rxjs';
+import { RealtimeService } from '../../../../../core/realtime/realtime.service';
 import { Clock } from '../../../../../core/services/clock.service';
 import { KpiCardComponent } from '../../../../../shared/ui/kpi-card/kpi-card.component';
 import { DOSSIER_TYPES, DossierType } from '../../../../dossiers/domain/dossier-catalog';
@@ -58,9 +59,11 @@ export class TableauDeBordComponent {
     };
   });
 
+  private readonly realtime = inject(RealtimeService);
+
   private readonly tableau = toSignal(
     toObservable(this.filtre).pipe(
-      switchMap((filtre) => this.api.tableauDeBord(filtre).pipe(catchError(() => of(null)))),
+      switchMap((filtre) => this.realtime.live(() => this.api.tableauDeBord(filtre))),
     ),
     { initialValue: null },
   );

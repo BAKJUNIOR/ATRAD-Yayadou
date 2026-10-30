@@ -1,7 +1,9 @@
 import { Dialog } from '@angular/cdk/dialog';
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
+import { RealtimeService } from '../../../../../core/realtime/realtime.service';
 import { ToastService } from '../../../../../core/services/toast.service';
 import { formatStamp, isoDateToFr } from '../../../../../core/utils/date.util';
 import { initialsOf } from '../../../../../core/utils/text.util';
@@ -76,6 +78,9 @@ export class DossierDetailComponent {
 
   constructor() {
     effect(() => void this.load(this.id()));
+    inject(RealtimeService)
+      .changes$.pipe(takeUntilDestroyed())
+      .subscribe(() => void this.load(this.id()));
   }
 
   private async load(id: string): Promise<void> {

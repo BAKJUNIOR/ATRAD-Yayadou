@@ -42,13 +42,13 @@ describe('StompClient', () => {
     return new StompClient({
       url: 'ws://localhost/ws/websocket',
       connectHeaders: () => ({ Authorization: 'Bearer jeton-1' }),
-      destination: '/user/queue/notifications',
+      destinations: ['/user/queue/notifications', '/user/queue/donnees'],
       onMessage: () => undefined,
       ...extra,
     });
   }
 
-  it('should connect with the token, subscribe once connected and deliver messages', () => {
+  it('should connect with the token, subscribe to each queue once connected and deliver messages', () => {
     const received: StompMessage[] = [];
     let connected = 0;
     const stomp = client({
@@ -63,6 +63,7 @@ describe('StompClient', () => {
 
     socket.onmessage?.({ data: 'CONNECTED\nversion:1.2\n\n\u0000' });
     expect(socket.sent[1]).toContain('SUBSCRIBE\nid:sub-0\ndestination:/user/queue/notifications');
+    expect(socket.sent[2]).toContain('SUBSCRIBE\nid:sub-1\ndestination:/user/queue/donnees');
     expect(connected).toBe(1);
 
     socket.onmessage?.({

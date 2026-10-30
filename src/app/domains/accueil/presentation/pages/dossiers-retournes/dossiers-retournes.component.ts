@@ -1,5 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
+import { RealtimeService } from '../../../../../core/realtime/realtime.service';
 import { ConfirmService } from '../../../../../core/services/confirm.service';
 import { ToastService } from '../../../../../core/services/toast.service';
 import { formatStamp } from '../../../../../core/utils/date.util';
@@ -34,6 +36,9 @@ export class DossiersRetournesComponent {
 
   constructor() {
     this.load();
+    inject(RealtimeService)
+      .changes$.pipe(takeUntilDestroyed())
+      .subscribe(() => this.load());
   }
 
   private load(): void {
