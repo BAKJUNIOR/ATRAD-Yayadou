@@ -37,6 +37,10 @@ export const endpoints = {
     byId: (id: string) => `api/v1/etats/${id}`,
     reception: (id: string) => `api/v1/etats/${id}/reception`,
   },
+  retours: {
+    base: 'api/v1/retours',
+    renvoi: 'api/v1/retours/renvoi',
+  },
   suivi: {
     agence: 'api/v1/suivi/agence',
     agenceDossier: (id: string) => `api/v1/suivi/agence/dossiers/${id}`,

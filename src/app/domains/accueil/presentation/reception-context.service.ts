@@ -4,6 +4,7 @@ import { entityCode, entiteOf, recepOf } from '../../dossiers/domain/referentiel
 import { ReferentielStore } from '../../dossiers/infrastructure/store/referentiel.store';
 import { TransmissionStore } from '../../dossiers/infrastructure/store/transmission.store';
 import { TraitementContext } from '../../traitement/presentation/traitement-context.service';
+import { ReceptionStore } from '../infrastructure/store/reception.store';
 
 /**
  * Point de vue de l'entité réceptrice de l'utilisateur : l'agent d'accueil, ou l'agent de
@@ -14,6 +15,7 @@ import { TraitementContext } from '../../traitement/presentation/traitement-cont
 export class ReceptionContext {
   private readonly session = inject(SessionService);
   private readonly store = inject(TransmissionStore);
+  private readonly reception = inject(ReceptionStore);
   private readonly referentiel = inject(ReferentielStore);
   private readonly traitement = inject(TraitementContext);
 
@@ -40,10 +42,13 @@ export class ReceptionContext {
       : (this.session.account()?.name ?? ''),
   );
 
-  /** États destinés à l'entité réceptrice. */
-  readonly etats = computed(() =>
-    this.store.etats().filter((etat) => recepOf(etat) === this.recepCode()),
-  );
+  /** États destinés à l'entité réceptrice (lus dans l'API par `load()`). */
+  readonly etats = this.reception.etats;
+
+  /** Charge les états de l'entité réceptrice ; une erreur est déjà signalée par l'intercepteur. */
+  load(): void {
+    void this.reception.load().catch(() => undefined);
+  }
 
   /** Dossiers réceptionnés par l'entité, quelle que soit leur entité de traitement. */
   readonly dossiers = computed(() => {

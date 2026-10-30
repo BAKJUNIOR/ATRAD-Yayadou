@@ -65,6 +65,10 @@ export class EtatsRecusComponent {
     void this.router.navigate(['/accueil-central/etats-recus', ref]);
   }
 
+  constructor() {
+    this.reception.load();
+  }
+
   protected criteria(): EtatCriteria {
     return this.search.draft();
   }

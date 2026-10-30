@@ -1,14 +1,14 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { ConfirmService } from '../../../../../core/services/confirm.service';
-import { SessionService } from '../../../../../core/services/session.service';
 import { ToastService } from '../../../../../core/services/toast.service';
 import { formatStamp } from '../../../../../core/utils/date.util';
-import { entityCode } from '../../../../../core/utils/text.util';
 import { IconComponent } from '../../../../../shared/ui/icon/icon.component';
+import { ApiDossier, routedFromApi } from '../../../../dossiers/domain/entities/dossier-api.entity';
+import { RoutedDossier } from '../../../../dossiers/domain/entities/dossier.entity';
 import { ENTITES, bareEntity } from '../../../../dossiers/domain/routing';
-import { TransmissionStore } from '../../../../dossiers/infrastructure/store/transmission.store';
-import { ReceptionContext } from '../../reception-context.service';
 import { pendingReturns } from '../../../domain/reception';
+import { AccueilApi, ApiDossierRetourne } from '../../../infrastructure/api/accueil.api';
 
 /** Parcours accueil : renvoyer à leur agence les dossiers retournés par une entité. */
 @Component({
@@ -17,9 +17,7 @@ import { pendingReturns } from '../../../domain/reception';
   templateUrl: './dossiers-retournes.component.html',
 })
 export class DossiersRetournesComponent {
-  private readonly store = inject(TransmissionStore);
-  private readonly reception = inject(ReceptionContext);
-  private readonly session = inject(SessionService);
+  private readonly api = inject(AccueilApi);
   private readonly confirm = inject(ConfirmService);
   private readonly toast = inject(ToastService);
 
@@ -31,7 +29,16 @@ export class DossiersRetournesComponent {
   protected readonly query = signal('');
   private readonly picked = signal<ReadonlySet<string>>(new Set());
 
-  protected readonly pending = computed(() => pendingReturns(this.reception.dossiers()));
+  /** Dossiers retournés par les services traitants, pas encore renvoyés à leur agence (lus dans l'API). */
+  protected readonly pending = signal<RoutedDossier[]>([]);
+
+  constructor() {
+    this.load();
+  }
+
+  private load(): void {
+    this.api.retours().subscribe((retours) => this.pending.set(pendingReturns(retours.map(retourneFromApi))));
+  }
 
   /** Entités ayant au moins un dossier à renvoyer, avec leur nombre. */
   protected readonly entiteOptions = computed(() =>
@@ -147,15 +154,38 @@ export class DossiersRetournesComponent {
     if (!confirmed) {
       return;
     }
-    const account = this.session.account();
-    const by = account ? `${account.name} — ${entityCode(account.entity)}` : '';
-    const returned = this.store.renvoyer(
-      picked.map((dossier) => dossier.id),
-      by,
-    );
+    let returned: ApiDossier[];
+    try {
+      returned = await firstValueFrom(this.api.renvoyer(picked.map((dossier) => dossier.id)));
+    } catch {
+      return;
+    }
     this.picked.set(new Set());
     this.toast.success(
-      `${returned.length} dossier(s) retourné(s) en agence : ${returned.map((dossier) => dossier.ref).join(', ')}.`,
+      `${returned.length} dossier(s) retourné(s) en agence : ${returned.map((dossier) => dossier.reference).join(', ')}.`,
     );
+    this.load();
   }
+}
+
+/** Dossier retourné de l'API, vu comme un dossier routé (motif, pièces manquantes, date du retour). */
+function retourneFromApi(row: ApiDossierRetourne): RoutedDossier {
+  return routedFromApi({
+    dossier: row.dossier,
+    actions: [],
+    suspens: row.piecesManquantes.length
+      ? {
+          id: '',
+          piecesManquantes: row.piecesManquantes,
+          note: null,
+          demandeParId: '',
+          demandeLe: '',
+          dateLimite: null,
+          regulariseLe: null,
+        }
+      : null,
+    retour: row.retour,
+    pieces: [],
+    historique: [],
+  });
 }
