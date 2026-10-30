@@ -1,4 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { ConfirmService } from '../../../../../core/services/confirm.service';
 import { ToastService } from '../../../../../core/services/toast.service';
 import { IconComponent } from '../../../../../shared/ui/icon/icon.component';
@@ -14,7 +15,6 @@ import {
   traitEntites,
 } from '../../../../dossiers/domain/referentiel';
 import {
-  ALL_GESTIONNAIRES,
   AssignmentMode,
   ENTITES,
   EntitySettings,
@@ -24,8 +24,8 @@ import {
   shortEntity,
 } from '../../../../dossiers/domain/routing';
 import { ReferentielStore } from '../../../../dossiers/infrastructure/store/referentiel.store';
-import { RoutingStore } from '../../../../dossiers/infrastructure/store/routing.store';
-import { TransmissionStore } from '../../../../dossiers/infrastructure/store/transmission.store';
+import { AdministrationApi } from '../../../infrastructure/api/administration.api';
+import { RoutingStore } from '../../../infrastructure/store/routing.store';
 
 type Tab = 'map' | 'rep';
 
@@ -49,8 +49,8 @@ function dispatcherError(settings: EntitySettings): string {
 }
 
 /** Garde les listes dérivées de l'équipe cohérentes avec elle, dans l'ordre du référentiel. */
-function normalise(settings: EntitySettings): EntitySettings {
-  const team = ALL_GESTIONNAIRES.filter((member) => settings.team.includes(member));
+function normalise(settings: EntitySettings, all: readonly string[]): EntitySettings {
+  const team = all.filter((member) => settings.team.includes(member));
   return {
     ...settings,
     team,
@@ -71,7 +71,7 @@ function normalise(settings: EntitySettings): EntitySettings {
 export class RoutageComponent {
   private readonly routing = inject(RoutingStore);
   private readonly referentiel = inject(ReferentielStore);
-  private readonly store = inject(TransmissionStore);
+  private readonly api = inject(AdministrationApi);
   private readonly confirm = inject(ConfirmService);
   private readonly toast = inject(ToastService);
 
@@ -90,6 +90,11 @@ export class RoutageComponent {
   private readonly entDraft = signal<EntitySettings | null>(null);
 
   private readonly saved = this.routing.config;
+
+  constructor() {
+    // Équipes, répartiteurs et membres candidats, lus dans l'API.
+    void this.routing.load().catch(() => undefined);
+  }
 
   // ------------------------------------------------ Circuit des types de dossier
 
@@ -157,17 +162,9 @@ export class RoutageComponent {
     });
   });
 
-  /** `3 dossier(s) de ce type existent déjà`, ou chaîne vide. */
-  private typeUse(type: DossierType): string {
-    const count =
-      this.store.draft().filter((dossier) => dossier.type === type).length +
-      this.store
-        .etats()
-        .reduce(
-          (sum, etat) => sum + etat.dossiers.filter((dossier) => dossier.type === type).length,
-          0,
-        );
-    return count ? `${count} dossier(s) de ce type existent déjà` : '';
+  /** L'API refuse elle-même de supprimer un type déjà utilisé, avec son message. */
+  private typeUse(_type: DossierType): string {
+    return '';
   }
 
   private circuitError(draft: CircuitDraft): string {
@@ -224,10 +221,18 @@ export class RoutageComponent {
     if (!confirmed) {
       return;
     }
-    this.saveCircuits({
-      ...this.referentiel.value().circuits,
-      [edit.type]: { et: edit.et, trait: edit.trait, check: false },
-    });
+    try {
+      await firstValueFrom(
+        this.api.modifierCircuit(
+          this.referentiel.value().typeIds[edit.type] ?? '',
+          edit.et,
+          entiteByCode(edit.trait)?.id ?? null,
+        ),
+      );
+      await this.referentiel.refresh();
+    } catch {
+      return;
+    }
     this.mapEdit.set(null);
     this.toast.success(`Circuit de « ${edit.type} » enregistré.`);
   }
@@ -277,11 +282,14 @@ export class RoutageComponent {
     if (!confirmed) {
       return;
     }
-    const ref = this.referentiel.value();
-    this.referentiel.save({
-      dossierTypes: [...ref.dossierTypes, nom],
-      circuits: { ...ref.circuits, [nom]: { et: draft.et, trait: draft.trait, check: false } },
-    });
+    try {
+      await firstValueFrom(
+        this.api.creerTypeDossier(nom, draft.et, entiteByCode(draft.trait)?.id ?? null),
+      );
+      await this.referentiel.refresh();
+    } catch {
+      return;
+    }
     this.newType.set(null);
     this.toast.success(`Type de dossier « ${nom} » ajouté.`);
   }
@@ -300,17 +308,15 @@ export class RoutageComponent {
     if (!confirmed) {
       return;
     }
-    const ref = this.referentiel.value();
-    const { [type]: _removed, ...circuits } = ref.circuits;
-    this.referentiel.save({
-      dossierTypes: ref.dossierTypes.filter((candidate) => candidate !== type),
-      circuits,
-    });
+    try {
+      await firstValueFrom(
+        this.api.supprimerTypeDossier(this.referentiel.value().typeIds[type] ?? ''),
+      );
+      await this.referentiel.refresh();
+    } catch {
+      return;
+    }
     this.toast.success(`Type de dossier « ${type} » supprimé.`);
-  }
-
-  private saveCircuits(circuits: Record<DossierType, Circuit>): void {
-    this.referentiel.save({ circuits });
   }
 
   // ------------------------------------------- Répartition interne par entité
@@ -381,12 +387,12 @@ export class RoutageComponent {
       isDisp,
       error: this.dirty() || isDisp ? error : '',
       types: this.typesOf(this.selectedEntite()),
-      teamLabel: `${settings.team.length} membre${settings.team.length > 1 ? 's' : ''} sur ${ALL_GESTIONNAIRES.length}`,
+      teamLabel: `${settings.team.length} membre${settings.team.length > 1 ? 's' : ''} sur ${this.routing.gestionnaires().length}`,
       dispatcherCount: settings.dispatchers.length
         ? `${settings.dispatchers.length} désigné${settings.dispatchers.length > 1 ? 's' : ''}`
         : 'obligatoire',
       gridClass: isDisp ? 'members-grid-disp min-w-[480px]' : 'members-grid min-w-[380px]',
-      members: ALL_GESTIONNAIRES.map((name) => {
+      members: this.routing.gestionnaires().map((name) => {
         const inTeam = settings.team.includes(name);
         return {
           name,
@@ -476,9 +482,11 @@ export class RoutageComponent {
     if (!confirmed) {
       return;
     }
-    const config = structuredClone(this.saved());
-    config.ent[entityCode(name)] = draft;
-    this.routing.save(config);
+    try {
+      await this.routing.save(entityCode(name), draft);
+    } catch {
+      return;
+    }
     this.entDraft.set(null);
     this.toast.success(`Répartition de ${shortEntity(name)} enregistrée.`);
   }
@@ -525,7 +533,9 @@ export class RoutageComponent {
   }
 
   private edit(change: (settings: EntitySettings) => EntitySettings): void {
-    this.entDraft.set(normalise(change(structuredClone(this.settings()))));
+    this.entDraft.set(
+      normalise(change(structuredClone(this.settings())), this.routing.gestionnaires()),
+    );
   }
 
   private flip(list: readonly string[], name: string): string[] {

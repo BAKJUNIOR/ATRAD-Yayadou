@@ -221,6 +221,53 @@
       </div>
     </section>
 
+    <!-- data-novocab : la saisie montre les termes tels que tapés, sans conversion. -->
+    <section
+      class="panel flex flex-col gap-3.5 px-5 py-[18px]"
+      data-novocab
+      aria-labelledby="vocab-title"
+    >
+      <div class="flex flex-col gap-1">
+        <h2 id="vocab-title" class="text-[14.5px] font-semibold text-ink">Vocabulaire</h2>
+        <p class="text-[12.5px] text-ink-muted">
+          Adaptez les mots de l'application à votre organisation : formulaires, tableaux, bordereaux
+          et messages, pour tous les profils.
+        </p>
+      </div>
+      <div class="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4">
+        <label class="form-label gap-[5px]">
+          Terme pour le tiers concerné *
+          <input
+            type="text"
+            class="form-control"
+            maxlength="30"
+            placeholder="Ex. Client, Patient, Fournisseur"
+            [value]="draft().vocab.tiers"
+            (input)="setVocab('tiers', $event)"
+          />
+          <span class="font-normal text-ink-muted">Par défaut « Tiers ».</span>
+        </label>
+        <label class="form-label gap-[5px]">
+          Terme pour le dossier *
+          <input
+            type="text"
+            class="form-control"
+            maxlength="30"
+            placeholder="Ex. Dossier, Demande"
+            [value]="draft().vocab.dossier"
+            (input)="setVocab('dossier', $event)"
+          />
+          <span class="font-normal text-ink-muted">Par défaut « Dossier ».</span>
+        </label>
+      </div>
+      <div class="flex flex-wrap items-center justify-between gap-2.5">
+        <span class="text-[12.5px] text-ink-secondary">{{ vocabPreview() }}</span>
+        <button type="button" class="btn-outline px-3 py-2 text-[13px]" (click)="restoreVocab()">
+          Termes par défaut
+        </button>
+      </div>
+    </section>
+
     <section class="panel flex flex-wrap items-center justify-between gap-4 px-5 py-[18px]">
       <div class="flex min-w-0 flex-[1_1_260px] flex-col gap-[3px]">
         <h2 class="text-[14.5px] font-semibold tracking-[-0.01em] text-ink">E. Mode d'affichage</h2>
@@ -363,10 +410,11 @@
           saveDisabled() ? 'cursor-not-allowed bg-ink-faint' : 'bg-brand hover:bg-brand-dark'
         "
         [attr.aria-disabled]="saveDisabled()"
+        [attr.aria-busy]="saving()"
         [title]="saveTip()"
         (click)="save()"
       >
-        Enregistrer
+        {{ saving() ? 'Enregistrement…' : 'Enregistrer' }}
       </button>
     </div>
   </div>

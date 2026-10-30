@@ -1,5 +1,5 @@
 import { Dialog } from '@angular/cdk/dialog';
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { NAVIGATION } from '../../../../../core/navigation/navigation';
 import { BrandService } from '../../../../../core/services/brand.service';
@@ -8,10 +8,10 @@ import { Theme, ThemeService } from '../../../../../core/services/theme.service'
 import { ToastService } from '../../../../../core/services/toast.service';
 import { entityCode, initialsOf } from '../../../../../core/utils/text.util';
 import { IconComponent, IconName } from '../../../../../shared/ui/icon/icon.component';
-import { MODE_LABEL, rightsOf } from '../../../../dossiers/domain/routing';
-import { RoutingStore } from '../../../../dossiers/infrastructure/store/routing.store';
+import { Utilisateur } from '../../../../auth/domain/entities/utilisateur.entity';
+import { TraitementContext } from '../../../../traitement/presentation/traitement-context.service';
 import { Contact, jobTitle, splitName } from '../../../domain/profile.rules';
-import { ProfileStore } from '../../../infrastructure/store/profile.store';
+import { ProfileApi } from '../../../infrastructure/api/profile.api';
 import { ContactDialogComponent } from '../../components/contact-dialog/contact-dialog.component';
 import { PasswordDialogComponent } from '../../components/password-dialog/password-dialog.component';
 
@@ -41,8 +41,8 @@ function field(label: string, value: string, mono = false): Field {
 export class ProfileComponent {
   private readonly session = inject(SessionService);
   private readonly brand = inject(BrandService);
-  private readonly profiles = inject(ProfileStore);
-  private readonly routing = inject(RoutingStore);
+  private readonly api = inject(ProfileApi);
+  private readonly traitement = inject(TraitementContext);
   private readonly dialog = inject(Dialog);
   private readonly toast = inject(ToastService);
   protected readonly theme = inject(ThemeService);
@@ -52,16 +52,26 @@ export class ProfileComponent {
 
   protected readonly initials = computed(() => initialsOf(this.account()?.name ?? ''));
   protected readonly jobTitle = computed(() => jobTitle(this.account()?.roleLabel ?? ''));
-  private readonly contact = computed<Contact>(() =>
-    this.profiles.contactOf(this.account()?.ident ?? ''),
-  );
+  /** Compte lu dans l'API (`/moi`). */
+  private readonly utilisateur = signal<Utilisateur | null>(null);
+  private readonly contact = computed<Contact>(() => ({
+    email: this.utilisateur()?.email ?? '',
+    phone: this.utilisateur()?.telephone ?? '',
+  }));
+
+  constructor() {
+    this.api.moi().subscribe((utilisateur) => this.utilisateur.set(utilisateur));
+  }
 
   protected readonly identity = computed<Field[]>(() => {
     const account = this.account();
     if (!account) {
       return [];
     }
-    const { firstName, lastName } = splitName(account.name);
+    const utilisateur = this.utilisateur();
+    const { firstName, lastName } = utilisateur
+      ? { firstName: utilisateur.prenom, lastName: utilisateur.nom }
+      : splitName(account.name);
     const contact = this.contact();
     return [
       field('Prénom', firstName),
@@ -84,18 +94,17 @@ export class ProfileComponent {
       field('Code', entityCode(account.entity), true),
       field('Parcours', NAVIGATION[account.role].title),
     ];
-    // Profil traitement : mode de répartition de l'entité et droits de l'agent dans celle-ci.
-    const settings = this.routing.config().ent[account.entity];
-    if (account.role === 'traitement' && settings) {
-      fields.push(field('Répartition des dossiers', MODE_LABEL[settings.mode]));
-      fields.push(
-        field(
-          'Mes droits',
-          settings.team.includes(account.name)
-            ? rightsOf(account.name, settings).join(' · ')
-            : "Hors de l'équipe",
-        ),
-      );
+    // Profil traitement : mode de répartition de l'entité et droits de l'agent, lus dans l'API.
+    if (account.role === 'traitement') {
+      const functions = this.traitement.functions();
+      const rights = [
+        functions.traiter && 'Traiter',
+        functions.pool && "S'attribuer",
+        functions.affecter && 'Affecter',
+        functions.rechercher && 'Rechercher',
+      ].filter((right): right is string => !!right);
+      fields.push(field('Répartition des dossiers', this.traitement.modeLabel()));
+      fields.push(field('Mes droits', rights.length ? rights.join(' · ') : "Hors de l'équipe"));
     }
     return fields;
   });
@@ -112,8 +121,10 @@ export class ProfileComponent {
     });
     const contact = await firstValueFrom(ref.closed);
     if (contact) {
-      this.profiles.saveContact(account.ident, contact);
-      this.toast.success('Coordonnées enregistrées.');
+      this.api.modifierCoordonnees(contact.email, contact.phone).subscribe((utilisateur) => {
+        this.utilisateur.set(utilisateur);
+        this.toast.success('Coordonnées enregistrées.');
+      });
     }
   }
 
@@ -123,8 +134,7 @@ export class ProfileComponent {
       backdropClass: 'app-dialog-backdrop',
     });
     if (await firstValueFrom(ref.closed)) {
-      // Aucun mot de passe n'est vérifié tant que l'API d'authentification n'est pas branchée.
-      this.toast.info("Démonstration : le changement sera appliqué une fois l'API branchée.");
+      this.toast.success('Mot de passe changé.');
     }
   }
 

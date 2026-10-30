@@ -1,6 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { ConfirmService } from '../../../../../core/services/confirm.service';
 import { ToastService } from '../../../../../core/services/toast.service';
 import { IconComponent } from '../../../../../shared/ui/icon/icon.component';
@@ -15,10 +16,9 @@ import {
   entityLabel,
   etatTypeErrors,
   etatTypes,
-  nextEtatTypeId,
 } from '../../../../dossiers/domain/referentiel';
 import { ReferentielStore } from '../../../../dossiers/infrastructure/store/referentiel.store';
-import { TransmissionStore } from '../../../../dossiers/infrastructure/store/transmission.store';
+import { AdministrationApi } from '../../../infrastructure/api/administration.api';
 
 const LOCK_TIP = "Terminez d'abord la modification en cours (Enregistrer ou Annuler).";
 
@@ -49,7 +49,7 @@ const SAISIE_MODES: readonly { id: SaisieMode; title: string; text: string; byDe
 })
 export class TypesEtatComponent {
   private readonly referentiel = inject(ReferentielStore);
-  private readonly store = inject(TransmissionStore);
+  private readonly api = inject(AdministrationApi);
   private readonly confirm = inject(ConfirmService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
@@ -168,18 +168,12 @@ export class TypesEtatComponent {
       return;
     }
     const mode = SAISIE_MODES.find((candidate) => candidate.id === id)!;
-    const draftCount = this.store.draft().length;
-    if (draftCount) {
-      const confirmed = await this.confirm.ask({
-        title: 'Changer le mode de saisie ?',
-        text: `Un brouillon de ${draftCount} dossier(s) est en cours côté agence. Il est conservé ; les dossiers non acceptés devront être corrigés avant transmission.`,
-        okLabel: 'Changer le mode',
-      });
-      if (!confirmed) {
-        return;
-      }
+    try {
+      await firstValueFrom(this.api.modifierModeSaisie(id === 'auto' ? 'AUTO' : 'CHOIX'));
+      await this.referentiel.refresh();
+    } catch {
+      return;
     }
-    this.referentiel.save({ saisieMode: id });
     this.toast.success(`Mode de saisie : « ${mode.title} » enregistré.`);
   }
 
@@ -234,7 +228,7 @@ export class TypesEtatComponent {
       return;
     }
     const row: EtatType = {
-      id: draft.orig ?? nextEtatTypeId(),
+      id: draft.orig ?? '',
       nom: draft.nom.trim(),
       recep: draft.recep,
       emet: [...draft.emet],
@@ -248,12 +242,21 @@ export class TypesEtatComponent {
     if (!confirmed) {
       return;
     }
-    const current = this.referentiel.value().etatTypes;
-    this.referentiel.save({
-      etatTypes: draft.orig
-        ? current.map((type) => (type.id === draft.orig ? row : type))
-        : [...current, row],
-    });
+    const body = {
+      nom: row.nom,
+      entiteReceptriceId: entiteByCode(row.recep)?.id ?? '',
+      emettriceIds: row.emet
+        .map((code) => entiteByCode(code)?.id)
+        .filter((id): id is string => !!id),
+    };
+    try {
+      await firstValueFrom(
+        draft.orig ? this.api.modifierTypeEtat(draft.orig, body) : this.api.creerTypeEtat(body),
+      );
+      await this.referentiel.refresh();
+    } catch {
+      return;
+    }
     this.draft.set(null);
     this.toast.success(`Type d'état « ${row.nom} » enregistré.`);
   }

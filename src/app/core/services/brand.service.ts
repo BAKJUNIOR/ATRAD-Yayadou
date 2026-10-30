@@ -1,7 +1,17 @@
 import { DOCUMENT, Service, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { BRAND_DEFAULT, Brand, BrandFont, FONT_QUERY, brandVars } from '../branding/brand';
+import {
+  BRAND_DEFAULT,
+  Brand,
+  BrandFont,
+  BrandLogoKey,
+  FONT_QUERY,
+  brandVars,
+} from '../branding/brand';
 import { BrandingApi } from '../branding/branding.api';
+import { configurationOf } from '../branding/marque.entity';
+
+const BRAND_LOGO_KEYS: readonly BrandLogoKey[] = ['logoFull', 'logoIcon', 'favicon'];
 import { initialsOf } from '../utils/text.util';
 import { StorageService } from './storage.service';
 
@@ -45,22 +55,29 @@ export class BrandService {
     }
   }
 
-  /** Enregistre le thème ; `false` si le navigateur refuse (logos trop volumineux). */
-  save(brand: Brand): boolean {
-    try {
-      localStorage.setItem(BRAND_KEY, JSON.stringify(brand));
-    } catch {
-      return false;
+  /**
+   * Enregistre la marque dans l'API (administrateur) : configuration et vocabulaire, puis les logos choisis
+   * (`files`) et ceux retirés. La marque relue de l'API est ensuite appliquée. Une erreur remonte à l'appelant.
+   */
+  async save(brand: Brand, files: Partial<Record<BrandLogoKey, File>>): Promise<void> {
+    const previous = this.current();
+    await firstValueFrom(this.api.modifier(configurationOf(brand)));
+    for (const key of BRAND_LOGO_KEYS) {
+      const file = files[key];
+      if (file) {
+        await firstValueFrom(this.api.deposerLogo(key, file));
+      } else if (!brand[key] && previous[key]) {
+        await firstValueFrom(this.api.retirerLogo(key));
+      }
     }
-    this.current.set(brand);
-    this.apply(brand);
-    return true;
+    await this.refresh();
   }
 
-  reset(): void {
+  /** Revient à la marque par défaut, dans l'API puis à l'écran. */
+  async reset(): Promise<void> {
+    await firstValueFrom(this.api.reinitialiser());
     this.storage.remove(BRAND_KEY);
-    this.current.set({ ...BRAND_DEFAULT });
-    this.apply(this.current());
+    await this.refresh();
   }
 
   /** Charge la police depuis Google Fonts (une seule fois), y compris pour l'aperçu. */

@@ -8,15 +8,20 @@ export const endpoints = {
   },
   moi: {
     base: 'api/v1/moi',
+    coordonnees: 'api/v1/moi/coordonnees',
+    motDePasse: 'api/v1/moi/mot-de-passe',
   },
   branding: {
     base: 'api/v1/branding',
+    logo: (type: string) => `api/v1/branding/logos/${type}`,
   },
   entites: {
     base: 'api/v1/entites',
+    byId: (id: string) => `api/v1/entites/${id}`,
   },
   typesEtat: {
     base: 'api/v1/types-etat',
+    byId: (id: string) => `api/v1/types-etat/${id}`,
     modeSaisie: 'api/v1/types-etat/mode-saisie',
   },
   motifs: {
@@ -59,6 +64,17 @@ export const endpoints = {
   repartition: {
     byEntite: (entiteId: string) => `api/v1/entites/${entiteId}/repartition`,
   },
+  utilisateurs: {
+    base: 'api/v1/utilisateurs',
+    byId: (id: string) => `api/v1/utilisateurs/${id}`,
+    profils: (id: string) => `api/v1/utilisateurs/${id}/profils`,
+    statut: (id: string) => `api/v1/utilisateurs/${id}/statut`,
+    affectation: (id: string) => `api/v1/utilisateurs/${id}/affectation`,
+  },
+  referentielOrganisation: {
+    profils: 'api/v1/profils',
+    fonctions: 'api/v1/fonctions',
+  },
   pilotage: {
     tableauDeBord: 'api/v1/pilotage/tableau-de-bord',
     delais: 'api/v1/pilotage/delais',
@@ -81,6 +97,8 @@ export const endpoints = {
   },
   typesDossier: {
     base: 'api/v1/types-dossier',
+    byId: (id: string) => `api/v1/types-dossier/${id}`,
+    circuit: (id: string) => `api/v1/types-dossier/${id}/circuit`,
     formulaire: (id: string) => `api/v1/types-dossier/${id}/formulaire`,
   },
 } as const;

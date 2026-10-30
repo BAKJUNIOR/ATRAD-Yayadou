@@ -11,10 +11,11 @@ import { StatCardComponent } from '../../../../../shared/ui/stat-card/stat-card.
 import { StatusBadgeComponent } from '../../../../../shared/ui/status-badge/status-badge.component';
 import { pendingEtats, remainingCount } from '../../../../accueil/domain/reception';
 import { ReceptionContext } from '../../../../accueil/presentation/reception-context.service';
-import { hasCapability } from '../../../../dossiers/domain/referentiel';
+import { hasCapability, referentiel } from '../../../../dossiers/domain/referentiel';
 import { Account, Role } from '../../../../auth/domain/entities/account.entity';
 import { Etat } from '../../../../dossiers/domain/entities/etat.entity';
 import { isLocked } from '../../../../dossiers/domain/workflow';
+import { UtilisateurApi } from '../../../../administration/infrastructure/api/utilisateur.api';
 import { BrouillonStore } from '../../../../agence/infrastructure/store/brouillon.store';
 import { statusOf } from '../../../../dossiers/domain/entities/dossier-api.entity';
 import { SLA_TARGET } from '../../../../pilotage/domain/indicators';
@@ -55,6 +56,7 @@ export class HomeComponent {
   private readonly session = inject(SessionService);
   private readonly brouillon = inject(BrouillonStore);
   private readonly pilotageApi = inject(PilotageApi);
+  private readonly utilisateurApi = inject(UtilisateurApi);
   private readonly router = inject(Router);
   private readonly traitement = inject(TraitementContext);
   private readonly reception = inject(ReceptionContext);
@@ -84,6 +86,9 @@ export class HomeComponent {
     }
     if (account.role === 'manager') {
       return { ...base, ...this.managerDashboard() };
+    }
+    if (account.role === 'admin') {
+      return { ...base, ...this.adminDashboard() };
     }
     return base;
   });
@@ -258,6 +263,62 @@ export class HomeComponent {
       : of(null),
     { initialValue: null },
   );
+
+  /** Comptes des utilisateurs (administrateur), pour les chiffres et les dernières connexions. */
+  private readonly utilisateurs = toSignal(
+    this.session.role() === 'admin'
+      ? this.utilisateurApi.rechercher({ taille: 500 }).pipe(catchError(() => of(null)))
+      : of(null),
+    { initialValue: null },
+  );
+
+  private adminDashboard(): Partial<Dashboard> {
+    const users = this.utilisateurs()?.content ?? [];
+    const ref = referentiel();
+    const since = Date.now() - 24 * 3600 * 1000;
+    const recent = users
+      .filter((user) => user.derniereConnexion)
+      .sort((a, b) => (b.derniereConnexion ?? '').localeCompare(a.derniereConnexion ?? ''));
+    const traitantes = ref.entites.filter((entite) => entite.trait).length;
+    return {
+      subline: 'Gestion des utilisateurs, des entités et des circuits de traitement.',
+      stats: [
+        {
+          label: 'Utilisateurs actifs',
+          value: String(users.filter((user) => user.actif).length),
+          hint: `${users.length} compte(s) au total`,
+          tone: 'heading',
+        },
+        {
+          label: 'Entités émettrices',
+          value: String(ref.entites.filter((entite) => entite.emet).length),
+          hint: `${traitantes} entité(s) de traitement`,
+          tone: 'brand',
+        },
+        {
+          label: 'Types de dossier',
+          value: String(ref.dossierTypes.length),
+          hint: `${ref.etatTypes.length} type(s) d'état`,
+          tone: 'info',
+        },
+        {
+          label: 'Connexions 24 h',
+          value: String(
+            recent.filter((user) => Date.parse(user.derniereConnexion ?? '') >= since).length,
+          ),
+          hint: 'utilisateurs connectés',
+          tone: 'success',
+        },
+      ],
+      listTitle: 'Dernières connexions',
+      rows: recent.slice(0, 5).map((user) => ({
+        ref: user.matricule,
+        label: `${user.prenom} ${user.nom}${user.entite ? ` — ${user.entite.nom}` : ''}`,
+        meta: `Connecté le ${formatStamp(user.derniereConnexion ?? '')}`,
+        status: user.actif ? 'Validé' : 'Clôturé',
+      })),
+    };
+  }
 
   private managerDashboard(): Partial<Dashboard> {
     const pilotage = this.pilotage();

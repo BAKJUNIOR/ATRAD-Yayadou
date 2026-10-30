@@ -1,6 +1,6 @@
 import { DOCUMENT } from '@angular/common';
 import { Service, effect, inject } from '@angular/core';
-import { ReferentielStore } from '../../domains/dossiers/infrastructure/store/referentiel.store';
+import { BrandService } from './brand.service';
 import { VocabularyLabels, applyVocabulary } from '../utils/vocabulary.util';
 
 /** Éléments dont le texte n'est jamais réécrit. */
@@ -15,9 +15,9 @@ const ATTRIBUTES = ['placeholder', 'title', 'aria-label'];
 @Service()
 export class VocabularyService {
   private readonly document = inject(DOCUMENT);
-  private readonly referentiel = inject(ReferentielStore);
+  private readonly brand = inject(BrandService);
 
-  private vocab: VocabularyLabels = this.referentiel.value().vocab;
+  private vocab: VocabularyLabels = this.brand.brand().vocab;
   /** Dernière valeur écrite, pour ne pas retraiter un texte déjà converti. */
   private readonly written = new WeakMap<Node, string>();
   private readonly writtenAttr = new WeakMap<Element, Record<string, string>>();
@@ -25,7 +25,7 @@ export class VocabularyService {
 
   constructor() {
     effect(() => {
-      const vocab = this.referentiel.value().vocab;
+      const vocab = this.brand.brand().vocab;
       if (JSON.stringify(vocab) !== JSON.stringify(this.vocab)) {
         this.vocab = vocab;
         this.walk(this.document.body);

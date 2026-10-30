@@ -1,5 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { ConfirmService } from '../../../../../core/services/confirm.service';
 import { ToastService } from '../../../../../core/services/toast.service';
 import { IconComponent } from '../../../../../shared/ui/icon/icon.component';
@@ -8,11 +9,12 @@ import {
   CAPABILITIES,
   EntiteDraft,
   NATURES,
+  entiteByCode,
   entiteErrors,
   etatTypes,
 } from '../../../../dossiers/domain/referentiel';
 import { ReferentielStore } from '../../../../dossiers/infrastructure/store/referentiel.store';
-import { TransmissionStore } from '../../../../dossiers/infrastructure/store/transmission.store';
+import { AdministrationApi } from '../../../infrastructure/api/administration.api';
 
 const LOCK_TIP = "Terminez d'abord la modification en cours (Enregistrer ou Annuler).";
 
@@ -29,7 +31,7 @@ const EDITABLE: readonly (keyof Entite)[] = ['nom', 'nature', 'emet', 'recep', '
 })
 export class EntitesComponent {
   private readonly referentiel = inject(ReferentielStore);
-  private readonly store = inject(TransmissionStore);
+  private readonly api = inject(AdministrationApi);
   private readonly confirm = inject(ConfirmService);
   private readonly toast = inject(ToastService);
 
@@ -129,29 +131,55 @@ export class EntitesComponent {
     this.draft.set(null);
   }
 
-  protected save(): void {
+  protected readonly saving = signal(false);
+
+  /**
+   * Enregistre l'entité dans l'API puis relit le référentiel. En modification, les réglages que l'écran ne montre
+   * pas (entité parente, responsables, e-mail, mode de répartition...) sont relus et conservés.
+   */
+  protected async save(): Promise<void> {
     const draft = this.draft();
-    if (!draft || !this.canSave()) {
+    if (!draft || !this.canSave() || this.saving()) {
       return;
     }
-    const row: Entite = {
+    const fields = {
       code: draft.code.trim().toUpperCase(),
       nom: draft.nom.trim(),
       nature: draft.nature || 'Service',
-      emet: draft.emet,
-      recep: draft.recep,
-      trait: draft.trait,
+      peutEmettre: draft.emet,
+      peutReceptionner: draft.recep,
+      peutTraiter: draft.trait,
     };
-    const entites = this.entites();
-    this.referentiel.save({
-      entites: draft.orig
-        ? entites.map((entite) => (entite.code === draft.orig ? row : entite))
-        : [...entites, row],
-    });
-    // Un renommage se répercute sur les dossiers déjà routés vers l'entité.
-    this.store.normalizeEntities();
+    const id = draft.orig ? entiteByCode(draft.orig)?.id : undefined;
+    this.saving.set(true);
+    try {
+      if (id) {
+        const current = await firstValueFrom(this.api.entite(id));
+        await firstValueFrom(this.api.modifierEntite(id, { ...current, ...fields }));
+      } else {
+        await firstValueFrom(
+          this.api.creerEntite({
+            ...fields,
+            parentId: null,
+            responsableId: null,
+            adjointId: null,
+            email: null,
+            emailCopieRejet: null,
+            ville: null,
+            delaiTransitJours: null,
+            modeRepartition: 'AUTOMATIQUE',
+            actif: true,
+          }),
+        );
+      }
+      await this.referentiel.refresh();
+    } catch {
+      return;
+    } finally {
+      this.saving.set(false);
+    }
     this.draft.set(null);
-    this.toast.success(`Entité « ${row.nom} » enregistrée.`);
+    this.toast.success(`Entité « ${fields.nom} » enregistrée.`);
   }
 
   /** Appelé par le garde de sortie de la route. */

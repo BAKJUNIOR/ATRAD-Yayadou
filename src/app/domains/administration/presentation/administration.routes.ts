@@ -1,12 +1,6 @@
 import { Routes } from '@angular/router';
 import { unsavedChangesGuard } from '../../../core/guards/unsaved-changes.guard';
 
-// Écrans à construire : la route pointe sur le gabarit d'attente tant que la page n'existe pas.
-const placeholder = () =>
-  import('../../../shared/ui/screen-placeholder/screen-placeholder.component').then(
-    (m) => m.ScreenPlaceholderComponent,
-  );
-
 export const ADMINISTRATION_ROUTES: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'routage' },
   {
@@ -38,14 +32,11 @@ export const ADMINISTRATION_ROUTES: Routes = [
       import('./pages/types-etat/types-etat.component').then((m) => m.TypesEtatComponent),
   },
   {
-    path: 'vocabulaire',
-    title: 'Vocabulaire',
-    canDeactivate: [unsavedChangesGuard],
+    path: 'utilisateurs',
+    title: 'Utilisateurs',
     loadComponent: () =>
-      import('./pages/vocabulaire/vocabulaire.component').then((m) => m.VocabulaireComponent),
+      import('./pages/utilisateurs/utilisateurs.component').then((m) => m.UtilisateursComponent),
   },
-  // Non construit dans le prototype (« prévu à une étape suivante »).
-  { path: 'utilisateurs', title: 'Utilisateurs', loadComponent: placeholder },
   {
     path: 'journal-audit',
     title: "Journal d'audit",

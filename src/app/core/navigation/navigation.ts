@@ -155,12 +155,6 @@ export const NAVIGATION: Record<Role, NavMenu> = {
             icon: '▦',
             path: '/administration/types-etat',
           },
-          {
-            id: 'vocab',
-            label: 'Vocabulaire',
-            icon: 'Aa',
-            path: '/administration/vocabulaire',
-          },
         ],
       },
       {

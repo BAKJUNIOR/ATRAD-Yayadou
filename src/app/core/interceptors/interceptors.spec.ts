@@ -97,16 +97,14 @@ describe('API interceptors', () => {
   it('should close the session when the token is refused', () => {
     session.signIn('jeton-1', ACCOUNT);
     api.getOne('/api/v1/moi').subscribe({ error: () => undefined });
-    http
-      .expectOne('/api/v1/moi')
-      .flush(
-        {
-          success: false,
-          message: 'Authentification requise ou jeton invalide',
-          errorCode: 'NON_AUTHENTIFIE',
-        },
-        { status: 401, statusText: 'Unauthorized' },
-      );
+    http.expectOne('/api/v1/moi').flush(
+      {
+        success: false,
+        message: 'Authentification requise ou jeton invalide',
+        errorCode: 'NON_AUTHENTIFIE',
+      },
+      { status: 401, statusText: 'Unauthorized' },
+    );
     expect(session.isAuthenticated()).toBe(false);
     expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/signin']);
   });
@@ -116,16 +114,14 @@ describe('API interceptors', () => {
     api
       .create('/api/v1/auth/login', {}, { withoutToken: true, silentErrors: true })
       .subscribe({ error: () => undefined });
-    http
-      .expectOne('/api/v1/auth/login')
-      .flush(
-        {
-          success: false,
-          message: 'Identifiant ou mot de passe incorrect',
-          errorCode: 'IDENTIFIANTS_INVALIDES',
-        },
-        { status: 401, statusText: 'Unauthorized' },
-      );
+    http.expectOne('/api/v1/auth/login').flush(
+      {
+        success: false,
+        message: 'Identifiant ou mot de passe incorrect',
+        errorCode: 'IDENTIFIANTS_INVALIDES',
+      },
+      { status: 401, statusText: 'Unauthorized' },
+    );
     expect(session.isAuthenticated()).toBe(true);
   });
 

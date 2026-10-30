@@ -1,0 +1,166 @@
+<div class="flex animate-enter flex-col gap-[18px]">
+  <section class="panel flex flex-col gap-3.5 px-5 py-4" aria-label="Recherche des utilisateurs">
+    <div class="flex flex-wrap items-end gap-3">
+      <label class="form-label min-w-[220px] flex-1 gap-[5px]">
+        Rechercher
+        <input
+          type="search"
+          class="form-control"
+          placeholder="Nom, prénom, matricule ou e-mail"
+          [value]="recherche()"
+          (input)="onRecherche($event)"
+        />
+      </label>
+      <label class="form-label min-w-[200px] gap-[5px]">
+        Entité
+        <select class="form-control" (change)="onEntite($event)">
+          <option value="">Toutes les entités</option>
+          @for (entite of entites(); track entite.id) {
+            <option [value]="entite.id" [selected]="entite.id === entiteId()">
+              {{ entite.label }}
+            </option>
+          }
+        </select>
+      </label>
+      <label class="form-label min-w-[160px] gap-[5px]">
+        Profil
+        <select class="form-control" (change)="onProfil($event)">
+          <option value="">Tous les profils</option>
+          @for (option of profils(); track option.code) {
+            <option [value]="option.code" [selected]="option.code === profil()">
+              {{ option.nom }}
+            </option>
+          }
+        </select>
+      </label>
+      <button type="button" class="btn-primary px-4 py-[9px] text-[13px]" (click)="open()">
+        Nouvel utilisateur
+      </button>
+    </div>
+  </section>
+
+  <section class="panel overflow-hidden" aria-labelledby="users-title">
+    <header
+      class="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-3.5"
+    >
+      <h2 id="users-title" class="text-[14.5px] font-semibold text-ink">Utilisateurs</h2>
+      <span class="text-[12.5px] text-ink-muted">{{ countLabel() }}</span>
+    </header>
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[820px] text-[13px]">
+        <thead>
+          <tr
+            class="border-b border-line text-start text-[11.5px] tracking-[0.06em] text-ink-muted uppercase"
+          >
+            <th scope="col" class="px-5 py-2.5 text-start font-semibold">Utilisateur</th>
+            <th scope="col" class="px-3 py-2.5 text-start font-semibold">Entité</th>
+            <th scope="col" class="px-3 py-2.5 text-start font-semibold">Profils</th>
+            <th scope="col" class="px-3 py-2.5 text-start font-semibold">Dernière connexion</th>
+            <th scope="col" class="px-3 py-2.5 text-start font-semibold">Statut</th>
+            <th scope="col" class="px-5 py-2.5 text-end font-semibold">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (utilisateur of rows(); track utilisateur.id) {
+            <tr class="border-b border-soft last:border-b-0">
+              <td class="px-5 py-3">
+                <span class="flex flex-col">
+                  <span class="font-medium text-ink"
+                    >{{ utilisateur.prenom }} {{ utilisateur.nom }}</span
+                  >
+                  <span class="font-mono text-[11.5px] text-ink-muted">{{
+                    utilisateur.matricule
+                  }}</span>
+                </span>
+              </td>
+              <td class="px-3 py-3 text-ink-secondary">
+                {{
+                  utilisateur.entite
+                    ? utilisateur.entite.nom + ' (' + utilisateur.entite.code + ')'
+                    : '—'
+                }}
+              </td>
+              <td class="px-3 py-3">
+                <span class="flex flex-wrap gap-1">
+                  @for (code of utilisateur.profils; track code) {
+                    <span class="rounded-full bg-soft px-2 py-0.5 text-[11.5px] text-ink-secondary">
+                      {{ profilLabel(code) }}
+                    </span>
+                  }
+                </span>
+              </td>
+              <td class="px-3 py-3 font-mono text-[12px] text-ink-muted">
+                {{
+                  utilisateur.derniereConnexion
+                    ? formatStamp(utilisateur.derniereConnexion)
+                    : 'Jamais'
+                }}
+              </td>
+              <td class="px-3 py-3">
+                <span
+                  class="rounded-full px-2.5 py-0.5 text-[11.5px] font-medium"
+                  [class]="
+                    utilisateur.actif ? 'bg-success-bg text-success' : 'bg-soft text-ink-muted'
+                  "
+                >
+                  {{ utilisateur.actif ? 'Actif' : 'Désactivé' }}
+                </span>
+              </td>
+              <td class="px-5 py-3">
+                <span class="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    class="btn-outline px-3 py-1.5 text-[12.5px]"
+                    (click)="open(utilisateur)"
+                  >
+                    Modifier
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-outline px-3 py-1.5 text-[12.5px]"
+                    [disabled]="isMe(utilisateur)"
+                    [attr.title]="
+                      isMe(utilisateur) ? 'Vous ne pouvez pas désactiver votre propre compte' : null
+                    "
+                    (click)="toggleActif(utilisateur)"
+                  >
+                    {{ utilisateur.actif ? 'Désactiver' : 'Réactiver' }}
+                  </button>
+                </span>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="px-5 py-10 text-center text-ink-muted">
+                Aucun utilisateur ne correspond à ces critères.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <footer
+      class="flex items-center justify-between gap-2 border-t border-line px-5 py-3 text-[12.5px] text-ink-muted"
+    >
+      <span>{{ pageLabel() }}</span>
+      <span class="flex gap-2">
+        <button
+          type="button"
+          class="btn-outline px-3 py-1.5 text-[12.5px]"
+          [disabled]="page() === 0"
+          (click)="goTo(page() - 1)"
+        >
+          Précédent
+        </button>
+        <button
+          type="button"
+          class="btn-outline px-3 py-1.5 text-[12.5px]"
+          [disabled]="page() + 1 >= (result()?.totalPages ?? 1)"
+          (click)="goTo(page() + 1)"
+        >
+          Suivant
+        </button>
+      </span>
+    </footer>
+  </section>
+</div>

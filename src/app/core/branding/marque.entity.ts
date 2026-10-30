@@ -50,6 +50,28 @@ export function brandFromMarque(marque: Marque, url: (path: string) => string): 
     font: isBrandFont(c.police) ? c.police : BRAND_DEFAULT.font,
     radius: c.rayon,
     darkDefault: c.modeSombreParDefaut,
+    vocab: { tiers: c.vocabulaire?.tiers || 'Tiers', dossier: c.vocabulaire?.dossier || 'Dossier' },
+  };
+}
+
+/** Configuration envoyée à l'API pour une marque saisie dans « Logo & Couleurs » (logos envoyés à part). */
+export function configurationOf(brand: Brand): ConfigurationMarque {
+  return {
+    nomApplication: brand.appName.trim(),
+    nomCourt: brand.shortName.trim(),
+    organisation: brand.org.trim(),
+    palette: brand.palette,
+    couleurPrincipale: brand.primary,
+    couleurPrincipaleFoncee: brand.primaryDark,
+    couleurSecondaire: brand.secondary,
+    couleurAccent: brand.accent,
+    couleurAccentClaire: brand.accentLight,
+    couleurFond: brand.background,
+    couleurTexte: brand.text,
+    police: brand.font,
+    rayon: brand.radius,
+    modeSombreParDefaut: brand.darkDefault,
+    vocabulaire: { tiers: brand.vocab.tiers.trim(), dossier: brand.vocab.dossier.trim() },
   };
 }
 
