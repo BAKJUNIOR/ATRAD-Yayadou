@@ -2,7 +2,14 @@ import { formatStamp, isoDateToFr } from '../../../core/utils/date.util';
 import { Status } from '../../../shared/models/status';
 import { TimelineEntry, TimelineTone } from '../../../shared/ui/timeline/timeline.component';
 import { DossierType } from '../../dossiers/domain/dossier-catalog';
-import { EtatDossier, RoutedDossier } from '../../dossiers/domain/entities/dossier.entity';
+import {
+  ApiDossierDetail,
+  ApiDossierSuivi,
+  agencyStatusOf,
+  routedFromApi,
+  statusOfEtape,
+} from '../../dossiers/domain/entities/dossier-api.entity';
+import { DossierLog, EtatDossier, RoutedDossier } from '../../dossiers/domain/entities/dossier.entity';
 import { Etat } from '../../dossiers/domain/entities/etat.entity';
 import { etatInfo } from '../../dossiers/domain/referentiel';
 
@@ -71,6 +78,77 @@ export function suiviDossiers(
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.ref.localeCompare(a.ref));
 }
 
+/** Ligne de la liste « Suivi des dossiers », lue dans l'API (statut déjà vu depuis l'agence). */
+export interface SuiviRow {
+  id: string;
+  ref: string;
+  client: string;
+  num: string;
+  compte: string;
+  type: DossierType;
+  status: Status;
+  createdAt: string;
+  etatRef: string;
+  etatId: string;
+}
+
+export function suiviRowFromApi(row: ApiDossierSuivi): SuiviRow {
+  return {
+    id: row.id,
+    ref: row.reference,
+    client: row.client || 'Client non renseigné',
+    num: row.tiersNumero ?? '',
+    compte: row.numeroCompte ?? '',
+    type: row.typeDossier,
+    status: statusOfEtape(row.etape),
+    createdAt: row.creeLe,
+    etatRef: row.etatReference ?? '',
+    etatId: row.etatId ?? '',
+  };
+}
+
+/**
+ * Fiche d'un dossier transmis à partir de l'API : son détail et, s'il est connu, son état d'origine (pointage de
+ * réception). Le statut est celui que voit l'agence.
+ */
+export function suiviDossierOf(detail: ApiDossierDetail, etat: Etat | null): SuiviDossier {
+  const ligne = etat?.dossiers.find((dossier) => dossier.id === detail.dossier.id);
+  const routed = routedFromApi(detail, etat?.ref ?? '');
+  const recu = detail.dossier.statut !== 'TRANSMIS' && detail.dossier.statut !== 'TEMPORAIRE';
+  return {
+    ...routed,
+    status: agencyStatusOf(detail.dossier.statut, !!ligne?.nonRec && !ligne.rec),
+    transmisAt: etat?.sentAt ?? '',
+    rec: ligne?.rec,
+    nonRec: ligne?.nonRec,
+    entite: recu ? routed.entite : undefined,
+    etat: etat ?? EMPTY_ETAT,
+    routed: recu ? routed : undefined,
+  };
+}
+
+const EMPTY_ETAT: Etat = {
+  ref: '',
+  agence: '',
+  code: '',
+  type: '',
+  createdAt: '',
+  sentAt: '',
+  status: 'Transmis',
+  receivedAt: '',
+  emetteur: '',
+  dest: '',
+  dossiers: [],
+  prints: [],
+};
+
+/** Historique en frise, du plus ancien au plus récent. */
+export function timelineOf(logs: readonly DossierLog[]): TimelineEntry[] {
+  return [...logs]
+    .sort((a, b) => a.at.localeCompare(b.at))
+    .map((log) => ({ label: log.label, who: log.who, at: formatStamp(log.at), tone: log.tone }));
+}
+
 export interface SuiviCriteria {
   num: string;
   nom: string;
@@ -93,15 +171,15 @@ export function countCriteria(criteria: SuiviCriteria): number {
   return Object.values(criteria).filter((value) => value.trim()).length;
 }
 
-export function matchesCriteria(dossier: SuiviDossier, criteria: SuiviCriteria): boolean {
+export function matchesCriteria(dossier: SuiviRow, criteria: SuiviCriteria): boolean {
   const includes = (value: string, query: string): boolean =>
     value.toLowerCase().includes(query.trim().toLowerCase());
   return (
     includes(dossier.num, criteria.num) &&
-    [dossier.client, dossier.prenom, dossier.nom].some((name) => includes(name, criteria.nom)) &&
+    includes(dossier.client, criteria.nom) &&
     includes(dossier.compte, criteria.compte) &&
     includes(dossier.ref, criteria.ref) &&
-    includes(dossier.etat.ref, criteria.etat) &&
+    includes(dossier.etatRef, criteria.etat) &&
     (!criteria.type || dossier.type === criteria.type)
   );
 }

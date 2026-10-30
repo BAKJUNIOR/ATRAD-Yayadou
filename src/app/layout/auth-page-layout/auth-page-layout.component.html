@@ -32,7 +32,13 @@
     </p>
   </aside>
 
-  <main class="flex min-h-screen items-center justify-center px-6 py-12 sm:px-10">
+  <main
+    class="flex min-h-screen flex-col items-center justify-center gap-8 bg-[radial-gradient(48rem_32rem_at_100%_0%,var(--brand-tint-soft),transparent_70%)] px-5 py-12 sm:px-10"
+  >
+    <!-- Sous 1024 px, le panneau de marque est masqué : la marque reste visible au-dessus du formulaire. -->
+    <div class="rounded-brand bg-navy px-4 py-3 shadow-raised lg:hidden">
+      <app-brand-mark />
+    </div>
     <ng-content />
   </main>
 

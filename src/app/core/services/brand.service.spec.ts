@@ -1,3 +1,5 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { BRAND_DEFAULT, PALETTES, colorChange, paletteColors } from '../branding/brand';
 import { BrandService } from './brand.service';
@@ -7,6 +9,7 @@ describe('BrandService', () => {
   const root = document.documentElement;
 
   beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
     localStorage.clear();
     root.removeAttribute('style');
     root.classList.remove('dark');

@@ -23,7 +23,7 @@ export class DraftEtatComponent {
 
   protected readonly priorityText = PRIORITY_TEXT;
 
-  private readonly expanded = signal<ReadonlySet<number>>(new Set());
+  private readonly expanded = signal<ReadonlySet<string>>(new Set());
 
   protected readonly createdLabel = computed(() =>
     this.facade.draftCreatedAt()
@@ -36,11 +36,11 @@ export class DraftEtatComponent {
     return draft.length > 0 && draft.every((dossier) => this.expanded().has(dossier.id));
   });
 
-  protected isExpanded(id: number): boolean {
+  protected isExpanded(id: string): boolean {
     return this.expanded().has(id);
   }
 
-  protected toggle(id: number): void {
+  protected toggle(id: string): void {
     this.expanded.update((expanded) => {
       const next = new Set(expanded);
       if (!next.delete(id)) {

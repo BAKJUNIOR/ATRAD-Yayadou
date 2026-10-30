@@ -90,12 +90,10 @@
         <app-timeline [entries]="history()" />
       </section>
     </div>
-  } @else {
+  } @else if (loaded()) {
     <section class="panel flex flex-col items-center gap-2.5 px-5 py-10 text-center">
       <h2 class="text-[15px] font-semibold text-ink">Dossier introuvable</h2>
-      <p class="text-[13px] text-ink-muted">
-        Aucun dossier <span class="font-mono">{{ ref() }}</span> n'a été transmis par votre agence.
-      </p>
+      <p class="text-[13px] text-ink-muted">Ce dossier n'a pas été transmis par votre agence.</p>
     </section>
   }
 </div>

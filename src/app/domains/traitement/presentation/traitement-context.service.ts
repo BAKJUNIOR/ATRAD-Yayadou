@@ -86,7 +86,7 @@ export class TraitementContext {
     if (!account) {
       return;
     }
-    this.session.signIn({
+    this.session.impersonate({
       ...account,
       name: user,
       entity: entite,

@@ -1,3 +1,4 @@
+import { isoDateToFr } from '../../../core/utils/date.util';
 import { Dataset, DatasetId, datasetOf } from './datasets';
 
 /** Type de dossier : propre au jeu de données, complété par l'administrateur. */
@@ -5,6 +6,12 @@ export type DossierType = string;
 
 /** Produit (ou nature d'opération) du dossier, selon le jeu de données. */
 export type Produit = string;
+
+/** Produit proposé pour un type de dossier, avec son identifiant d'opération dans l'API. */
+export interface ProduitOption {
+  id: string;
+  label: string;
+}
 
 export const PRIORITES = ['Normale', 'Haute', 'Urgente'] as const;
 
@@ -32,6 +39,11 @@ let active: Dataset = datasetOf('neutre');
 const types: string[] = [...active.types];
 const produits: string[] = [...active.produits];
 
+// Champs et pièces lus dans l'API pour chaque type ; à défaut, ceux du jeu de données.
+let typeFields: Record<string, readonly TypeField[]> = {};
+let typePieces: Record<string, readonly string[]> = {};
+let typeProduits: Record<string, readonly ProduitOption[]> = {};
+
 /** Types de dossier en vigueur. */
 export const DOSSIER_TYPES: readonly DossierType[] = types;
 
@@ -53,9 +65,36 @@ export function setDossierTypes(list: readonly DossierType[]): void {
   types.splice(0, types.length, ...next);
 }
 
+/** Champs et pièces des types de dossier, tels que paramétrés dans l'API. */
+export function setTypeCatalog(
+  fields: Record<string, readonly TypeField[]>,
+  pieces: Record<string, readonly string[]>,
+  produits: Record<string, readonly ProduitOption[]> = {},
+): void {
+  typeFields = fields;
+  typePieces = pieces;
+  typeProduits = produits;
+}
+
+/** Produits proposés pour un type ; à défaut de paramétrage dans l'API, la liste du jeu de données. */
+export function produitsOf(type: DossierType): readonly Produit[] {
+  const options = typeProduits[type];
+  return options?.length ? options.map((option) => option.label) : PRODUITS;
+}
+
+/** Identifiant d'opération d'un produit pour un type (vide pour un produit du jeu de données). */
+export function operationIdOf(type: DossierType, produit: Produit): string | null {
+  return typeProduits[type]?.find((option) => option.label === produit)?.id ?? null;
+}
+
+/** Libellé du produit d'un dossier à partir de son identifiant d'opération. */
+export function produitLabelOf(type: DossierType, operationId: string | null): Produit {
+  return (operationId && typeProduits[type]?.find((option) => option.id === operationId)?.label) || '';
+}
+
 /** Champs propres à un type ; un type ajouté par l'administrateur reçoit ceux du jeu. */
 export function fieldsOf(type: DossierType): readonly TypeField[] {
-  return active.typeFields[type] ?? active.addedTypeFields;
+  return typeFields[type] ?? active.typeFields[type] ?? active.addedTypeFields;
 }
 
 /** Champ dont la valeur devient le montant du dossier, pour les types qui en ont un. */
@@ -65,7 +104,15 @@ export function montantFieldOf(type: DossierType): string | undefined {
 
 /** Pièces attendues pour un type de dossier, proposées lors d'une demande de documents. */
 export function piecesOf(type: DossierType): readonly string[] {
-  return active.pieces[type] ?? [];
+  return typePieces[type] ?? active.pieces[type] ?? [];
+}
+
+/** Valeur d'un champ propre au type, mise en forme pour l'affichage (nombre groupé et unité, date française). */
+export function displayValue(field: TypeField, raw: string): string {
+  if (field.kind === 'number') {
+    return formatNumber(raw) + (field.unit ? ` ${field.unit}` : '');
+  }
+  return field.kind === 'date' ? isoDateToFr(raw) : raw;
 }
 
 /** `1250000` → `1 250 000` */

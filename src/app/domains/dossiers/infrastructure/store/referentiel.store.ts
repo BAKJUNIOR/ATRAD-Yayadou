@@ -1,4 +1,5 @@
 import { Service, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { StorageService } from '../../../../core/services/storage.service';
 import { activateDataset, dataset } from '../../domain/dossier-catalog';
 import { DATASET_KEY, DatasetId, datasetOf, storedDatasetId } from '../../domain/datasets';
@@ -11,19 +12,22 @@ import {
   setReferentiel,
 } from '../../domain/referentiel';
 import { syncEntites } from '../../domain/routing';
+import { ReferentielApi } from '../api/referentiel.api';
 
 const REFERENTIEL_KEY = 'atrad_referentiel_v1';
 /** Routage enregistré avant les types d'état : type de dossier → libellé de l'entité. */
 const LEGACY_ROUTING_KEY = 'atrad_routing_v1';
 
 /**
- * Paramétrage de l'administrateur : entités, types d'état, circuits des types de dossier, mode
- * de saisie et vocabulaire. Conservé dans le navigateur en attendant l'API.
- * Active au démarrage le jeu de données choisi à la dernière réinitialisation.
+ * Paramétrage de l'administrateur : entités, types d'état, circuits des types de dossier (avec leurs champs et
+ * pièces), mode de saisie et vocabulaire. Lu dans l'API après la connexion (`refresh()`) ; la dernière version
+ * lue est gardée dans le navigateur pour s'afficher aussitôt au rechargement. Le vocabulaire et les libellés du
+ * formulaire viennent encore du jeu de données choisi à la dernière réinitialisation.
  */
 @Service()
 export class ReferentielStore {
   private readonly storage = inject(StorageService);
+  private readonly api = inject(ReferentielApi);
 
   /** Jeu de données en vigueur jusqu'au prochain rechargement. */
   readonly datasetId: DatasetId = this.activate();
@@ -38,6 +42,19 @@ export class ReferentielStore {
 
   get datasetLabel(): string {
     return datasetOf(this.datasetId).label;
+  }
+
+  /**
+   * Remplace le paramétrage par celui de l'API (le vocabulaire est gardé). En cas d'échec, la dernière version lue
+   * reste en place et l'erreur a déjà été signalée par l'intercepteur.
+   */
+  async refresh(): Promise<void> {
+    try {
+      const fromApi = await firstValueFrom(this.api.referentiel());
+      this.save(fromApi);
+    } catch {
+      // Paramétrage précédent conservé.
+    }
   }
 
   save(patch: Partial<Referentiel>): void {
@@ -95,6 +112,11 @@ export class ReferentielStore {
       ),
       saisieMode: stored.saisieMode === 'auto' ? 'auto' : 'choix',
       vocab: { ...DEFAULT_VOCABULARY, ...(stored.vocab ?? {}) },
+      typeIds: stored.typeIds ?? {},
+      typeFields: stored.typeFields ?? {},
+      typePieces: stored.typePieces ?? {},
+      typeOperations: stored.typeOperations ?? {},
+      motifsRetour: stored.motifsRetour ?? [],
     };
   }
 

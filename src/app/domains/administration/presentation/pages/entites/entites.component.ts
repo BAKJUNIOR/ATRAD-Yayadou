@@ -3,14 +3,12 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { ConfirmService } from '../../../../../core/services/confirm.service';
 import { ToastService } from '../../../../../core/services/toast.service';
 import { IconComponent } from '../../../../../shared/ui/icon/icon.component';
-import { demoAccounts } from '../../../../auth/infrastructure/mock/auth.mock';
 import { Entite, EntityCapability } from '../../../../dossiers/domain/datasets';
 import {
   CAPABILITIES,
   EntiteDraft,
   NATURES,
   entiteErrors,
-  entityCode,
   etatTypes,
 } from '../../../../dossiers/domain/referentiel';
 import { ReferentielStore } from '../../../../dossiers/infrastructure/store/referentiel.store';
@@ -81,9 +79,6 @@ export class EntitesComponent {
       const editing = draft?.orig === entite.code;
       const recep = types.filter((type) => type.recep === entite.code).length;
       const emet = types.filter((type) => type.emet.includes(entite.code)).length;
-      const accounts = demoAccounts()
-        .filter((account) => entityCode(account.entity) === entite.code)
-        .map((account) => account.name);
       return {
         entite,
         editing,
@@ -92,7 +87,6 @@ export class EntitesComponent {
           [
             recep ? `Réceptrice de ${recep} type(s) d'état` : '',
             emet ? `Émettrice dans ${emet} type(s) d'état` : '',
-            accounts.length ? `Compte(s) : ${accounts.join(', ')}` : '',
           ]
             .filter(Boolean)
             .join(' · ') || "Aucun type d'état ni compte rattaché",

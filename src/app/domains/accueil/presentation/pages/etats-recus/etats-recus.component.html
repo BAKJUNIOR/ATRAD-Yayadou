@@ -205,7 +205,7 @@
                 </span>
               </td>
               <td class="truncate text-[12.5px] text-ink-secondary">{{ etat.type }}</td>
-              <td class="font-mono text-[12.5px] text-ink">{{ etat.dossiers.length }}</td>
+              <td class="font-mono text-[12.5px] text-ink">{{ etat.count ?? etat.dossiers.length }}</td>
               <td class="font-mono text-[12px] whitespace-nowrap text-ink-muted">
                 {{ formatStamp(etat.sentAt) }}
               </td>

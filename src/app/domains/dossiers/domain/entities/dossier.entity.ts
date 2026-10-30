@@ -4,6 +4,10 @@ import { DossierType, Priorite, Produit } from '../dossier-catalog';
 
 export interface PieceJointe {
   id: string;
+  /** Dossier de l'API qui porte la pièce ; absent tant qu'elle n'est pas envoyée. */
+  dossierId?: string;
+  /** Fichier choisi, gardé en mémoire jusqu'à son envoi à l'API. */
+  file?: File;
   name: string;
   size: number;
   mime: string;
@@ -50,7 +54,8 @@ export interface DossierData {
 
 /** Dossier d'un état en cours de constitution (statut Temporaire). */
 export interface Dossier extends DossierData {
-  id: number;
+  /** Identifiant (UUID) du dossier dans l'API. */
+  id: string;
   ref: string;
   createdAt: string;
   log: DossierLog[];

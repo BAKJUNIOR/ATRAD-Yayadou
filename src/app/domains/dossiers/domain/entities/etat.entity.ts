@@ -19,6 +19,8 @@ export interface EtatPrint {
 
 /** État de transmission : lot de dossiers émis par une entité vers une entité réceptrice. */
 export interface Etat {
+  /** Identifiant (UUID) de l'état dans l'API. */
+  id?: string;
   ref: string;
   agence: string;
   /** Code de l'agence émettrice (ex. `AG-014`). */
@@ -39,6 +41,8 @@ export interface Etat {
   /** Entité réceptrice : `Accueil central (EC-001)`. */
   dest: string;
   dossiers: EtatDossier[];
+  /** Nombre de dossiers de l'état, connu même quand `dossiers` n'est pas chargé (listes). */
+  count?: number;
   prints: EtatPrint[];
   recLog?: ReceptionLog[];
 }

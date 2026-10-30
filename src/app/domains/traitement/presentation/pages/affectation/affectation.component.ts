@@ -33,7 +33,7 @@ export class AffectationComponent {
   protected readonly priorityText = PRIORITY_TEXT;
 
   /** Gestionnaire choisi pour chaque dossier du bac, avant confirmation. */
-  private readonly picks = signal<Record<number, string>>({});
+  private readonly picks = signal<Record<string, string>>({});
 
   protected readonly rows = computed(() => unassigned(this.context.entityDossiers()));
   private readonly active = computed(() =>

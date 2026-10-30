@@ -29,7 +29,7 @@ export class DossiersRetournesComponent {
   private readonly pickedEntite = signal('');
   private readonly pickedAgence = signal('');
   protected readonly query = signal('');
-  private readonly picked = signal<ReadonlySet<number>>(new Set());
+  private readonly picked = signal<ReadonlySet<string>>(new Set());
 
   protected readonly pending = computed(() => pendingReturns(this.reception.dossiers()));
 
@@ -90,7 +90,7 @@ export class DossiersRetournesComponent {
       : 'Aucun dossier à renvoyer aux agences',
   );
 
-  protected isPicked(id: number): boolean {
+  protected isPicked(id: string): boolean {
     return this.picked().has(id);
   }
 
@@ -116,7 +116,7 @@ export class DossiersRetournesComponent {
     this.picked.set(new Set());
   }
 
-  protected toggle(id: number): void {
+  protected toggle(id: string): void {
     this.picked.update((picked) => {
       const next = new Set(picked);
       if (!next.delete(id)) {

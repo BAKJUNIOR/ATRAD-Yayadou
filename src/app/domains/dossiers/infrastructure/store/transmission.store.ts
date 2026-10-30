@@ -127,7 +127,7 @@ export class TransmissionStore {
     const createdAt = nowIso();
     const dossier: Dossier = {
       ...data,
-      id: state.nextId,
+      id: String(state.nextId),
       ref: `DOS-${state.nextRef}`,
       createdAt,
       log: [],
@@ -143,7 +143,7 @@ export class TransmissionStore {
   }
 
   /** Remplace le contenu d'un dossier de l'état en cours ; sa référence est conservée. */
-  updateDossier(id: number, data: DossierData, log: DossierLog): void {
+  updateDossier(id: string, data: DossierData, log: DossierLog): void {
     this.state.update((state) => ({
       ...state,
       draft: state.draft.map((dossier) =>
@@ -154,7 +154,7 @@ export class TransmissionStore {
     }));
   }
 
-  removeDossier(id: number): void {
+  removeDossier(id: string): void {
     this.state.update((state) => {
       const draft = state.draft.filter((dossier) => dossier.id !== id);
       return { ...state, draft, draftCreatedAt: draft.length ? state.draftCreatedAt : '' };
@@ -323,7 +323,7 @@ export class TransmissionStore {
   }
 
   /** Confirme le renvoi à leur agence de dossiers retournés par une entité de traitement. */
-  renvoyer(ids: readonly number[], by: string): RoutedDossier[] {
+  renvoyer(ids: readonly string[], by: string): RoutedDossier[] {
     const at = nowIso();
     const targets = this.state().dossiers.filter(
       (dossier) => ids.includes(dossier.id) && !dossier.renvoyeAt,
@@ -362,7 +362,7 @@ export class TransmissionStore {
   }
 
   /** Affecte un dossier à un gestionnaire de son entité (répartiteur ou réaffectation). */
-  assign(id: number, gestionnaire: string, by: string): OperationResult {
+  assign(id: string, gestionnaire: string, by: string): OperationResult {
     const dossier = this.state().dossiers.find((candidate) => candidate.id === id);
     if (!dossier) {
       return { ok: false, message: 'Dossier introuvable.' };
@@ -390,7 +390,7 @@ export class TransmissionStore {
   }
 
   /** Transfère un dossier en cours à un autre gestionnaire de l'entité. */
-  reassign(id: number, gestionnaire: string, motif: string, by: string): OperationResult {
+  reassign(id: string, gestionnaire: string, motif: string, by: string): OperationResult {
     const dossier = this.state().dossiers.find((candidate) => candidate.id === id);
     if (!dossier || dossier.status !== 'En cours' || !dossier.gest) {
       return { ok: false, message: "Réaffectation impossible : le dossier n'est plus en cours." };
@@ -413,7 +413,7 @@ export class TransmissionStore {
     };
   }
 
-  addComment(id: number, who: string, text: string): void {
+  addComment(id: string, who: string, text: string): void {
     const at = nowIso();
     this.state.update((state) => ({
       ...state,
@@ -426,7 +426,7 @@ export class TransmissionStore {
   }
 
   /** Applique une action de traitement, si le circuit du dossier l'autorise. */
-  applyAction(id: number, action: DossierAction, by: string): OperationResult {
+  applyAction(id: string, action: DossierAction, by: string): OperationResult {
     const dossier = this.state().dossiers.find((candidate) => candidate.id === id);
     if (!dossier) {
       return { ok: false, message: 'Dossier introuvable.' };
@@ -573,7 +573,7 @@ export class TransmissionStore {
   }
 
   /** Un membre de l'équipe s'attribue un dossier du pool partagé de son entité. */
-  take(id: number, user: string): OperationResult {
+  take(id: string, user: string): OperationResult {
     const dossier = this.state().dossiers.find((candidate) => candidate.id === id);
     if (!dossier) {
       return { ok: false, message: 'Dossier introuvable.' };
@@ -625,7 +625,7 @@ export class TransmissionStore {
     }));
   }
 
-  private patchDossier(id: number, patch: Partial<RoutedDossier>, log: DossierLog): void {
+  private patchDossier(id: string, patch: Partial<RoutedDossier>, log: DossierLog): void {
     this.state.update((state) => ({
       ...state,
       dossiers: state.dossiers.map((dossier) =>

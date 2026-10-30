@@ -1,16 +1,16 @@
-import { isoDateToFr } from '../../../core/utils/date.util';
 import {
   DOSSIER_TYPES,
   DossierType,
   PRIORITES,
-  PRODUITS,
   Priorite,
   Produit,
   TypeField,
   dataset,
+  displayValue,
   fieldsOf,
   formatNumber,
   montantFieldOf,
+  produitsOf,
 } from '../../dossiers/domain/dossier-catalog';
 import { Dossier, DossierData, PieceJointe } from '../../dossiers/domain/entities/dossier.entity';
 
@@ -49,7 +49,7 @@ export function emptyDossierForm(type: DossierType = DOSSIER_TYPES[0] ?? ''): Do
     prenom: '',
     nom: '',
     compte: '',
-    produit: PRODUITS[0],
+    produit: produitsOf(type)[0] ?? '',
     prio: PRIORITES[0],
     note: '',
     extra: {},
@@ -133,13 +133,6 @@ export function allFieldErrors(value: DossierFormValue, todayIso: string): Recor
     errors[field.key] = fieldError(field.key, value.extra[field.key] ?? '', value.type, todayIso);
   }
   return errors;
-}
-
-function displayValue(field: TypeField, raw: string): string {
-  if (field.kind === 'number') {
-    return formatNumber(raw) + (field.unit ? ` ${field.unit}` : '');
-  }
-  return field.kind === 'date' ? isoDateToFr(raw) : raw;
 }
 
 export type BuildResult =

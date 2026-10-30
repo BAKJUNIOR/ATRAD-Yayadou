@@ -54,6 +54,27 @@
               "extractLicenses": false,
               "sourceMap": true
             },
+            "demo": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.demo.ts"
+                }
+              ]
+            },
             "interne": {
               "fileReplacements": [
                 {
@@ -67,12 +88,18 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+            "proxyConfig": "proxy.conf.json"
+          },
           "configurations": {
             "production": {
               "buildTarget": "ydxtrace-front:build:production"
             },
             "development": {
               "buildTarget": "ydxtrace-front:build:development"
+            },
+            "demo": {
+              "buildTarget": "ydxtrace-front:build:demo"
             },
             "interne": {
               "buildTarget": "ydxtrace-front:build:development,interne"

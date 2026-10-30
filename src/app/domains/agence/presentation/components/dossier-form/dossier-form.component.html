@@ -156,7 +156,7 @@
       @if (labels.showProduit) {
         <app-form-field [label]="labels.produit + ' *'">
           <select class="form-control" (change)="onProduit($event)">
-            @for (produit of produits; track produit) {
+            @for (produit of produits(); track produit) {
               <option [value]="produit" [selected]="produit === value.produit">
                 {{ produit }}
               </option>

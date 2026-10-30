@@ -12,7 +12,6 @@ import { pendingEtats, remainingCount } from '../../../../accueil/domain/recepti
 import { ReceptionContext } from '../../../../accueil/presentation/reception-context.service';
 import { hasCapability } from '../../../../dossiers/domain/referentiel';
 import { Account, Role } from '../../../../auth/domain/entities/account.entity';
-import { demoAccounts } from '../../../../auth/infrastructure/mock/auth.mock';
 import { Etat } from '../../../../dossiers/domain/entities/etat.entity';
 import { isLocked } from '../../../../dossiers/domain/workflow';
 import { TransmissionStore } from '../../../../dossiers/infrastructure/store/transmission.store';
@@ -43,14 +42,6 @@ const PRIMARY_ICON: Record<Role, IconName> = {
   admin: 'users',
 };
 
-const ROLE_SHORT: Record<Role, string> = {
-  agence: 'Émettrice',
-  accueil: 'Réceptrice',
-  traitement: 'Traitement',
-  manager: 'Pilotage',
-  admin: 'Admin',
-};
-
 /** Accueil commun à tous les profils : son contenu dépend du rôle connecté. */
 @Component({
   selector: 'app-home',
@@ -66,9 +57,6 @@ export class HomeComponent {
   private readonly toast = inject(ToastService);
 
   protected readonly lifecycle = LIFECYCLE;
-  protected readonly demoAccounts = demoAccounts();
-  protected readonly roleShort = ROLE_SHORT;
-  protected readonly role = this.session.role;
 
   protected readonly dashboard = computed<Dashboard | null>(() => {
     const account = this.session.account();
@@ -122,11 +110,6 @@ export class HomeComponent {
     if (action && !action.disabledReason) {
       void this.router.navigateByUrl(action.path);
     }
-  }
-
-  /** Bascule de profil sans repasser par la connexion (démonstration). */
-  protected switchTo(account: Account): void {
-    this.session.signIn(account);
   }
 
   private agenceDashboard(account: Account): Partial<Dashboard> {

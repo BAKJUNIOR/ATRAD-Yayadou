@@ -85,7 +85,7 @@ describe('dossier form rules', () => {
     expect(changedLabels(before, build('Sylla', '12'))).toEqual([]);
     expect(changedLabels(before, build('Koné', '24'))).toEqual(['Nom', 'Durée souhaitée']);
 
-    const reloaded = formValueOf({ ...before, id: 1, ref: 'DOS-1', createdAt: '', log: [] });
+    const reloaded = formValueOf({ ...before, id: 'd-1', ref: 'DOS-1', createdAt: '', log: [] });
     expect(reloaded.client).toBe('000123456789');
     expect(reloaded.extra['duree']).toBe('12');
   });

@@ -79,7 +79,14 @@ src/app/
 
 - **Profils** : `agence` (entité émettrice), `accueil` (entité réceptrice), `traitement`, `manager`, `admin`. Chaque profil a son menu (`core/navigation/navigation.ts`) et ses routes, protégées par `roleGuard`. Le profil `manager` n'est plus proposé à la connexion (prototype du 24/10) ; ses écrans restent en place.
 - **Nouvel écran** : créer la page dans `domains/<domaine>/presentation/pages/`, puis remplacer `placeholder` par son `loadComponent` dans `<domaine>.routes.ts`. Le `title` d'une route ne contient que le nom de l'écran.
-- **Données** : aucune consommation d'API pour l'instant. Les données fictives vivent dans `infrastructure/mock/` ; `provideHttpClient` n'est pas encore déclaré.
+- **Données** : branchement de l'API en cours, domaine par domaine (les écrans pas encore branchés lisent toujours leurs stores locaux). Même organisation que xbanking-Backoffice :
+  - Environnements (`src/environments/`) : `environment.ts` (local), `environment.demo.ts` (`--configuration demo`), `environment.prod.ts` ; chacun porte `baseUrl` et `endpoints`. Les chemins sont écrits une seule fois dans `endpoints.ts` (un chemin à identifiant est une fonction) ; le code lit `environment.endpoints.<domaine>`.
+  - `AppConfigService` : `public/config/app-config.json` (`apiBaseUrl`, réécrit au déploiement) l'emporte sur `environment.baseUrl` ; vide = même origine que le front.
+  - `BaseService` (`core/services/`) : méthodes d'appel communes (`getOne`, `create`, `update`, `delete`, `upload`, `getBlob`, `url`), réponses rendues sans l'enveloppe `ResponseWrapper` (`core/models/`). Options d'un appel : `withoutToken` (public, un 401 n'y ferme pas la session), `silentErrors` (l'écran affiche l'erreur), `token` (jeton explicite).
+  - Intercepteurs (`core/interceptors/`) : jeton de la session ; toute erreur devient une `ApiError` (`core/utils/api-error.util.ts` : message français, `code` = `errorCode` du backend), affichée en toast ; un 401 ferme la session.
+  - Pas de DTO : les données de l'API sont typées par les entités du domaine (`domain/entities/*.entity.ts`), qui portent aussi leur conversion (`accountFromUtilisateur`, `brandFromMarque`). Les appels sont dans `infrastructure/api/<domaine>.api.ts`, avec `BaseService` et `environment.endpoints`.
+  - En local, `ng serve` relaie `/api` et `/ws` vers `http://localhost:8080` (`proxy.conf.json`).
+- **Session** : jeton et compte (`/auth/login` puis `/moi`) dans le sessionStorage (`atrad_session_v2`), ou dans le localStorage avec « Se souvenir de moi » (identifiant aussi gardé, `atrad_identifiant_v1`) ; un jeton expiré n'est jamais repris.
 - **Nommage des fichiers** : suffixes explicites (`*.component.ts`, `*.service.ts`, `*.guard.ts`), configurés dans `angular.json`.
 
 ## Thème et styles

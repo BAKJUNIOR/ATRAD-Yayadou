@@ -4,10 +4,10 @@ import { IconComponent } from '../../../../../shared/ui/icon/icon.component';
 import {
   DossierType,
   PRIORITES,
-  PRODUITS,
   Priorite,
   Produit,
   TypeField,
+  produitsOf,
 } from '../../../../dossiers/domain/dossier-catalog';
 import { fileSizeLabel } from '../../../../dossiers/domain/piece.rules';
 import { PieceOpener } from '../../../../dossiers/presentation/piece-opener.service';
@@ -25,7 +25,8 @@ export class DossierFormComponent {
   protected readonly facade = inject(CreerEtatFacade);
   protected readonly pieceOpener = inject(PieceOpener);
 
-  protected readonly produits = PRODUITS;
+  /** Produits du type de dossier choisi. */
+  protected readonly produits = computed(() => produitsOf(this.facade.value().type));
   protected readonly priorites = PRIORITES;
   protected readonly sizeLabel = fileSizeLabel;
 

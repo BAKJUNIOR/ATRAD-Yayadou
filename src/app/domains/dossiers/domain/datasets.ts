@@ -12,6 +12,8 @@ export function isDatasetId(value: unknown): value is DatasetId {
 export type EntityCapability = 'emet' | 'recep' | 'trait';
 
 export interface Entite {
+  /** Identifiant (UUID) dans l'API ; absent pour une entité des jeux de démonstration. */
+  id?: string;
   /** Code au format `AA-000`, identifiant stable de l'entité. */
   code: string;
   nom: string;

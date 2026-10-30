@@ -3,7 +3,7 @@ import { ConfirmService } from '../../../core/services/confirm.service';
 import { SessionService } from '../../../core/services/session.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { nowIso, todayIsoDate } from '../../../core/utils/date.util';
-import { DossierType, dataset, fieldsOf } from '../../dossiers/domain/dossier-catalog';
+import { DossierType, dataset, fieldsOf, produitsOf } from '../../dossiers/domain/dossier-catalog';
 import { Dossier, PieceJointe } from '../../dossiers/domain/entities/dossier.entity';
 import { Etat } from '../../dossiers/domain/entities/etat.entity';
 import { screenPieces } from '../../dossiers/domain/piece.rules';
@@ -18,9 +18,8 @@ import {
 } from '../../dossiers/domain/referentiel';
 import { entityOf, entitySummary } from '../../dossiers/domain/routing';
 import { ReferentielStore } from '../../dossiers/infrastructure/store/referentiel.store';
-import { PieceFileStore } from '../../dossiers/infrastructure/store/piece-file.store';
-import { TransmissionStore } from '../../dossiers/infrastructure/store/transmission.store';
 import { BordereauService } from '../../dossiers/presentation/bordereau.service';
+import { BrouillonStore } from '../infrastructure/store/brouillon.store';
 import {
   BASE_FIELD_KEYS,
   BaseFieldKey,
@@ -46,8 +45,7 @@ const TYPE_SEARCH_THRESHOLD = 15;
  */
 @Injectable()
 export class CreerEtatFacade {
-  private readonly store = inject(TransmissionStore);
-  private readonly files = inject(PieceFileStore);
+  private readonly store = inject(BrouillonStore);
   private readonly session = inject(SessionService);
   private readonly toast = inject(ToastService);
   private readonly confirm = inject(ConfirmService);
@@ -101,7 +99,7 @@ export class CreerEtatFacade {
   readonly pieceError = signal('');
 
   // --- Modification d'un dossier de l'état en cours
-  readonly editId = signal<number | null>(null);
+  readonly editId = signal<string | null>(null);
   readonly editOriginalType = signal<DossierType | null>(null);
   private editSnapshot = '';
 
@@ -109,14 +107,11 @@ export class CreerEtatFacade {
   readonly draft = this.store.draft;
   readonly draftRef = this.store.draftRef;
   readonly draftCreatedAt = this.store.draftCreatedAt;
-  private readonly sentRefs = signal<readonly string[]>([]);
+  /** Un appel à l'API est en cours (ajout, modification, transmission) : les boutons attendent. */
+  readonly busy = signal(false);
 
   /** États produits par le dernier envoi (un par type d'état). */
-  readonly sentEtats = computed(() =>
-    this.sentRefs()
-      .map((ref) => this.store.etats().find((etat) => etat.ref === ref))
-      .filter((etat): etat is Etat => !!etat),
-  );
+  readonly sentEtats = signal<readonly Etat[]>([]);
   readonly sentEtat = computed(() => this.sentEtats()[0] ?? null);
   readonly editing = computed(
     () => this.draft().find((dossier) => dossier.id === this.editId()) ?? null,
@@ -188,6 +183,10 @@ export class CreerEtatFacade {
     (this.session.account()?.entity ?? '').replace(/ \([^)]+\)$/, ''),
   );
 
+  constructor() {
+    void this.store.load().catch(() => undefined);
+  }
+
   // ---------------------------------------------------------------- Saisie
 
   /** Enregistre un champ texte et renvoie la valeur retenue (le n° client est filtré). */
@@ -241,9 +240,8 @@ export class CreerEtatFacade {
       if (!confirmed) {
         return;
       }
-      for (const dossier of draft) {
-        this.store.removeDossier(dossier.id);
-        dossier.pieces.forEach((piece) => void this.files.delete(piece.id));
+      if (!(await this.run(() => Promise.all(draft.map((dossier) => this.store.remove(dossier.id)))))) {
+        return;
       }
     }
     this.etatTypeChoice.set(id);
@@ -254,7 +252,11 @@ export class CreerEtatFacade {
   }
 
   setType(type: DossierType): void {
-    this.value.update((value) => ({ ...value, type }));
+    // Le produit suit le type : il reste s'il est proposé pour le nouveau type, sinon le premier est retenu.
+    this.value.update((value) => {
+      const produits = produitsOf(type);
+      return { ...value, type, produit: produits.includes(value.produit) ? value.produit : (produits[0] ?? '') };
+    });
     // Les erreurs des champs propres à l'ancien type n'ont plus d'objet.
     this.errors.update((errors) =>
       Object.fromEntries(
@@ -283,23 +285,23 @@ export class CreerEtatFacade {
   }
 
   resetForm(): void {
-    this.discardUnsavedPieces();
     this.clearForm(true);
   }
 
   // ---------------------------------------------------------- Pièces jointes
 
-  async addPieces(fileList: FileList | null | undefined): Promise<void> {
+  /** Les fichiers retenus restent en mémoire ; ils sont envoyés à l'API avec le dossier. */
+  addPieces(fileList: FileList | null | undefined): void {
     const { accepted, errors } = screenPieces(Array.from(fileList ?? []), this.pieces());
     if (!accepted.length) {
       this.pieceError.set(errors.join(' · '));
       return;
     }
-
     const at = nowIso();
     const by = this.session.account()?.name ?? '';
     const added: PieceJointe[] = accepted.map((file) => ({
       id: `pj-${crypto.randomUUID()}`,
+      file,
       name: file.name,
       size: file.size,
       mime: file.type,
@@ -307,27 +309,22 @@ export class CreerEtatFacade {
       at,
       by,
     }));
-
-    try {
-      await Promise.all(added.map((piece, index) => this.files.put(piece.id, accepted[index])));
-      this.pieces.update((pieces) => [...pieces, ...added]);
-      this.pieceError.set(errors.join(' · '));
-    } catch {
-      this.pieceError.set('Enregistrement des fichiers impossible dans ce navigateur.');
-    }
+    this.pieces.update((pieces) => [...pieces, ...added]);
+    this.pieceError.set(errors.join(' · '));
   }
 
+  /** Une pièce déjà envoyée n'est supprimée de l'API qu'à l'enregistrement du dossier. */
   removePiece(piece: PieceJointe): void {
-    if (!this.isKeptInDraft(piece)) {
-      void this.files.delete(piece.id);
-    }
     this.pieces.update((pieces) => pieces.filter((candidate) => candidate.id !== piece.id));
     this.pieceError.set('');
   }
 
   // ------------------------------------------------- Ajout et modification
 
-  submit(): void {
+  async submit(): Promise<void> {
+    if (this.busy()) {
+      return;
+    }
     if (this.editId() !== null) {
       void this.saveEdit();
       return;
@@ -343,7 +340,10 @@ export class CreerEtatFacade {
       this.showInvalid(result.error, result.errors);
       return;
     }
-    const dossier = this.store.addDossier(result.data);
+    const dossier = await this.run(() => this.store.add(result.data));
+    if (!dossier) {
+      return;
+    }
     this.clearForm(false);
     this.toast.success(`Dossier ${dossier.ref} ajouté à l'état — statut Temporaire.`);
   }
@@ -400,13 +400,9 @@ export class CreerEtatFacade {
       return;
     }
 
-    this.store.updateDossier(previous.id, result.data, {
-      at: nowIso(),
-      who: this.session.account()?.name ?? '',
-      label: `Dossier modifié avant transmission — ${changes.join(', ')}`,
-      tone: 'warning',
-      pre: true,
-    });
+    if (!(await this.run(() => this.store.update(previous, result.data)))) {
+      return;
+    }
     this.clearForm(true);
     this.toast.success(
       `Dossier ${previous.ref} modifié (${changes.length} champ${changes.length > 1 ? 's' : ''}) — référence inchangée.`,
@@ -429,8 +425,9 @@ export class CreerEtatFacade {
     if (!confirmed) {
       return;
     }
-    this.store.removeDossier(dossier.id);
-    dossier.pieces.forEach((piece) => void this.files.delete(piece.id));
+    if (!(await this.run(() => this.store.remove(dossier.id).then(() => true)))) {
+      return;
+    }
     this.toast.success(`Dossier ${dossier.ref} supprimé de l'état.`);
   }
 
@@ -467,14 +464,12 @@ export class CreerEtatFacade {
       return;
     }
 
-    const result = this.store.transmit(account, etatType?.id ?? '');
-    if (!result.ok) {
-      this.toast.error(result.error);
+    const etats = await this.run(() => this.store.transmit(this.autoMode() ? null : (etatType?.id ?? null)));
+    if (!etats?.length) {
       return;
     }
     this.clearForm(true);
-    const { etats } = result;
-    this.sentRefs.set(etats.map((etat) => etat.ref));
+    this.sentEtats.set(etats);
     this.toast.success(
       etats.length > 1
         ? `${etats.length} états transmis : ${etats.map((etat) => `${etat.ref} → ${etat.dest}`).join(' · ')}`
@@ -483,11 +478,14 @@ export class CreerEtatFacade {
   }
 
   startNewEtat(): void {
-    this.sentRefs.set([]);
+    this.sentEtats.set([]);
   }
 
   printEtat(ref: string): void {
-    this.bordereau.open(ref);
+    const etat = this.sentEtats().find((candidate) => candidate.ref === ref);
+    if (etat?.id) {
+      this.bordereau.open(etat.id);
+    }
   }
 
   // ------------------------------------------------- Saisie non enregistrée
@@ -520,7 +518,6 @@ export class CreerEtatFacade {
       danger: true,
     });
     if (confirmed) {
-      this.discardUnsavedPieces();
       this.clearForm(true);
     }
     return confirmed;
@@ -566,13 +563,18 @@ export class CreerEtatFacade {
     this.editSnapshot = '';
   }
 
-  private isKeptInDraft(piece: PieceJointe): boolean {
-    return this.draft().some((dossier) => dossier.pieces.some((kept) => kept.id === piece.id));
-  }
-
-  private discardUnsavedPieces(): void {
-    this.pieces()
-      .filter((piece) => !this.isKeptInDraft(piece))
-      .forEach((piece) => void this.files.delete(piece.id));
+  /**
+   * Exécute un appel à l'API en bloquant les boutons ; rend `null` en cas d'échec (l'erreur est déjà affichée par
+   * l'intercepteur).
+   */
+  private async run<T>(call: () => Promise<T>): Promise<T | null> {
+    this.busy.set(true);
+    try {
+      return await call();
+    } catch {
+      return null;
+    } finally {
+      this.busy.set(false);
+    }
   }
 }

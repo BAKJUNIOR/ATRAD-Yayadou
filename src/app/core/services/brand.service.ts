@@ -1,16 +1,23 @@
 import { DOCUMENT, Service, computed, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { BRAND_DEFAULT, Brand, BrandFont, FONT_QUERY, brandVars } from '../branding/brand';
+import { BrandingApi } from '../branding/branding.api';
 import { initialsOf } from '../utils/text.util';
 import { StorageService } from './storage.service';
 
 const BRAND_KEY = 'atrad_brand_v1';
 const FAVICON_MARK = 'data-atrad';
 
-/** Marque blanche : nom, logos, couleurs, police et rayon appliqués à toute l'application. */
+/**
+ * Marque blanche : nom, logos, couleurs, police et rayon appliqués à toute l'application. La marque vient de
+ * l'API (`refresh()`, au démarrage) ; une copie locale l'applique dès le chargement, sans flash des couleurs par
+ * défaut.
+ */
 @Service()
 export class BrandService {
   private readonly document = inject(DOCUMENT);
   private readonly storage = inject(StorageService);
+  private readonly api = inject(BrandingApi);
 
   private readonly current = signal<Brand>(this.read());
   private defaultFavicon: string | null = null;
@@ -24,6 +31,18 @@ export class BrandService {
 
   constructor() {
     this.apply(this.current());
+  }
+
+  /** Lit la marque de l'API ; en cas d'échec (serveur injoignable), la copie locale reste appliquée. */
+  async refresh(): Promise<void> {
+    try {
+      const brand = await firstValueFrom(this.api.brand());
+      this.storage.set(BRAND_KEY, brand);
+      this.current.set(brand);
+      this.apply(brand);
+    } catch {
+      // Marque locale conservée.
+    }
   }
 
   /** Enregistre le thème ; `false` si le navigateur refuse (logos trop volumineux). */

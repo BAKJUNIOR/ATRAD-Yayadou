@@ -7,11 +7,14 @@ import { ReferentielStore } from './referentiel.store';
 import { TransmissionStore } from './transmission.store';
 
 const AGENT: Account = {
+  id: 'u-1',
   role: 'agence',
+  roles: ['agence'],
   ident: 'a.diallo',
   name: 'Aminata Diallo',
   roleLabel: '',
   entity: 'Agence Plateau (AG-014)',
+  entityId: 'e-1',
 };
 
 function dossier(type: DossierData['type']): DossierData {

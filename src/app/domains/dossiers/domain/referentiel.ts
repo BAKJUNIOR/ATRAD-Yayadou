@@ -1,5 +1,14 @@
-import { DOSSIER_TYPES, DossierType, dataset, setDossierTypes } from './dossier-catalog';
+import {
+  DOSSIER_TYPES,
+  DossierType,
+  ProduitOption,
+  TypeField,
+  dataset,
+  setDossierTypes,
+  setTypeCatalog,
+} from './dossier-catalog';
 import { Entite, EntityCapability, EtatType } from './datasets';
+import type { MotifOption } from './entities/referentiel.entity';
 
 /** Circuit d'un type de dossier : type d'état qui le transmet et entité qui le traite. */
 export interface Circuit {
@@ -33,6 +42,13 @@ export interface Referentiel {
   circuits: Record<DossierType, Circuit>;
   saisieMode: SaisieMode;
   vocab: Vocabulary;
+  /** Identifiant (UUID) de chaque type de dossier dans l'API ; vide pour les jeux de démonstration. */
+  typeIds: Record<DossierType, string>;
+  /** Champs et pièces de chaque type lus dans l'API ; à défaut, ceux du jeu de données. */
+  typeFields: Record<DossierType, TypeField[]>;
+  typePieces: Record<DossierType, string[]>;
+  typeOperations: Record<DossierType, ProduitOption[]>;
+  motifsRetour: MotifOption[];
 }
 
 export const NATURES = ['Agence', 'Service', 'Département', 'Direction', 'Cellule', 'Autre'];
@@ -60,6 +76,11 @@ export function defaultReferentiel(): Referentiel {
     circuits,
     saisieMode: 'choix',
     vocab: { ...DEFAULT_VOCABULARY },
+    typeIds: {},
+    typeFields: {},
+    typePieces: {},
+    typeOperations: {},
+    motifsRetour: [],
   };
 }
 
@@ -93,6 +114,7 @@ let current: Referentiel = defaultReferentiel();
 export function setReferentiel(referentiel: Referentiel): void {
   current = referentiel;
   setDossierTypes(referentiel.dossierTypes);
+  setTypeCatalog(referentiel.typeFields, referentiel.typePieces, referentiel.typeOperations);
 }
 
 export function referentiel(): Referentiel {
