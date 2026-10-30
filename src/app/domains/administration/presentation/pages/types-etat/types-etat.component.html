@@ -1,0 +1,318 @@
+@let draft = this.draft();
+
+<div class="flex animate-enter flex-col gap-[18px]">
+  <p
+    class="flex items-start gap-3 rounded-brand border border-info-line bg-info-bg px-4 py-[13px] text-[13px] leading-normal text-info"
+  >
+    <span
+      class="mt-px flex size-5 flex-none items-center justify-center rounded-full bg-info text-[12px] font-bold text-card"
+      aria-hidden="true"
+    >
+      i
+    </span>
+    <span>
+      Un état de transmission a une seule destination : son entité réceptrice. Un type de dossier
+      n'appartient qu'à un seul type d'état. Un changement s'applique aux prochains états créés.
+    </span>
+  </p>
+
+  <section class="panel flex flex-col gap-3 px-5 py-4" aria-labelledby="saisie-title">
+    <div class="flex flex-col gap-[3px]">
+      <h2 id="saisie-title" class="text-[14.5px] font-semibold tracking-[-0.01em] text-ink">
+        Mode de saisie
+      </h2>
+      <span class="text-[12.5px] text-ink-muted">
+        S'applique à toutes les entités émettrices, dès le prochain dossier saisi.
+      </span>
+    </div>
+    <div
+      role="radiogroup"
+      aria-labelledby="saisie-title"
+      class="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-2.5"
+    >
+      @for (mode of modes; track mode.id) {
+        @let on = mode.id === saisieMode();
+        <button
+          type="button"
+          role="radio"
+          class="flex items-start gap-[11px] rounded-brand border px-3.5 py-[13px] text-start text-ink transition-[border-color,box-shadow,background-color]"
+          [class]="
+            on
+              ? 'border-brand bg-brand-tint ring-3 ring-brand/14'
+              : 'border-line bg-card hover:border-line-strong'
+          "
+          [attr.aria-checked]="on"
+          (click)="pickMode(mode.id)"
+        >
+          <span
+            class="mt-0.5 flex size-4 flex-none items-center justify-center rounded-full border-2 border-brand"
+            aria-hidden="true"
+          >
+            <span class="size-2 rounded-full" [class]="on ? 'bg-brand' : 'bg-transparent'"></span>
+          </span>
+          <span class="flex min-w-0 flex-col gap-[3px]">
+            <span class="block text-[13.5px] leading-[1.35] font-semibold">{{ mode.title }}</span>
+            @if (mode.byDefault) {
+              <span
+                class="self-start rounded-full bg-soft px-2 py-px text-[11px] font-semibold text-ink-secondary"
+              >
+                Par défaut
+              </span>
+            }
+            <span class="text-[12.5px] leading-[1.45] text-ink-muted">{{ mode.text }}</span>
+          </span>
+        </button>
+      }
+    </div>
+  </section>
+
+  @if (missing().length) {
+    <p
+      role="status"
+      class="rounded-brand border border-warning-line bg-warning-bg px-3.5 py-[11px] text-[12.5px] leading-normal text-warning"
+    >
+      ⚠ {{ missing().length }} type(s) de dossier non rattaché(s) (sans type d'état ou sans entité
+      de traitement) : {{ missing().join(', ') }}. Ils ne pourront pas être saisis tant que leur
+      circuit n'est pas complet dans Routage & affectation.
+    </p>
+  }
+
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div class="flex min-w-0 flex-[1_1_260px] flex-col gap-[3px]">
+      <h2 class="text-[14.5px] font-semibold tracking-[-0.01em] text-ink">
+        Types d'état de transmission
+      </h2>
+      <span class="text-[12.5px] text-ink-muted">
+        {{ cards().length }} type(s) d'état · modifiez un type à la fois
+      </span>
+    </div>
+    <button
+      type="button"
+      class="btn-primary gap-[7px] px-3.5 py-2 text-[13px] disabled:opacity-50"
+      [disabled]="!!draft"
+      [attr.title]="draft ? lockTip : 'Nouveau type d\'état'"
+      (click)="add()"
+    >
+      <app-icon name="plus" [size]="14" [strokeWidth]="2.4" />
+      Nouveau type d'état
+    </button>
+  </div>
+
+  @if (draft && !draft.orig) {
+    <section
+      class="panel animate-enter overflow-hidden border-brand ring-3 ring-brand/16"
+      aria-labelledby="new-type-title"
+    >
+      <h3 id="new-type-title" class="px-5 pt-3.5 text-[14px] font-semibold text-ink">
+        Nouveau type d'état
+      </h3>
+      <ng-container [ngTemplateOutlet]="form" [ngTemplateOutletContext]="{ $implicit: draft }" />
+    </section>
+  }
+
+  @for (card of cards(); track card.type.id) {
+    <section
+      class="panel overflow-hidden transition-[opacity,box-shadow,border-color]"
+      [class]="card.editing ? 'border-brand ring-3 ring-brand/16' : card.locked ? 'opacity-55' : ''"
+      [attr.aria-label]="'Type d\'état ' + card.type.nom"
+    >
+      <div class="flex flex-wrap items-start justify-between gap-3 px-5 py-4">
+        <div class="flex min-w-0 flex-[1_1_280px] flex-col gap-1">
+          <span class="block leading-[1.35]">
+            <span class="me-2 text-[15px] font-semibold text-ink">{{ card.type.nom }}</span>
+            <span class="font-mono text-[11.5px] whitespace-nowrap text-ink-muted">
+              {{ card.type.id }}
+            </span>
+          </span>
+          <span class="text-[13px] text-ink-secondary">
+            Réceptionné par <strong class="font-semibold text-ink">{{ card.recepLabel }}</strong>
+            @if (card.recepTrait) {
+              <span class="text-ink-muted"> · réceptionne et traite (pas de dispatch)</span>
+            }
+          </span>
+        </div>
+        @if (!card.editing) {
+          <button
+            type="button"
+            class="btn-outline gap-1.5 px-3 py-[7px] text-[12.5px] font-medium disabled:opacity-45"
+            [disabled]="card.locked"
+            [attr.title]="card.locked ? lockTip : 'Modifier « ' + card.type.nom + ' »'"
+            (click)="edit(card.type)"
+          >
+            <app-icon name="pencil" class="text-info" [size]="13" [strokeWidth]="2" />
+            Modifier
+          </button>
+        }
+      </div>
+
+      @if (card.editing && draft) {
+        <div class="border-t border-line">
+          <ng-container
+            [ngTemplateOutlet]="form"
+            [ngTemplateOutletContext]="{ $implicit: draft }"
+          />
+        </div>
+      } @else {
+        <dl class="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-3.5 px-5 pb-4">
+          <div class="flex flex-col gap-1.5">
+            <dt class="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+              <span class="eyebrow font-medium tracking-[0.07em]">
+                Types de dossier rattachés ({{ card.type.dossiers.length }})
+              </span>
+              <button
+                type="button"
+                class="text-[12px] font-medium text-brand-ink underline-offset-2 hover:underline"
+                (click)="goToCircuits()"
+              >
+                Gérer dans Routage & affectation
+              </button>
+            </dt>
+            <dd class="flex flex-wrap gap-[5px]">
+              @for (dossier of card.type.dossiers; track dossier) {
+                <span class="chip bg-brand-tint text-brand-ink">{{ dossier }}</span>
+              } @empty {
+                <span class="text-[12.5px] font-medium text-warning">
+                  ⚠ Aucun type de dossier rattaché
+                </span>
+              }
+            </dd>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <dt class="eyebrow font-medium tracking-[0.07em]">Entités de traitement concernées</dt>
+            <dd class="flex flex-wrap gap-[5px]">
+              @for (traitement of card.traitements; track traitement.label) {
+                <span class="chip gap-[5px] bg-soft text-ink">
+                  {{ traitement.label }}
+                  <span class="font-normal text-ink-muted">· {{ traitement.role }}</span>
+                </span>
+              }
+              @if (!card.traitements.length && !card.traitMissing) {
+                <span class="text-[12.5px] text-ink-muted">—</span>
+              }
+              @if (card.traitMissing) {
+                <span class="text-[12.5px] font-medium text-warning"
+                  >⚠ {{ card.traitMissing }}</span
+                >
+              }
+            </dd>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <dt class="eyebrow font-medium tracking-[0.07em]">Entités émettrices</dt>
+            <dd class="flex flex-wrap gap-[5px]">
+              @for (emetteur of card.emetteurs; track emetteur) {
+                <span class="chip bg-soft text-ink">{{ emetteur }}</span>
+              } @empty {
+                <span class="text-[12.5px] text-warning">Aucune entité émettrice</span>
+              }
+            </dd>
+          </div>
+        </dl>
+      }
+    </section>
+  }
+</div>
+
+<ng-template #form let-draft>
+  <div class="flex animate-enter flex-col gap-4 px-5 py-[18px]">
+    <div class="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-3">
+      <label class="form-label gap-[5px]">
+        Nom du type d'état *
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Ex. Accueil central"
+          [value]="draft.nom"
+          (input)="setNom($event)"
+        />
+      </label>
+      <label class="form-label gap-[5px]">
+        <span>Entité réceptrice * <span class="font-normal text-ink-muted">(une seule)</span></span>
+        <select
+          class="form-control disabled:bg-subtle disabled:text-ink-muted"
+          [disabled]="recepLocked()"
+          [attr.title]="recepLocked() ? 'Entité réceptrice verrouillée' : null"
+          (change)="setRecep($event)"
+        >
+          <option value="" [selected]="!draft.recep">— Choisir l'entité réceptrice —</option>
+          @for (option of recepOptions(); track option.value) {
+            <option [value]="option.value" [selected]="option.value === draft.recep">
+              {{ option.label }}
+            </option>
+          }
+        </select>
+        @if (recepHint()) {
+          <span class="text-[12px] font-normal text-ink-muted">{{ recepHint() }}</span>
+        }
+        @if (recepLocked()) {
+          <span class="text-[12px] font-medium text-warning">
+            Verrouillée : des types de dossier sont rattachés à ce type d'état (Routage &
+            affectation).
+          </span>
+        }
+      </label>
+    </div>
+    <p
+      class="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 rounded-control border border-line bg-subtle px-3 py-2.5 text-[12.5px] text-ink-secondary"
+    >
+      <span>
+        @if (draft.orig) {
+          Types de dossier rattachés : {{ attachedText(draftType()) }}.
+        } @else {
+          Aucun type de dossier rattaché pour l'instant.
+        }
+      </span>
+      <span class="text-ink-muted">
+        Lecture seule · géré dans Routage & affectation › Circuit des types de dossier.
+      </span>
+    </p>
+    <fieldset class="flex flex-col gap-1.5">
+      <legend class="mb-1.5 text-[12px] font-medium text-ink-secondary">
+        Entités émettrices autorisées
+      </legend>
+      <div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
+        @for (entite of emetOptions(); track entite.code) {
+          <label
+            class="flex cursor-pointer items-center gap-[9px] rounded-control border border-line bg-card px-2.5 py-2 text-[13px] text-ink"
+            [attr.title]="entite.code"
+          >
+            <input
+              type="checkbox"
+              class="size-4 flex-none accent-brand"
+              [checked]="draft.emet.includes(entite.code)"
+              (change)="toggleEmet(entite.code)"
+            />
+            {{ entite.nom }}
+          </label>
+        }
+      </div>
+    </fieldset>
+    @if (dirty() && errors().length) {
+      <div
+        role="alert"
+        class="flex flex-col gap-1 rounded-control border border-danger-line bg-danger-bg px-3 py-2.5 text-[12.5px] font-medium text-danger"
+      >
+        @for (error of errors(); track error) {
+          <span>⚠ {{ error }}</span>
+        }
+      </div>
+    }
+    <div class="flex flex-wrap justify-end gap-2">
+      <button
+        type="button"
+        class="rounded-control px-3.5 py-2 text-[13px] whitespace-nowrap text-ink-muted hover:bg-soft hover:text-ink"
+        (click)="cancel()"
+      >
+        Annuler
+      </button>
+      <button
+        type="button"
+        class="btn-primary px-4 py-2 text-[13px]"
+        [disabled]="!canSave()"
+        [attr.title]="saveTip()"
+        (click)="save()"
+      >
+        Enregistrer
+      </button>
+    </div>
+  </div>
+</ng-template>

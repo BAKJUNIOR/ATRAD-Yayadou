@@ -22,6 +22,8 @@ export interface Brand {
   radius: number;
   /** Mode sombre pour les utilisateurs qui n'ont pas encore choisi eux-mêmes. */
   darkDefault: boolean;
+  /** Mots qui remplacent « Tiers » et « Dossier » dans toute l'application. */
+  vocab: { tiers: string; dossier: string };
 }
 
 export type BrandLogoKey = 'logoFull' | 'logoIcon' | 'favicon';
@@ -64,6 +66,7 @@ export const BRAND_DEFAULT: Brand = {
   font: 'Geist',
   radius: 10,
   darkDefault: false,
+  vocab: { tiers: 'Tiers', dossier: 'Dossier' },
 };
 
 export interface Palette {

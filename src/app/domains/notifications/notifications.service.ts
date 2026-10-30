@@ -1,15 +1,15 @@
-import { Service, computed, inject, signal } from '@angular/core';
+import { Service, computed, effect, inject, signal, untracked } from '@angular/core';
+import { environment } from '../../../environments/environment';
+import { StompClient } from '../../core/realtime/stomp-client';
+import { AppConfigService } from '../../core/services/app-config.service';
 import { SessionService } from '../../core/services/session.service';
-import { StorageService } from '../../core/services/storage.service';
-import { formatStamp, isoDateToFr } from '../../core/utils/date.util';
-import { entityCode } from '../../core/utils/text.util';
-import { pendingEtats, pendingReturns, remainingCount } from '../accueil/domain/reception';
-import { isLocked } from '../dossiers/domain/workflow';
-import { TransmissionStore } from '../dossiers/infrastructure/store/transmission.store';
-import { isLate, unassigned } from '../traitement/domain/portfolio';
-import { TraitementContext } from '../traitement/presentation/traitement-context.service';
-
-const READ_KEY = 'atrad_notif_read_v1';
+import { formatStamp } from '../../core/utils/date.util';
+import { Role } from '../auth/domain/entities/account.entity';
+import {
+  ApiNotification,
+  EvenementNotification,
+  NotificationApi,
+} from './infrastructure/api/notification.api';
 
 export type NotificationTone = 'info' | 'warn' | 'danger';
 
@@ -23,235 +23,169 @@ export interface AppNotification {
   read: boolean;
 }
 
+const TONE: Record<ApiNotification['niveau'], NotificationTone> = {
+  INFO: 'info',
+  WARN: 'warn',
+  DANGER: 'danger',
+};
+
+/** État de la connexion temps réel. */
+export type RealtimeState = 'off' | 'connecting' | 'live' | 'refused';
+
 /**
- * Notifications de l'utilisateur connecté, déduites de l'état des dossiers.
- * Profils couverts : agence, accueil, traitement et pilotage ; les autres seront ajoutés avec leurs parcours.
+ * Notifications de l'utilisateur connecté, tenues par l'API : la liste et le nombre de non-lues sont lus à
+ * l'ouverture de la session, puis tenus à jour en temps réel (WebSocket STOMP, file `/user/queue/notifications`).
+ * Le serveur signale les nouvelles notifications, les lectures et « tout lu », avec le nombre de non-lues : tous
+ * les onglets de l'utilisateur restent alignés. À chaque reconnexion, liste et compteur sont relus.
  */
 @Service()
 export class NotificationsService {
   private readonly session = inject(SessionService);
-  private readonly store = inject(TransmissionStore);
-  private readonly storage = inject(StorageService);
-  private readonly traitement = inject(TraitementContext);
+  private readonly api = inject(NotificationApi);
+  private readonly config = inject(AppConfigService);
 
-  private readonly readMap = signal<Record<string, boolean>>(
-    this.storage.get<Record<string, boolean>>(READ_KEY) ?? {},
-  );
+  private readonly list = signal<ApiNotification[]>([]);
+  private readonly unread = signal(0);
+  private readonly state = signal<RealtimeState>('off');
+  private socket: StompClient | null = null;
 
   readonly items = computed<AppNotification[]>(() => {
-    const account = this.session.account();
-    if (!account) {
-      return [];
-    }
-    const found =
-      account.role === 'agence'
-        ? this.forAgence(account.entity)
-        : account.role === 'accueil'
-          ? this.forAccueil()
-          : account.role === 'traitement'
-            ? this.forTraitement()
-            : account.role === 'manager'
-              ? this.forManager()
-              : [];
-    const read = this.readMap();
-    return found.map((item) => ({ ...item, read: !!read[this.key(account.role, item.id)] }));
+    const role = this.session.role();
+    return this.list().map((notification) => ({
+      id: notification.id,
+      label: notification.titre,
+      meta: [notification.message, formatStamp(notification.creeLe)].filter(Boolean).join(' · '),
+      path: pathOf(notification, role),
+      tone: TONE[notification.niveau] ?? 'info',
+      read: notification.lu,
+    }));
   });
 
-  readonly unreadCount = computed(() => this.items().filter((item) => !item.read).length);
+  readonly unreadCount = this.unread.asReadonly();
+  readonly realtime = this.state.asReadonly();
 
-  private forAccueil(): Omit<AppNotification, 'read'>[] {
-    const found: Omit<AppNotification, 'read'>[] = [];
-    const pending = pendingEtats(this.store.etats());
-    if (pending.length) {
-      found.push({
-        id: `pend:${pending.map((etat) => etat.ref + remainingCount(etat)).join(',')}`,
-        label: `${pending.length} état(s) de transmission reçu(s) à réceptionner`,
-        meta: pending.map((etat) => etat.ref).join(', '),
-        path: '/accueil-central/etats-recus',
-        tone: 'warn',
-      });
-    }
-    const returns = pendingReturns(this.store.dossiers());
-    if (returns.length) {
-      found.push({
-        id: `ret:${returns.map((dossier) => dossier.ref).join(',')}`,
-        label: `${returns.length} dossier(s) retourné(s) à traiter`,
-        meta: "Renvoi à l'agence en attente",
-        path: '/accueil-central/dossiers-retournes',
-        tone: 'danger',
-      });
-    }
-    return found;
-  }
-
-  private forManager(): Omit<AppNotification, 'read'>[] {
-    const found: Omit<AppNotification, 'read'>[] = [];
-    const late = this.store.dossiers().filter((dossier) => isLate(dossier, this.traitement.today));
-    if (late.length) {
-      found.push({
-        id: `mlate:${late.map((dossier) => dossier.ref).join(',')}`,
-        label: `${late.length} dossier(s) en retard sur l'ensemble des entités`,
-        meta: 'Respect des délais',
-        path: '/pilotage/delais',
-        tone: 'danger',
-      });
-    }
-    const partial = this.store.etats().filter((etat) => etat.status === 'Reçu partiellement');
-    if (partial.length) {
-      found.push({
-        id: `part:${partial.map((etat) => etat.ref).join(',')}`,
-        label: `${partial.length} état(s) reçu(s) partiellement`,
-        meta: partial.map((etat) => etat.ref).join(', '),
-        path: '/pilotage/tableau-de-bord',
-        tone: 'warn',
-      });
-    }
-    return found;
-  }
-
-  private forTraitement(): Omit<AppNotification, 'read'>[] {
-    const found: Omit<AppNotification, 'read'>[] = [];
-    const mine = this.traitement.myDossiers();
-    for (const dossier of mine.filter((candidate) => !isLocked(candidate))) {
-      found.push({
-        id: `aff:${dossier.ref}:${dossier.gestAt}`,
-        label: `Dossier ${dossier.ref} affecté à vous`,
-        meta:
-          `${dossier.type} · ${dossier.client}` +
-          (dossier.gestAt ? ` · ${formatStamp(dossier.gestAt)}` : ''),
-        path: `/traitement/dossiers/${dossier.ref}`,
-        tone: 'info',
-      });
-    }
-    const late = mine.filter((dossier) => isLate(dossier, this.traitement.today));
-    if (late.length) {
-      found.push({
-        id: `late:${late.map((dossier) => dossier.ref).join(',')}`,
-        label: `${late.length} dossier(s) en retard`,
-        meta: this.traitement.entiteShort(),
-        path: '/traitement/retard-clotures',
-        tone: 'danger',
-      });
-    }
-    const waiting = unassigned(this.traitement.entityDossiers());
-    if (waiting.length) {
-      found.push({
-        id: `pool:${waiting.map((dossier) => dossier.ref).join(',')}`,
-        label: `${waiting.length} dossier(s) non pris en charge`,
-        meta: this.traitement.entiteShort(),
-        path: this.traitement.functions().affecter
-          ? '/traitement/affectation'
-          : this.traitement.functions().pool
-            ? '/traitement/pool'
-            : '/traitement/mes-dossiers',
-        tone: 'warn',
-      });
-    }
-    return found;
-  }
-
-  private forAgence(entity: string): Omit<AppNotification, 'read'>[] {
-    const found: Omit<AppNotification, 'read'>[] = [];
-    const draft = this.store.draft();
-    if (draft.length) {
-      found.push({
-        id: `draft:${draft.length}`,
-        label: `État en cours de constitution : ${draft.length} dossier(s) non transmis`,
-        meta: 'Statut Temporaire',
-        path: '/agence/creer-etat',
-        tone: 'warn',
-      });
-    }
-
-    const mine = this.store.etats().filter((etat) => etat.code === entityCode(entity));
-    const waiting = mine.filter((etat) => !etat.receivedAt);
-    if (waiting.length) {
-      const refs = waiting.map((etat) => etat.ref).join(', ');
-      found.push({
-        id: `wait:${refs}`,
-        label: `${waiting.length} état(s) transmis en attente de réception à l'Accueil`,
-        meta: refs,
-        path: '/agence/suivi',
-        tone: 'info',
-      });
-    }
-    for (const etat of mine) {
-      for (const dossier of etat.dossiers) {
-        if (dossier.nonRec && !dossier.rec) {
-          found.push({
-            id: `nonrec:${dossier.ref}:${dossier.nonRec.at}`,
-            label: `Dossier ${dossier.ref} non reçu par l'Accueil`,
-            meta: `État ${etat.ref} · pointage du ${formatStamp(dossier.nonRec.at)}`,
-            path: `/agence/suivi/${dossier.ref}`,
-            tone: 'danger',
-          });
-        }
-      }
-    }
-
-    // Suites données par l'entité de traitement aux dossiers de l'agence.
-    for (const dossier of this.store
-      .dossiers()
-      .filter((candidate) => candidate.agence === entity)) {
-      const missing = (dossier.docsMissing ?? []).join(', ') || dossier.complements || '—';
-      const context = `${dossier.type} · ${dossier.client}`;
-      const path = `/agence/suivi/${dossier.ref}`;
-      if (dossier.docsReqAt) {
-        found.push({
-          id: `docreq:${dossier.ref}:${dossier.docsReqAt}`,
-          label: `Dossier ${dossier.ref} : document(s) attendu(s) : ${missing} — à fournir avant le ${isoDateToFr(dossier.docsDeadlineIso ?? '')}`,
-          meta: `${context} · ${formatStamp(dossier.docsReqAt)}`,
-          path,
-          tone: 'warn',
-        });
-      }
-      if (dossier.docsRetAt) {
-        found.push({
-          id: `docret:${dossier.ref}:${dossier.docsRetAt}`,
-          label: `Dossier ${dossier.ref} retourné faute de document(s) : ${missing}`,
-          meta: `${context} · ${formatStamp(dossier.docsRetAt)}`,
-          path,
-          tone: 'danger',
-        });
-      }
-      if (dossier.renvoyeAt) {
-        found.push({
-          id: `renv:${dossier.ref}:${dossier.renvoyeAt}`,
-          label:
-            `Dossier ${dossier.ref} renvoyé à l'agence — ` +
-            (dossier.docsRetAt
-              ? `document(s) manquant(s) : ${missing}`
-              : `motif : ${dossier.rejectReason || '—'}`),
-          meta: `${context} · ${formatStamp(dossier.renvoyeAt)}`,
-          path,
-          tone: 'danger',
-        });
-      }
-    }
-    return found;
+  constructor() {
+    effect(() => {
+      const token = this.session.token();
+      untracked(() => (token ? this.open() : this.close()));
+    });
   }
 
   markRead(id: string): void {
-    this.mark([id]);
+    const notification = this.list().find((candidate) => candidate.id === id);
+    if (!notification || notification.lu) {
+      return;
+    }
+    this.api.marquerLue(id).subscribe(() => {
+      this.setRead(id);
+      this.unread.update((count) => Math.max(0, count - 1));
+    });
   }
 
   markAllRead(): void {
-    this.mark(this.items().map((item) => item.id));
+    this.api.toutesLues().subscribe(({ nonLues }) => {
+      this.list.update((list) => list.map((item) => ({ ...item, lu: true })));
+      this.unread.set(nonLues);
+    });
   }
 
-  private mark(ids: string[]): void {
-    const role = this.session.role();
-    if (!role) {
-      return;
+  private open(): void {
+    this.refresh();
+    this.socket?.stop();
+    this.state.set('connecting');
+    let first = true;
+    this.socket = new StompClient({
+      url: this.socketUrl(),
+      connectHeaders: () => ({ Authorization: `Bearer ${this.session.token() ?? ''}` }),
+      destination: environment.endpoints.notifications.file,
+      onMessage: (message) => this.receive(message.body),
+      onConnected: () => {
+        this.state.set('live');
+        // Rattrapage de ce qui est arrivé pendant la coupure.
+        if (!first) {
+          this.refresh();
+        }
+        first = false;
+      },
+      onDisconnected: (refused) => this.state.set(refused ? 'refused' : 'connecting'),
+    });
+    this.socket.start();
+  }
+
+  private close(): void {
+    this.socket?.stop();
+    this.socket = null;
+    this.state.set('off');
+    this.list.set([]);
+    this.unread.set(0);
+  }
+
+  private refresh(): void {
+    this.api.liste().subscribe((page) => this.list.set(page.content));
+    this.api.nonLues().subscribe(({ nonLues }) => this.unread.set(nonLues));
+  }
+
+  private receive(body: string): void {
+    let event: EvenementNotification;
+    try {
+      event = JSON.parse(body) as EvenementNotification;
+    } catch {
+      return; // Message illisible : ignoré.
     }
-    this.readMap.update((read) => ({
-      ...read,
-      ...Object.fromEntries(ids.map((id) => [this.key(role, id), true])),
-    }));
-    this.storage.set(READ_KEY, this.readMap());
+    const notification = event.notification;
+    switch (event.type) {
+      case 'notification:new':
+        if (notification) {
+          this.list.update((list) => [
+            notification,
+            ...list.filter((item) => item.id !== notification.id),
+          ]);
+        }
+        break;
+      case 'notification:read':
+        if (notification) {
+          this.setRead(notification.id);
+        }
+        break;
+      case 'notification:read-all':
+        this.list.update((list) => list.map((item) => ({ ...item, lu: true })));
+        break;
+      default:
+        return;
+    }
+    this.unread.set(event.nonLues);
   }
 
-  private key(role: string, id: string): string {
-    return `${role}:${id}`;
+  private setRead(id: string): void {
+    this.list.update((list) =>
+      list.map((item) => (item.id === id ? { ...item, lu: true } : item)),
+    );
   }
+
+  /** `ws(s)://` sur l'adresse de l'API, ou sur l'origine du front quand elle est vide (proxy). */
+  private socketUrl(): string {
+    const base = this.config.apiBaseUrl || window.location.origin;
+    return `${base.replace(/^http/, 'ws')}/${environment.endpoints.notifications.socket}`;
+  }
+}
+
+/** Écran ouvert au clic, selon l'objet de la notification et le profil. */
+function pathOf(notification: ApiNotification, role: Role | null): string {
+  const id = notification.objetId ?? '';
+  if (notification.objetType === 'DOSSIER' && id) {
+    switch (role) {
+      case 'agence':
+        return `/agence/suivi/${id}`;
+      case 'traitement':
+        return `/traitement/dossiers/${id}`;
+      case 'accueil':
+        return '/accueil-central/dossiers-retournes';
+      case 'manager':
+        return '/pilotage/delais';
+    }
+  }
+  if (notification.objetType === 'ETAT') {
+    return role === 'agence' ? '/agence/suivi' : '/accueil-central/etats-recus';
+  }
+  return '/';
 }

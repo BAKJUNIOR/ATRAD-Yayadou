@@ -1,31 +1,20 @@
-export const DOSSIER_TYPES = [
-  'Ouverture de compte',
-  'Demande de prêt',
-  'Réclamation',
-  'Mise à jour KYC',
-  'Clôture de compte',
-] as const;
+import { isoDateToFr } from '../../../core/utils/date.util';
 
-export type DossierType = (typeof DOSSIER_TYPES)[number];
+/** Type de dossier, paramétré par l'administrateur dans l'API. */
+export type DossierType = string;
 
-export const PRODUITS = [
-  'Compte courant',
-  'Compte épargne',
-  'Prêt habitat',
-  'Prêt conso',
-  'Prêt auto',
-  'Carte Visa Classic',
-  'Assurance vie',
-] as const;
+/** Produit (opération) du dossier, paramétré pour chaque type dans l'API. */
+export type Produit = string;
 
-export type Produit = (typeof PRODUITS)[number];
+/** Produit proposé pour un type de dossier, avec son identifiant d'opération dans l'API. */
+export interface ProduitOption {
+  id: string;
+  label: string;
+}
 
 export const PRIORITES = ['Normale', 'Haute', 'Urgente'] as const;
 
 export type Priorite = (typeof PRIORITES)[number];
-
-/** Destinataire unique des états émis par les agences. */
-export const ACCUEIL_CENTRAL = 'Accueil central (EC-001)';
 
 export type TypeFieldKind = 'select' | 'number' | 'text' | 'date';
 
@@ -42,85 +31,112 @@ export interface TypeField {
   unit?: 'FCFA' | 'mois';
 }
 
-export const TYPE_FIELDS: Record<DossierType, readonly TypeField[]> = {
-  'Ouverture de compte': [
-    {
-      key: 'typeCompte',
-      label: 'Type de compte souhaité',
-      kind: 'select',
-      options: ['Courant', 'Épargne'],
-    },
-    {
-      key: 'depot',
-      label: 'Montant du dépôt initial',
-      kind: 'number',
-      unit: 'FCFA',
-      placeholder: 'Ex. 50000',
-    },
-  ],
-  'Demande de prêt': [
-    {
-      key: 'montantPret',
-      label: 'Montant demandé',
-      kind: 'number',
-      unit: 'FCFA',
-      placeholder: 'Ex. 5000000',
-    },
-    { key: 'duree', label: 'Durée souhaitée', kind: 'number', unit: 'mois', placeholder: 'Ex. 36' },
-    {
-      key: 'apport',
-      label: 'Apport personnel',
-      kind: 'number',
-      unit: 'FCFA',
-      placeholder: 'Ex. 500000',
-      zeroOk: true,
-    },
-  ],
-  Réclamation: [
-    {
-      key: 'objet',
-      label: 'Objet de la réclamation',
-      kind: 'select',
-      options: ['Erreur de prélèvement', 'Carte bloquée', 'Frais contestés', 'Autre'],
-    },
-    {
-      key: 'refOp',
-      label: "Référence de l'opération concernée",
-      kind: 'text',
-      placeholder: 'Ex. OP-2026-000123',
-      optional: true,
-    },
-  ],
-  'Mise à jour KYC': [
-    {
-      key: 'piece',
-      label: "Type de pièce d'identité",
-      kind: 'select',
-      options: ['CNI', 'Passeport', "Attestation d'identité"],
-    },
-    { key: 'expiration', label: "Date d'expiration de la pièce", kind: 'date' },
-  ],
-  'Clôture de compte': [
-    {
-      key: 'motifCloture',
-      label: 'Motif de la clôture',
-      kind: 'text',
-      placeholder: "Ex. Déménagement à l'étranger",
-    },
-    {
-      key: 'compteDest',
-      label: 'Compte de destination du solde',
-      kind: 'text',
-      placeholder: 'Ex. CPT-0000000 ou IBAN',
-    },
-  ],
+/** Libellés et règles du formulaire de saisie d'un dossier. */
+export interface DossierFormLabels {
+  type: string;
+  produit: string;
+  client: string;
+  clientPlaceholder: string;
+  /** Saisie du n° client : 12 chiffres, numéro + clé, ou objet libre. */
+  clientRule: 'digits12' | 'numeroCle' | 'objet';
+  clientMax: number;
+  prenom: string;
+  nom: string;
+  compte: string;
+  comptePlaceholder: string;
+  showProduit: boolean;
+  showPrenom: boolean;
+  showCompte: boolean;
+  showPrio: boolean;
+  /** Prénom, nom et compte obligatoires. */
+  identityRequired: boolean;
+}
+
+export const DOSSIER_FORM: DossierFormLabels = {
+  type: 'Type de dossier',
+  produit: 'Type de produit',
+  client: 'Numéro client',
+  clientPlaceholder: '12 chiffres, ex. 000123456789',
+  clientRule: 'digits12',
+  clientMax: 12,
+  prenom: 'Prénom du client',
+  nom: 'Nom du client',
+  compte: 'N° de compte',
+  comptePlaceholder: 'CPT-0000000',
+  showProduit: true,
+  showPrenom: true,
+  showCompte: true,
+  showPrio: true,
+  identityRequired: false,
 };
 
-/** Champ dont la valeur devient le montant du dossier, pour les types qui en ont un. */
-export const MONTANT_FIELD: Partial<Record<DossierType, string>> = {
-  'Demande de prêt': 'montantPret',
-  'Ouverture de compte': 'depot',
-};
+// Catalogue lu dans l'API (`setReferentiel`). La liste des types est mise à jour sur place pour que ses lecteurs
+// gardent la même référence ; tant que l'API n'a pas répondu, tout est vide.
+const types: string[] = [];
+let typeFields: Record<string, readonly TypeField[]> = {};
+let typePieces: Record<string, readonly string[]> = {};
+let typeProduits: Record<string, readonly ProduitOption[]> = {};
+
+/** Types de dossier en vigueur. */
+export const DOSSIER_TYPES: readonly DossierType[] = types;
+
+/** Remplace la liste des types de dossier (paramétrage de l'administrateur). */
+export function setDossierTypes(list: readonly DossierType[]): void {
+  types.splice(0, types.length, ...list);
+}
+
+/** Champs et pièces des types de dossier, tels que paramétrés dans l'API. */
+export function setTypeCatalog(
+  fields: Record<string, readonly TypeField[]>,
+  pieces: Record<string, readonly string[]>,
+  produits: Record<string, readonly ProduitOption[]> = {},
+): void {
+  typeFields = fields;
+  typePieces = pieces;
+  typeProduits = produits;
+}
+
+/** Produits proposés pour un type, vide si l'API n'en paramètre aucun. */
+export function produitsOf(type: DossierType): readonly Produit[] {
+  return (typeProduits[type] ?? []).map((option) => option.label);
+}
+
+/** Identifiant d'opération d'un produit pour un type. */
+export function operationIdOf(type: DossierType, produit: Produit): string | null {
+  return typeProduits[type]?.find((option) => option.label === produit)?.id ?? null;
+}
+
+/** Libellé du produit d'un dossier à partir de son identifiant d'opération. */
+export function produitLabelOf(type: DossierType, operationId: string | null): Produit {
+  return (
+    (operationId && typeProduits[type]?.find((option) => option.id === operationId)?.label) || ''
+  );
+}
+
+/** Champs propres à un type, tels que paramétrés dans l'API. */
+export function fieldsOf(type: DossierType): readonly TypeField[] {
+  return typeFields[type] ?? [];
+}
+
+/** Champ dont la valeur devient le montant du dossier : le premier montant en FCFA qui ne peut pas être nul. */
+export function montantFieldOf(type: DossierType): string | undefined {
+  return fieldsOf(type).find(
+    (field) => field.kind === 'number' && field.unit === 'FCFA' && !field.zeroOk,
+  )?.key;
+}
+
+/** Pièces attendues pour un type de dossier, proposées lors d'une demande de documents. */
+export function piecesOf(type: DossierType): readonly string[] {
+  return typePieces[type] ?? [];
+}
+
+/** Valeur d'un champ propre au type, mise en forme pour l'affichage (nombre groupé et unité, date française). */
+export function displayValue(field: TypeField, raw: string): string {
+  if (field.kind === 'number') {
+    return formatNumber(raw) + (field.unit ? ` ${field.unit}` : '');
+  }
+  return field.kind === 'date' ? isoDateToFr(raw) : raw;
+}
 
 /** `1250000` → `1 250 000` */
 export function formatNumber(value: string | number): string {

@@ -12,8 +12,8 @@ import {
   DossierAction,
   DossierActionKind,
   FINAL_STATUSES,
-  PIECES_PAR_TYPE,
 } from '../../../../dossiers/domain/workflow';
+import { piecesOf } from '../../../../dossiers/domain/dossier-catalog';
 
 export interface ActionDialogData {
   dossier: RoutedDossier;
@@ -40,7 +40,7 @@ export class ActionDialogComponent {
   protected readonly kind = this.data.kind;
   protected readonly docDelay = DOC_DELAI_JOURS;
   protected readonly deadline = isoDateToFr(isoDateInDays(DOC_DELAI_JOURS));
-  protected readonly docOptions = [...PIECES_PAR_TYPE[this.data.dossier.type], OTHER];
+  protected readonly docOptions = [...piecesOf(this.data.dossier.type), OTHER];
 
   protected readonly reason = signal('');
   protected readonly note = signal('');
@@ -135,8 +135,8 @@ export class ActionDialogComponent {
       case 'retour_noneligible':
         return {
           title: `Retourner le dossier ${dossier.ref} pour non-éligibilité ?`,
-          text: `Le dossier sera renvoyé vers l'Accueil (écran « Dossiers retournés »), qui le retournera à l'agence d'origine (${dossier.agence}). Statut : Dossier retourné.`,
-          confirm: "Renvoyer vers l'Accueil",
+          text: `Le dossier sera renvoyé vers l'entité réceptrice (écran « Dossiers retournés »), qui le retournera à l'agence d'origine (${dossier.agence}). Statut : Dossier retourné.`,
+          confirm: "Renvoyer vers l'entité réceptrice",
           buttonClass: 'bg-[#8a5a11] hover:brightness-110',
           tone: 'warning',
         };
@@ -155,7 +155,7 @@ export class ActionDialogComponent {
           : '';
         return {
           title: `Retourner le dossier ${dossier.ref} faute de document(s) ?`,
-          text: `Document(s) attendu(s) : ${expected}${deadline}. Le dossier passe au statut « Dossier retourné » et apparaît dans « Dossiers retournés » de l'Accueil, qui le renverra à l'agence. L'agence est notifiée.`,
+          text: `Document(s) attendu(s) : ${expected}${deadline}. Le dossier passe au statut « Dossier retourné » et apparaît dans « Dossiers retournés » de l'entité réceptrice, qui le renverra à l'agence. L'agence est notifiée.`,
           confirm: 'Retourner le dossier',
           buttonClass: 'bg-danger-solid hover:brightness-90',
           tone: 'danger',

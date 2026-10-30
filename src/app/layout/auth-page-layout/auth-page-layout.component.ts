@@ -11,8 +11,7 @@ import { ThemeToggleComponent } from '../../shared/ui/theme-toggle/theme-toggle.
 export class AuthPageLayoutComponent {
   protected readonly steps = [
     "Transmission depuis l'agence",
-    "Réception et affectation par l'Accueil",
+    "Réception et dispatch par l'entité réceptrice",
     'Instruction, validation, clôture',
-    'Pilotage et respect des délais',
   ];
 }

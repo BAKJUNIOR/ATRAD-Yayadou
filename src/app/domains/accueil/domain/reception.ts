@@ -77,7 +77,7 @@ export function searchEtats(etats: readonly Etat[], criteria: EtatCriteria): Eta
     .sort((a, b) => b.sentAt.localeCompare(a.sentAt));
 }
 
-/** Dossiers d'un état que l'Accueil n'a pas encore pointés comme reçus. */
+/** Dossiers d'un état que l'entité réceptrice n'a pas encore pointés comme reçus. */
 export function remainingCount(etat: Etat): number {
   return etat.dossiers.filter((dossier) => !dossier.rec).length;
 }
@@ -133,7 +133,10 @@ export function trackingKpis(
     {
       label: 'Dossiers réceptionnés',
       value: tracked.length,
-      hint: 'routés vers une entité',
+      hint:
+        tracked.length && tracked.every((dossier) => dossier.direct)
+          ? "pris en charge par l'entité"
+          : 'dispatchés ou pris en charge',
       textClass: 'text-brand-ink',
     },
     {

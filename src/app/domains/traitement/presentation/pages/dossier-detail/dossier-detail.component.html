@@ -119,7 +119,7 @@
               </dd>
             </div>
             <div class="grid grid-cols-[max-content_minmax(0,1fr)] items-baseline gap-x-4">
-              <dt class="whitespace-nowrap text-ink-muted">Reçu de l'Accueil</dt>
+              <dt class="whitespace-nowrap text-ink-muted">Reçu de l'entité réceptrice</dt>
               <dd class="flex min-w-0 flex-wrap justify-end gap-x-1.5 text-end">
                 <span class="font-mono whitespace-nowrap">{{ dossier.etat }}</span>
                 <span class="whitespace-nowrap">{{ dossier.agence }}</span>
@@ -208,62 +208,6 @@
             <p class="text-[12.5px] leading-[1.55] text-ink-muted">{{ dossier.note }}</p>
           }
         </section>
-
-        <section
-          class="panel flex flex-col gap-3.5 px-5 py-[18px]"
-          aria-labelledby="comments-title"
-        >
-          <h2 id="comments-title" class="text-[14.5px] font-semibold tracking-[-0.01em] text-ink">
-            Commentaires d'instruction
-          </h2>
-          @if (dossier.comments?.length) {
-            <ul class="flex flex-col gap-3">
-              @for (entry of dossier.comments; track $index) {
-                <li class="flex items-start gap-[11px]">
-                  <span
-                    class="flex size-[30px] flex-none items-center justify-center rounded-full bg-brand-tint text-[12px] font-semibold text-brand-ink"
-                    aria-hidden="true"
-                  >
-                    {{ initialsOf(entry.who) }}
-                  </span>
-                  <div class="flex min-w-0 flex-col gap-[3px]">
-                    <span class="text-[12.5px] font-semibold text-ink">
-                      {{ entry.who }}
-                      <span class="font-mono text-[11.5px] font-normal text-ink-muted">
-                        {{ formatStamp(entry.at) }}
-                      </span>
-                    </span>
-                    <span class="text-[13px] leading-[1.55] text-ink-secondary">{{
-                      entry.text
-                    }}</span>
-                  </div>
-                </li>
-              }
-            </ul>
-          }
-          <form class="flex flex-col gap-2.5" (submit)="publish($event)">
-            <textarea
-              rows="3"
-              class="form-control resize-y px-3 py-[11px] text-[13px]"
-              aria-label="Commentaire d'instruction"
-              [placeholder]="
-                view.locked
-                  ? 'Dossier non modifiable — commentaires fermés.'
-                  : 'Ajouter un commentaire d\'instruction…'
-              "
-              [disabled]="view.locked"
-              [value]="comment()"
-              (input)="onComment($event)"
-            ></textarea>
-            <button
-              type="submit"
-              class="self-start rounded-control border border-line-strong bg-card px-[15px] py-[9px] text-[13px] text-ink-secondary transition-colors enabled:hover:border-brand enabled:hover:text-brand-ink disabled:text-ink-faint disabled:opacity-100"
-              [disabled]="view.locked || !comment().trim()"
-            >
-              Publier le commentaire
-            </button>
-          </form>
-        </section>
       </div>
 
       <section
@@ -283,7 +227,7 @@
           <button
             type="button"
             class="rounded-control border border-brand bg-brand-tint-soft px-4 py-[11px] text-[13.5px] font-semibold text-brand-ink transition-colors hover:bg-brand-tint"
-            (click)="actions.run(dossier, 'statut', transition.target)"
+            (click)="run(dossier, 'statut', transition.target)"
           >
             {{ transition.label }}
           </button>
@@ -293,7 +237,7 @@
           class="btn-primary px-4"
           [disabled]="!view.canValidate"
           [attr.title]="view.validateTip"
-          (click)="actions.run(dossier, 'valider')"
+          (click)="run(dossier, 'valider')"
         >
           Valider le dossier
         </button>
@@ -303,7 +247,7 @@
           [class]="view.canClose ? 'border-navy text-heading' : 'border-line text-ink-faint'"
           [disabled]="!view.canClose"
           [attr.title]="view.closeTip"
-          (click)="actions.run(dossier, 'cloturer')"
+          (click)="run(dossier, 'cloturer')"
         >
           Clôturer le dossier
         </button>
@@ -316,7 +260,7 @@
             class="reject-button"
             [disabled]="!view.canReturn"
             [attr.title]="view.canReturn ? null : view.notAllowedTip"
-            (click)="actions.run(dossier, 'retour_noneligible')"
+            (click)="run(dossier, 'retour_noneligible')"
           >
             {{ view.returnLabel }}
           </button>
@@ -325,19 +269,18 @@
             class="reject-button"
             [disabled]="!view.canRequestDocs"
             [attr.title]="view.canRequestDocs ? null : view.notAllowedTip"
-            (click)="actions.run(dossier, 'rejet_info')"
+            (click)="run(dossier, 'rejet_info')"
           >
             Demander des documents complémentaires
           </button>
         </div>
       </section>
     </div>
-  } @else {
+  } @else if (loaded()) {
     <section class="panel flex flex-col items-center gap-2.5 px-5 py-10 text-center">
       <h2 class="text-[15px] font-semibold text-ink">Dossier introuvable</h2>
       <p class="text-[13px] text-ink-muted">
-        Aucun dossier <span class="font-mono">{{ ref() }}</span> dans l'entité
-        {{ context.entiteShort() }}.
+        Ce dossier n'appartient pas à l'entité {{ context.entiteShort() }}.
       </p>
     </section>
   }

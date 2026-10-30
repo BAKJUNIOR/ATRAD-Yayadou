@@ -49,12 +49,17 @@
 
       <dl class="grid grid-cols-2 gap-x-8 gap-y-3.5">
         <div class="flex flex-col gap-0.5">
-          <dt class="eyebrow">Agence émettrice</dt>
+          <dt class="eyebrow">Entité émettrice</dt>
           <dd class="text-[13px] font-medium">{{ etat.agence }} ({{ etat.code }})</dd>
         </div>
         <div class="flex flex-col gap-0.5">
-          <dt class="eyebrow">Destinataire</dt>
-          <dd class="text-[13px] font-medium">{{ etat.dest }}</dd>
+          <dt class="eyebrow">Entité réceptrice</dt>
+          <dd class="flex flex-col text-[13px] font-medium">
+            {{ info().dest }}
+            <span class="text-[11px] font-normal text-ink-muted"
+              >Type d'état : {{ info().nom }}</span
+            >
+          </dd>
         </div>
         <div class="flex flex-col gap-0.5">
           <dt class="eyebrow">Date et heure de transmission</dt>
@@ -65,7 +70,7 @@
           <dd class="text-[13px] font-medium">{{ etat.emetteur }}</dd>
         </div>
         <div class="flex flex-col gap-0.5">
-          <dt class="eyebrow">Type d'état</dt>
+          <dt class="eyebrow">Type de dossier</dt>
           <dd class="text-[13px] font-medium">{{ etat.type }}</dd>
         </div>
         <div class="flex flex-col gap-0.5">
@@ -84,7 +89,9 @@
             <th scope="col" class="px-2 py-2 text-start font-semibold">Client</th>
             <th scope="col" class="px-2 py-2 text-start font-semibold">Type</th>
             <th scope="col" class="px-2 py-2 text-start font-semibold">Produit</th>
-            <th scope="col" class="px-2 py-2 text-start font-semibold">Entité de traitement</th>
+            @if (showEntity()) {
+              <th scope="col" class="px-2 py-2 text-start font-semibold">Entité de traitement</th>
+            }
           </tr>
         </thead>
         @for (row of rows(); track row.ref) {
@@ -98,11 +105,16 @@
               </td>
               <td class="px-2 pt-2.5">{{ row.type }}</td>
               <td class="px-2 pt-2.5">{{ row.produit }}</td>
-              <td class="px-2 pt-2.5">{{ row.entite }}</td>
+              @if (showEntity()) {
+                <td class="px-2 pt-2.5">{{ row.entite }}</td>
+              }
             </tr>
             <tr>
               <td></td>
-              <td colspan="5" class="px-2 pt-1 pb-2.5 text-[11px] text-ink-muted">
+              <td
+                [attr.colspan]="showEntity() ? 5 : 4"
+                class="px-2 pt-1 pb-2.5 text-[11px] text-ink-muted"
+              >
                 <span class="flex flex-wrap gap-x-4 gap-y-0.5">
                   <span
                     >Compte : <span class="font-mono">{{ row.compte }}</span></span
@@ -122,7 +134,9 @@
         }
         <tfoot>
           <tr class="text-[12.5px] font-semibold">
-            <td colspan="5" class="px-2 py-3 text-end">Nombre total de dossiers</td>
+            <td [attr.colspan]="showEntity() ? 5 : 4" class="px-2 py-3 text-end">
+              Nombre total de dossiers
+            </td>
             <td class="px-2 py-3 font-mono">{{ etat.dossiers.length }}</td>
           </tr>
         </tfoot>

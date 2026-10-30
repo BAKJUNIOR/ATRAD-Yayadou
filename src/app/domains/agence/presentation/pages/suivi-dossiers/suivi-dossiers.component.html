@@ -72,7 +72,7 @@
         >
           @for (etat of printableEtats(); track etat.ref) {
             <option [value]="etat.ref" [selected]="etat.ref === selectedEtat()">
-              {{ etat.ref }} · {{ etat.dossiers.length }} dossier(s)
+              {{ etat.ref }} · {{ etat.count ?? etat.dossiers.length }} dossier(s)
             </option>
           } @empty {
             <option value="">Aucun état transmis</option>
@@ -216,7 +216,7 @@
           @for (dossier of rows; track dossier.ref) {
             <tr
               class="cursor-pointer border-b border-soft transition-colors hover:bg-brand-tint-soft"
-              (click)="open(dossier.ref)"
+              (click)="open(dossier.id)"
             >
               <td class="py-3 ps-5 pe-1.5 font-mono text-[12.5px] whitespace-nowrap text-brand-ink">
                 {{ dossier.ref }}
@@ -250,7 +250,7 @@
                   class="icon-button ms-auto border-brand-tint-line text-brand-ink hover:bg-brand-tint-soft"
                   title="Consulter le dossier"
                   [attr.aria-label]="'Consulter le dossier ' + dossier.ref"
-                  [routerLink]="[dossier.ref]"
+                  [routerLink]="[dossier.id]"
                   (click)="$event.stopPropagation()"
                 >
                   <app-icon name="eye" [size]="16" />

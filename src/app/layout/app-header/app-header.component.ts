@@ -1,6 +1,6 @@
 import { Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { DemoClock } from '../../core/services/demo-clock.service';
+import { Clock } from '../../core/services/clock.service';
 import { SessionService } from '../../core/services/session.service';
 import { SidebarService } from '../../core/services/sidebar.service';
 import { initialsOf } from '../../core/utils/text.util';
@@ -40,7 +40,7 @@ const PROFILE_ENTRIES: { label: string; icon: IconName }[] = [
 export class AppHeaderComponent {
   private readonly session = inject(SessionService);
   private readonly router = inject(Router);
-  private readonly clock = inject(DemoClock);
+  private readonly clock = inject(Clock);
   protected readonly sidebar = inject(SidebarService);
   protected readonly notifications = inject(NotificationsService);
 
@@ -62,7 +62,7 @@ export class AppHeaderComponent {
     return unread ? `Notifications, ${unread} non lue(s)` : 'Notifications';
   });
 
-  /** `Lundi 12 octobre 2026` ; suit la date de démonstration. */
+  /** `Lundi 12 octobre 2026` */
   protected readonly today = computed(() => {
     const text = new Intl.DateTimeFormat('fr-FR', {
       weekday: 'long',

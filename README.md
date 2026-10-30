@@ -21,6 +21,8 @@ npx netlify-cli deploy --prod --no-build \
 
 Sans `--prod`, la commande publie un aperçu à une adresse temporaire, sans toucher au lien public.
 
+Le jeu de données interne (agences et produits réels) n'est ni versionné ni publié : il vit dans `src/app/domains/dossiers/domain/datasets.interne.local.ts`, ignoré par Git, et ne s'utilise qu'en local avec `npx ng serve --configuration interne`. Ne jamais publier un build `interne`.
+
 ### Limites
 
 - Aucune donnée n'est partagée : dossiers, états, routage et thème sont enregistrés dans le navigateur de chaque visiteur. « Réinitialiser les données de démo » les efface.

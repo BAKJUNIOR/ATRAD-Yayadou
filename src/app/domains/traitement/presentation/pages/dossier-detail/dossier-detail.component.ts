@@ -1,23 +1,25 @@
 import { Dialog } from '@angular/cdk/dialog';
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { ConfirmService } from '../../../../../core/services/confirm.service';
 import { ToastService } from '../../../../../core/services/toast.service';
 import { formatStamp, isoDateToFr } from '../../../../../core/utils/date.util';
 import { initialsOf } from '../../../../../core/utils/text.util';
+import { Status } from '../../../../../shared/models/status';
 import { StatusBadgeComponent } from '../../../../../shared/ui/status-badge/status-badge.component';
 import { Priorite } from '../../../../dossiers/domain/dossier-catalog';
+import { RoutedDossier } from '../../../../dossiers/domain/entities/dossier.entity';
 import { fileSizeLabel } from '../../../../dossiers/domain/piece.rules';
 import {
   ATTENTE_DOCS,
+  DossierActionKind,
   isLocked,
   lockReason,
   nextStatuses,
 } from '../../../../dossiers/domain/workflow';
-import { TransmissionStore } from '../../../../dossiers/infrastructure/store/transmission.store';
 import { PieceOpener } from '../../../../dossiers/presentation/piece-opener.service';
 import { DelayTone, delayOf } from '../../../domain/portfolio';
+import { DossierFiche, TraitementStore } from '../../../infrastructure/store/traitement.store';
 import {
   ReassignChoice,
   ReassignDialogComponent,
@@ -48,16 +50,15 @@ const PRIORITY_TEXT: Record<Priorite, string> = {
   templateUrl: './dossier-detail.component.html',
 })
 export class DossierDetailComponent {
-  private readonly store = inject(TransmissionStore);
+  private readonly store = inject(TraitementStore);
   private readonly toast = inject(ToastService);
-  private readonly confirm = inject(ConfirmService);
   private readonly dialog = inject(Dialog);
   protected readonly context = inject(TraitementContext);
   protected readonly actions = inject(DossierActionsService);
   protected readonly pieceOpener = inject(PieceOpener);
 
-  /** Référence du dossier, lue dans l'URL (`/traitement/dossiers/:ref`). */
-  readonly ref = input.required<string>();
+  /** Identifiant du dossier, lu dans l'URL (`/traitement/dossiers/:id`). */
+  readonly id = input.required<string>();
 
   protected readonly notAssigned = NOT_ASSIGNED;
   protected readonly priorityText = PRIORITY_TEXT;
@@ -65,20 +66,46 @@ export class DossierDetailComponent {
   protected readonly formatStamp = formatStamp;
   protected readonly initialsOf = initialsOf;
 
-  protected readonly comment = signal('');
   /** Gestionnaire choisi dans la liste d'affectation ; `null` tant que rien n'est choisi. */
   private readonly pickedGest = signal<string | null>(null);
 
-  protected readonly dossier = computed(
-    () => this.context.entityDossiers().find((dossier) => dossier.ref === this.ref()) ?? null,
-  );
+  /** Fiche lue dans l'API, avec les passages du circuit que l'utilisateur peut faire. */
+  private readonly fiche = signal<DossierFiche | null>(null);
+  protected readonly loaded = signal(false);
+  protected readonly dossier = computed(() => this.fiche()?.dossier ?? null);
+
+  constructor() {
+    effect(() => void this.load(this.id()));
+  }
+
+  private async load(id: string): Promise<void> {
+    try {
+      this.fiche.set(await this.store.fiche(id));
+    } catch {
+      this.fiche.set(null);
+    } finally {
+      this.loaded.set(true);
+    }
+  }
+
+  /** Applique une action du circuit puis relit la fiche. */
+  protected async run(
+    dossier: RoutedDossier,
+    kind: DossierActionKind,
+    target?: Status,
+  ): Promise<void> {
+    if (await this.actions.run(dossier, kind, target)) {
+      await this.load(dossier.id);
+    }
+  }
 
   protected readonly view = computed(() => {
     const dossier = this.dossier();
     if (!dossier) {
       return null;
     }
-    const next = nextStatuses(dossier);
+    // L'API ne propose d'actions qu'au gestionnaire en charge du dossier.
+    const next = this.fiche()?.actions.length ? nextStatuses(dossier) : [];
     const locked = isLocked(dossier);
     const canValidate = next.includes('Validé');
     const canClose = next.includes('Clôturé');
@@ -121,8 +148,8 @@ export class DossierDetailComponent {
       canRequestDocs: next.includes(ATTENTE_DOCS),
       notAllowedTip: `Non autorisé par le circuit « ${dossier.type} » depuis le statut « ${dossier.status} »`,
       returnLabel: waitingDocs
-        ? "Retourner faute de document(s) (vers l'Accueil)"
-        : "Retourner pour non-éligibilité (vers l'Accueil)",
+        ? "Retourner faute de document(s) (vers l'entité réceptrice)"
+        : "Retourner pour non-éligibilité (vers l'entité réceptrice)",
       validateTip: canValidate ? null : `Action impossible : ${reason}`,
       closeTip: canClose
         ? null
@@ -141,27 +168,11 @@ export class DossierDetailComponent {
     };
   });
 
-  protected onComment(event: Event): void {
-    this.comment.set((event.target as HTMLTextAreaElement).value);
-  }
-
   protected onGest(event: Event): void {
     this.pickedGest.set((event.target as HTMLSelectElement).value);
   }
 
-  protected publish(event: Event): void {
-    event.preventDefault();
-    const dossier = this.dossier();
-    const text = this.comment().trim();
-    if (!dossier || !text || isLocked(dossier)) {
-      return;
-    }
-    this.store.addComment(dossier.id, this.context.user(), text);
-    this.comment.set('');
-    this.toast.success(`Commentaire ajouté au dossier ${dossier.ref}.`);
-  }
-
-  protected assign(): void {
+  protected async assign(): Promise<void> {
     const dossier = this.dossier();
     const gestionnaire = this.pickedGest() ?? dossier?.gest ?? '';
     if (!dossier) {
@@ -171,7 +182,11 @@ export class DossierDetailComponent {
       this.toast.warning("Sélectionnez un gestionnaire avant d'affecter.");
       return;
     }
-    this.report(this.store.assign(dossier.id, gestionnaire, this.context.user()));
+    await this.attribute(
+      dossier,
+      gestionnaire,
+      `Dossier ${dossier.ref} affecté à ${gestionnaire}.`,
+    );
     this.pickedGest.set(null);
   }
 
@@ -191,42 +206,32 @@ export class DossierDetailComponent {
     });
     const choice = await firstValueFrom(ref.closed);
     if (choice) {
-      this.report(
-        this.store.reassign(
-          dossier.id,
-          choice.gestionnaire,
-          choice.motif,
-          this.context.signature(),
-        ),
+      await this.attribute(
+        dossier,
+        choice.gestionnaire,
+        `Dossier ${dossier.ref} réaffecté à ${choice.gestionnaire}.`,
+        choice.motif,
       );
     }
   }
 
-  /** Avant de quitter l'écran : un commentaire saisi mais non publié serait perdu. */
-  canLeave(): boolean | Promise<boolean> {
-    if (!this.comment().trim()) {
-      return true;
+  private async attribute(
+    dossier: RoutedDossier,
+    gestionnaire: string,
+    message: string,
+    motif?: string,
+  ): Promise<void> {
+    try {
+      await this.store.assign(dossier.id, gestionnaire, motif);
+    } catch {
+      return;
     }
-    return this.confirm.ask({
-      title: 'Quitter sans enregistrer ?',
-      tone: 'warning',
-      text: "Un commentaire n'a pas été publié. Si vous quittez cet écran, cette saisie sera perdue.",
-      okLabel: 'Quitter sans enregistrer',
-      cancelLabel: 'Rester',
-      danger: true,
-    });
+    this.toast.success(message);
+    await this.load(dossier.id);
   }
 
   protected sizeLabel(size: number): string {
     return fileSizeLabel(size);
-  }
-
-  private report(result: { ok: boolean; message: string }): void {
-    if (result.ok) {
-      this.toast.success(result.message);
-    } else {
-      this.toast.warning(result.message);
-    }
   }
 
   private lockedMessage(): string {
@@ -244,7 +249,7 @@ export class DossierDetailComponent {
     }
     const rejectedAt = dossier.rejectedAt ? formatStamp(dossier.rejectedAt) : '—';
     return (
-      `Dossier renvoyé vers l'Accueil le ${rejectedAt} — consultation seule. Motif : ${dossier.rejectReason || '—'}` +
+      `Dossier renvoyé vers l'entité réceptrice le ${rejectedAt} — consultation seule. Motif : ${dossier.rejectReason || '—'}` +
       (dossier.complements ? ` · Compléments attendus : ${dossier.complements}` : '')
     );
   }

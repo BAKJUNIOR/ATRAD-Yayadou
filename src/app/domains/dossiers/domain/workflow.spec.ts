@@ -1,4 +1,5 @@
-import { ATTENTE_DOCS, isLocked, nextStatuses, targetOf } from './workflow';
+import { emptyReferentiel, setReferentiel } from './referentiel';
+import { ATTENTE_DOCS, actionCodeTo, isLocked, nextStatuses, targetOf } from './workflow';
 
 describe('workflow', () => {
   it('lets a standard dossier be validated, then only closed', () => {
@@ -32,5 +33,35 @@ describe('workflow', () => {
     expect(targetOf({ kind: 'valider' })).toBe('Validé');
     expect(targetOf({ kind: 'rejet_info', docs: ['RIB'], note: '' })).toBe(ATTENTE_DOCS);
     expect(targetOf({ kind: 'retour_docs', reason: '' })).toBe('Dossier retourné');
+  });
+
+  it('follows the circuit read from the API when there is one', () => {
+    setReferentiel({
+      ...emptyReferentiel(),
+      typeCircuits: { 'Demande de prêt': 'STANDARD' },
+      workflows: {
+        STANDARD: [
+          {
+            source: 'EN_COURS',
+            cible: 'VALIDE',
+            actionCode: 'VALIDER',
+            libelleAction: 'Valider',
+            exigeMotif: false,
+          },
+          {
+            source: 'VALIDE',
+            cible: 'CLOTURE',
+            actionCode: 'CLOTURER',
+            libelleAction: 'Clôturer',
+            exigeMotif: false,
+          },
+        ],
+      },
+    });
+    const dossier = { type: 'Demande de prêt', status: 'En cours' as const };
+    expect(nextStatuses(dossier)).toEqual(['Validé']);
+    expect(actionCodeTo(dossier, 'Validé')).toBe('VALIDER');
+    expect(actionCodeTo(dossier, 'Clôturé')).toBe('');
+    setReferentiel(emptyReferentiel());
   });
 });

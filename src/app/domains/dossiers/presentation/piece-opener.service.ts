@@ -1,22 +1,25 @@
 import { DOCUMENT, Service, inject } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { ToastService } from '../../../core/services/toast.service';
 import { PieceJointe } from '../domain/entities/dossier.entity';
-import { PieceFileStore } from '../infrastructure/store/piece-file.store';
+import { DossierApi } from '../infrastructure/api/dossier.api';
 
 /** Ouvre une pièce jointe dans un nouvel onglet (ou la télécharge si l'onglet est bloqué). */
 @Service()
 export class PieceOpener {
-  private readonly files = inject(PieceFileStore);
+  private readonly api = inject(DossierApi);
   private readonly toast = inject(ToastService);
   private readonly document = inject(DOCUMENT);
 
   async open(piece: PieceJointe): Promise<void> {
-    let blob: Blob | null;
-    try {
-      blob = await this.files.get(piece.id);
-    } catch {
-      this.toast.error('Ouverture impossible.');
-      return;
+    // Fichier choisi mais pas encore envoyé : lu en mémoire ; sinon téléchargé depuis l'API.
+    let blob: Blob | null = piece.file ?? null;
+    if (!blob && piece.dossierId) {
+      try {
+        blob = await firstValueFrom(this.api.fichier(piece.dossierId, piece.id));
+      } catch {
+        return;
+      }
     }
     if (!blob) {
       this.toast.warning(`Fichier « ${piece.name} » introuvable sur ce poste.`);

@@ -1,6 +1,7 @@
 import { toIsoDate } from '../../../core/utils/date.util';
 import { RoutedDossier } from '../../dossiers/domain/entities/dossier.entity';
 import { Etat } from '../../dossiers/domain/entities/etat.entity';
+import { etatInfo } from '../../dossiers/domain/referentiel';
 
 export interface AuditEvent {
   at: string;
@@ -61,13 +62,14 @@ export function auditEvents(
 
   for (const etat of etats) {
     add(etat.createdAt || etat.sentAt, etat.emetteur, 'État créé', etat.ref);
-    add(etat.sentAt, etat.emetteur, "État validé et transmis à l'Accueil central", etat.ref);
+    const info = etatInfo(etat);
     add(
-      etat.receivedAt,
-      etat.receivedBy || 'Accueil central',
-      "Réception de l'état confirmée",
+      etat.sentAt,
+      etat.emetteur,
+      `État validé et transmis à ${info.dest} (type « ${info.nom} »)`,
       etat.ref,
     );
+    add(etat.receivedAt, etat.receivedBy || info.dest, "Réception de l'état confirmée", etat.ref);
     for (const log of etat.recLog ?? []) {
       for (const ref of log.refs) {
         add(log.at, log.by, 'Dossier réceptionné (pointé reçu)', `${ref} · ${etat.ref}`);

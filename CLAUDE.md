@@ -77,9 +77,16 @@ src/app/
     └── ui/                # Primitives : button, icon, status-badge, stat-card, theme-toggle, ...
 ```
 
-- **Profils** : `agence`, `accueil`, `traitement`, `manager`, `admin`. Chaque profil a son menu (`core/navigation/navigation.ts`) et ses routes, protégées par `roleGuard`.
+- **Profils** : `agence` (entité émettrice), `accueil` (entité réceptrice), `traitement`, `manager`, `admin`. Chaque profil a son menu (`core/navigation/navigation.ts`) et ses routes, protégées par `roleGuard`. Le profil `manager` n'est plus proposé à la connexion (prototype du 24/10) ; ses écrans restent en place.
 - **Nouvel écran** : créer la page dans `domains/<domaine>/presentation/pages/`, puis remplacer `placeholder` par son `loadComponent` dans `<domaine>.routes.ts`. Le `title` d'une route ne contient que le nom de l'écran.
-- **Données** : aucune consommation d'API pour l'instant. Les données fictives vivent dans `infrastructure/mock/` ; `provideHttpClient` n'est pas encore déclaré.
+- **Données** : branchement de l'API en cours, domaine par domaine (les écrans pas encore branchés lisent toujours leurs stores locaux). Même organisation que xbanking-Backoffice :
+  - Environnements (`src/environments/`) : `environment.ts` (local), `environment.demo.ts` (`--configuration demo`), `environment.prod.ts` ; chacun porte `baseUrl` et `endpoints`. Les chemins sont écrits une seule fois dans `endpoints.ts` (un chemin à identifiant est une fonction) ; le code lit `environment.endpoints.<domaine>`.
+  - `AppConfigService` : `public/config/app-config.json` (`apiBaseUrl`, réécrit au déploiement) l'emporte sur `environment.baseUrl` ; vide = même origine que le front.
+  - `BaseService` (`core/services/`) : méthodes d'appel communes (`getOne`, `create`, `update`, `delete`, `upload`, `getBlob`, `url`), réponses rendues sans l'enveloppe `ResponseWrapper` (`core/models/`). Options d'un appel : `withoutToken` (public, un 401 n'y ferme pas la session), `silentErrors` (l'écran affiche l'erreur), `token` (jeton explicite).
+  - Intercepteurs (`core/interceptors/`) : jeton de la session ; toute erreur devient une `ApiError` (`core/utils/api-error.util.ts` : message français, `code` = `errorCode` du backend), affichée en toast ; un 401 ferme la session.
+  - Pas de DTO : les données de l'API sont typées par les entités du domaine (`domain/entities/*.entity.ts`), qui portent aussi leur conversion (`accountFromUtilisateur`, `brandFromMarque`). Les appels sont dans `infrastructure/api/<domaine>.api.ts`, avec `BaseService` et `environment.endpoints`.
+  - En local, `ng serve` relaie `/api` et `/ws` vers `http://localhost:8080` (`proxy.conf.json`).
+- **Session** : jeton et compte (`/auth/login` puis `/moi`) dans le sessionStorage (`atrad_session_v2`), ou dans le localStorage avec « Se souvenir de moi » (identifiant aussi gardé, `atrad_identifiant_v1`) ; un jeton expiré n'est jamais repris.
 - **Nommage des fichiers** : suffixes explicites (`*.component.ts`, `*.service.ts`, `*.guard.ts`), configurés dans `angular.json`.
 
 ## Thème et styles
@@ -94,53 +101,37 @@ src/app/
 
 `@angular/cdk`, `apexcharts` + `ng-apexcharts` (graphiques), `flatpickr` (dates). Ne pas ajouter de dépendance sans demander.
 
-## Parcours agence (premiers écrans construits)
+## Référentiel
 
-- `domains/dossiers/` est le socle partagé par tous les profils : entités `Dossier` / `Etat`, catalogue des types et de leurs champs (`dossier-catalog.ts`), routage par défaut (`routing.ts`), bordereau imprimable.
-- `TransmissionStore` (`domains/dossiers/infrastructure/store/`) tient lieu de backend : dossiers et états sont conservés dans le `localStorage` (clé `atrad_live_data_v1`), le contenu des pièces jointes dans IndexedDB. Chaque méthode correspond à un futur appel d'API.
-- Les règles métier sont des fonctions pures dans `domains/<domaine>/domain/` (ex. `dossier-form.rules.ts`, `suivi.ts`), testées sans composant.
-- Un écran riche expose son état par une façade fournie par la page (`creer-etat.facade.ts`), partagée par ses composants.
-- Dates : stockées en ISO 8601, mises en forme à l'affichage avec `core/utils/date.util.ts`.
-- Dialogues : hôte `dialog-card`, en-tête `<app-dialog-head [title] [kind]>` (pastille `danger` / `warning` / `success` / `info`, bouton de fermeture), boutons `dialog-cancel` / `dialog-confirm` dans `dialog-actions`.
-- Couleur des icônes d'action : suppression en rouge (`text-danger`), modification en bleu (`text-info`), consultation en couleur de marque, validation en vert.
-- Confirmation : `ConfirmService.ask(...)` (dialogue CDK). Saisie non enregistrée : la page implémente `canLeave()` et sa route déclare `unsavedChangesGuard`.
-- Classes utilitaires de formulaire dans `styles.css` : `form-control`, `form-label`, `form-error`, `panel`, `eyebrow`, `icon-button` ; champ complet avec `<app-form-field>`.
+- **Référentiel** (`domain/referentiel.ts`, store `ReferentielStore`) : lu dans l'API après la connexion (`refresh()`), gardé dans le navigateur (`atrad_referentiel_v1`) pour s'afficher aussitôt au rechargement. Il contient les entités (avec leur `id`), les types d'état, les types de dossier et leur circuit, le mode de saisie (`choix` / `auto`), les champs, pièces et produits de chaque type (formulaire de l'API), les motifs de retour et les circuits de statuts (`workflows`). Conversion : `referentielFromApi()` (`domain/entities/referentiel.entity.ts`).
+- Le front désigne une entité par son code (`AG-014`, libellé `Nom (CODE)`) et un type de dossier par son nom ; les UUID de l'API sont gardés à côté (`entite.id`, `typeIds`) pour les appels.
+- `fieldsOf()`, `piecesOf()`, `produitsOf()` lisent le formulaire de l'API ; sans réponse, ils rendent des listes vides. Aucun jeu de données côté front : paramétrage, marque et répartition viennent uniquement de l'API et ne sont gardés qu'en mémoire (pas de copie en localStorage). Les libellés du formulaire de saisie sont fixes (`DOSSIER_FORM`).
+- `nextStatuses()` et `actionCodeTo()` (`workflow.ts`) suivent le circuit de statuts du backend.
+- **Vocabulaire** : réglé dans « Logo & Couleurs » avec la marque (`Brand.vocab`) ; `VocabularyService` réécrit tout le texte affiché, une zone `data-novocab` est épargnée.
 
-## Parcours accueil
+## Données des dossiers
 
-- Réception : `TransmissionStore.receive()` pointe les dossiers reçus d'un état, les route vers leur entité (`RoutedDossier`) et les affecte selon le mode de l'entité (`ENTITY_SETTINGS` dans `routing.ts` : tour de rôle, pool ou répartiteur). Les dossiers non pointés passent « Non reçu » et restent pointables.
-- Écrans : `etats-recus` (recherche, état conservé dans `EtatSearchState`), `etats-recus/:ref` (pointage), `suivi-statistiques`, `dossiers-retournes`. Leurs règles sont dans `domains/accueil/domain/reception.ts`.
-- Menu latéral : chaque entrée de `navigation.ts` porte le glyphe du prototype (`icon`), et non une icône SVG.
-- Détail d'un dossier côté agence : l'encart « motif du retour / documents attendus » vient de `returnNotice()` (`domains/agence/domain/suivi.ts`).
-- Pastilles du menu : `NavBadgesService` ; notifications par profil : `NotificationsService`.
-- Tableaux du prototype : `<table class="grid-table">` avec un modificateur de colonnes par ligne (`etats-grid`, `pointage-grid`, ...) défini dans `styles.css`.
-- Fidélité au prototype : avant d'écrire un écran, le rendre dans le prototype HTML et en reprendre la mise en page et les styles à l'identique.
+- Conversions API → front dans `domains/dossiers/domain/entities/dossier-api.entity.ts` : `dossierFromApi`, `etatFromApi`, `routedFromApi` (détail : historique réel, documents attendus, retour), `brouillonOf` (corps envoyé), `statusOf` / `statusCodeOf` (codes de statut ↔ libellés), `agencyStatusOf`.
+- Appels communs : `DossierApi` (brouillon, pièces jointes) et `EtatApi` (transmission, états émis et reçus, détail, pointage).
+- Pièces jointes : choisies en mémoire (`PieceJointe.file`), envoyées à l'API avec le dossier ; ouvertes par `PieceOpener` (fichier en mémoire ou téléchargé par l'API).
+- Bordereau : `BordereauService.open(etatId)`, l'aperçu relit l'état dans l'API.
 
-## Parcours traitement
+## Parcours
 
-- Circuits de statuts et actions autorisées : `domains/dossiers/domain/workflow.ts` (`nextStatuses`, `DossierAction`). `TransmissionStore.applyAction()` refuse toute transition hors circuit.
-- Droits d'un agent dans son entité : `functionsOf()` et `ENTITY_SETTINGS` (`routing.ts`). Le menu (`requires` dans `navigation.ts`) et les routes (`functionGuard`) en dépendent.
-- `TraitementContext` porte l'entité, le membre incarné (« Voir en tant que », démonstration) et son portefeuille. `DossierActionsService` ouvre le dialogue d'une action puis l'applique.
-- Écrans : `mes-dossiers`, `recherche`, `retard-clotures` (même composant, portée donnée par la route), `dossiers/:ref`, `affectation`. Délais et filtres : `domains/traitement/domain/portfolio.ts`.
-- Menus contextuels : `@angular/cdk/menu` avec la classe `menu-item`.
+- **Agence** : `BrouillonStore` (`domains/agence/infrastructure/store/`) tient le brouillon, les états émis et transmet ; suivi des dossiers et fiche par `SuiviAgenceApi` (`/suivi/agence`). Routes de détail par identifiant (`/agence/suivi/:id`).
+- **Accueil** : `ReceptionStore` (états reçus et leurs dossiers, pointage, compteurs) ; « Suivi & statistiques » et « Dossiers retournés » par `AccueilApi`. `ReceptionContext` : entité réceptrice de l'utilisateur.
+- **Traitement** : `TraitementStore` (répartition de l'entité, droits, mes dossiers, pool, bac, recherche, fiche, actions) ; `TraitementContext` expose entité, équipe, droits et portefeuilles ; les gardes des écrans attendent les droits (`ready()`). Fiche par identifiant (`/traitement/dossiers/:id`) ; seul le gestionnaire en charge reçoit des actions. Commentaires internes masqués (pas d'API).
+- **Pilotage** : indicateurs calculés par l'API (`PilotageApi`), mis en forme par les fonctions `*FromApi` de `domain/indicators.ts`.
+- **Notifications** : `NotificationsService` (cloche) lit l'API et reçoit les nouvelles notifications en temps réel par WebSocket (`core/realtime/stomp-client.ts`, client STOMP sans dépendance, file `/user/queue/notifications`).
+- **Données à l'ouverture de session** : `AppLayoutComponent` charge celles du profil connecté (pastilles du menu, accueil).
+- Date du jour : `Clock` (`core/services/clock.service.ts`) et `core/utils/date.util.ts` ; ne pas appeler `new Date()` directement.
 
-## Parcours pilotage et date de démonstration
+## Administration et marque blanche
 
-- Indicateurs : fonctions pures de `domains/pilotage/domain/indicators.ts` (respect des délais, périodes, classements), affichées par `tableau-de-bord`, `delais`, `agences`, `rapports`.
-- `DemoClock` (`core/services`) décale la date du jour (« Avancer la date de démo ») pour faire apparaître les retards. Toute date du jour passe par `core/utils/date.util.ts` (`nowIso`, `todayIsoDate`, `isoDateInDays`) ou par `clock.today()` dans un `computed` : ne pas appeler `new Date()` directement.
-- « Réinitialiser les données de démo » vide `TransmissionStore`, les pièces jointes et la date de démonstration.
-
-## Parcours administration et marque blanche
-
-- Écrans : `logo-couleurs`, `routage` (type → entité, répartition interne), `journal-audit` ; « Agences & entités » et « Utilisateurs » restent sur le gabarit d'attente (non construits dans le prototype).
-- Routage : `RoutingStore` (clé `atrad_routing_v1`) remplace la configuration par défaut de `routing.ts` ; un changement ne s'applique qu'aux réceptions suivantes. Pool partagé : écran `traitement/pool`, `TransmissionStore.take()`.
-- Marque blanche : `BrandService` (`core/services`, clé `atrad_brand_v1`) pose les variables `--brand-*` sur `<html>`, charge la police, remplace le favicon et fournit nom, organisation et logos. Ne jamais écrire « ATRAD » ou « YAYADOU » en dur dans un écran : lire `BrandService`.
-- Modèle, palettes et dérivation des couleurs : `core/branding/brand.ts` et `core/utils/color.util.ts`. L'aperçu de l'écran applique le brouillon sur le seul bloc `.brand-preview` (`styles.css`).
-- Mode sombre par défaut de la marque : suivi par `ThemeService` tant que l'utilisateur n'a pas choisi lui-même (`followBrandDefault`, `clearChoice`).
-- « Réinitialiser les données de démo » rétablit aussi le routage, la marque et le choix de thème.
+- Écrans : `utilisateurs` (recherche paginée, création, modification, activation), `logo-couleurs` (marque, logos et vocabulaire), `routage` (circuits des types de dossier, répartition interne via `RoutingStore`), `entites`, `types-etat` (et mode de saisie), `journal-audit` (vide en attendant le module audit du backend). Appels : `AdministrationApi`, `UtilisateurApi`.
+- Marque blanche : `BrandService` lit la marque dans l'API au démarrage, l'enregistre (`save(brand, files)`) et la réinitialise ; elle pose les variables `--brand-*`, charge la police, remplace le favicon. Ne jamais écrire « ATRAD » ou « YAYADOU » en dur dans un écran : lire `BrandService`.
+- Modèle, palettes et dérivation des couleurs : `core/branding/brand.ts` et `core/utils/color.util.ts` ; conversion API dans `core/branding/marque.entity.ts`.
 
 ## Profil de l'utilisateur
 
-- Page `/profil` (`domains/profile/`), ouverte depuis le menu du profil de l'en-tête et accessible à tous les rôles : identité, rattachement, sécurité, apparence.
-- Seules les coordonnées (e-mail, téléphone) sont modifiables ; elles sont conservées par identifiant dans `ProfileStore` (clé `atrad_profile_v1`). Le nom ne l'est pas : il sert à rattacher dossiers et affectations.
-- Règles de saisie : `domains/profile/domain/profile.rules.ts`. Le changement de mot de passe valide la saisie mais n'enregistre rien tant que l'API d'authentification n'est pas branchée.
+- Page `/profil` (`domains/profile/`), accessible à tous les rôles : compte lu dans l'API (`ProfileApi`, `/moi`), coordonnées et mot de passe enregistrés par l'API (les erreurs du serveur s'affichent dans le dialogue).

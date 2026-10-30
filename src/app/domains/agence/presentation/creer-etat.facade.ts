@@ -3,22 +3,32 @@ import { ConfirmService } from '../../../core/services/confirm.service';
 import { SessionService } from '../../../core/services/session.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { nowIso, todayIsoDate } from '../../../core/utils/date.util';
-import { ACCUEIL_CENTRAL, DossierType, TYPE_FIELDS } from '../../dossiers/domain/dossier-catalog';
+import { DOSSIER_FORM, DossierType, fieldsOf, produitsOf } from '../../dossiers/domain/dossier-catalog';
 import { Dossier, PieceJointe } from '../../dossiers/domain/entities/dossier.entity';
+import { Etat } from '../../dossiers/domain/entities/etat.entity';
 import { screenPieces } from '../../dossiers/domain/piece.rules';
+import {
+  allowedTypes,
+  currentEtatType,
+  draftGroups,
+  entityCode,
+  entityLabel,
+  etatTypeOfDossier,
+  etatTypesFor,
+} from '../../dossiers/domain/referentiel';
 import { entityOf, entitySummary } from '../../dossiers/domain/routing';
-import { PieceFileStore } from '../../dossiers/infrastructure/store/piece-file.store';
-import { TransmissionStore } from '../../dossiers/infrastructure/store/transmission.store';
+import { ReferentielStore } from '../../dossiers/infrastructure/store/referentiel.store';
 import { BordereauService } from '../../dossiers/presentation/bordereau.service';
+import { BrouillonStore } from '../infrastructure/store/brouillon.store';
 import {
   BASE_FIELD_KEYS,
   BaseFieldKey,
-  CLIENT_NUMBER_LENGTH,
   DossierFormValue,
   buildDossierData,
   changedLabels,
   emptyDossierForm,
   fieldError,
+  filterClientInput,
   formSnapshot,
   formValueOf,
   hasTypedContent,
@@ -26,21 +36,61 @@ import {
 
 type TextFieldKey = BaseFieldKey | 'note';
 
+/** Au-delà, une recherche est proposée au-dessus de la liste des types de dossier. */
+const TYPE_SEARCH_THRESHOLD = 15;
+
 /**
  * État et actions de l'écran « Créer un état » : saisie d'un dossier, constitution de l'état
  * puis transmission. Fourni par la page et partagé par ses composants.
  */
 @Injectable()
 export class CreerEtatFacade {
-  private readonly store = inject(TransmissionStore);
-  private readonly files = inject(PieceFileStore);
+  private readonly store = inject(BrouillonStore);
   private readonly session = inject(SessionService);
   private readonly toast = inject(ToastService);
   private readonly confirm = inject(ConfirmService);
   private readonly bordereau = inject(BordereauService);
+  private readonly referentiel = inject(ReferentielStore);
+
+  /** Libellés et règles du formulaire de saisie. */
+  readonly labels = DOSSIER_FORM;
+
+  // --- Type d'état et types de dossier autorisés pour l'entité émettrice
+  private readonly emetCode = computed(() => entityCode(this.session.account()?.entity ?? ''));
+  readonly autoMode = computed(() => this.referentiel.value().saisieMode === 'auto');
+  /** Types d'état ouverts à l'entité ; vide si l'administrateur ne l'autorise nulle part. */
+  readonly etatTypes = computed(() => {
+    this.referentiel.value();
+    return etatTypesFor(this.emetCode());
+  });
+  /** Type d'état choisi (mode « choix ») ; à défaut, celui du premier dossier du brouillon. */
+  private readonly etatTypeChoice = signal(
+    etatTypeOfDossier(this.store.draft()[0]?.type ?? '')?.id ?? '',
+  );
+  readonly etatType = computed(() => {
+    this.referentiel.value();
+    return currentEtatType(this.emetCode(), this.etatTypeChoice()) ?? null;
+  });
+  readonly allowed = computed(() => {
+    this.referentiel.value();
+    return allowedTypes(this.emetCode(), this.etatType()?.id ?? '');
+  });
+  readonly typeQuery = signal('');
+  readonly typeSearchOn = computed(() => this.allowed().length > TYPE_SEARCH_THRESHOLD);
+  /** Types proposés : filtrés par la recherche, le type sélectionné restant visible. */
+  readonly typeOptions = computed(() => {
+    const all = this.allowed();
+    const query = this.typeQuery().trim().toLowerCase();
+    if (!query) {
+      return all;
+    }
+    const type = this.value().type;
+    const found = all.filter((candidate) => candidate.toLowerCase().includes(query));
+    return found.includes(type) || !all.includes(type) ? found : [type, ...found];
+  });
 
   // --- Formulaire de dossier
-  readonly value = signal<DossierFormValue>(emptyDossierForm());
+  readonly value = signal<DossierFormValue>(emptyDossierForm(this.allowed()[0] ?? ''));
   readonly errors = signal<Record<string, string>>({});
   /** Une tentative d'envoi a échoué : les champs obligatoires vides sont signalés. */
   readonly touched = signal(false);
@@ -49,7 +99,7 @@ export class CreerEtatFacade {
   readonly pieceError = signal('');
 
   // --- Modification d'un dossier de l'état en cours
-  readonly editId = signal<number | null>(null);
+  readonly editId = signal<string | null>(null);
   readonly editOriginalType = signal<DossierType | null>(null);
   private editSnapshot = '';
 
@@ -57,17 +107,70 @@ export class CreerEtatFacade {
   readonly draft = this.store.draft;
   readonly draftRef = this.store.draftRef;
   readonly draftCreatedAt = this.store.draftCreatedAt;
-  private readonly sentRef = signal('');
+  /** Un appel à l'API est en cours (ajout, modification, transmission) : les boutons attendent. */
+  readonly busy = signal(false);
 
-  readonly sentEtat = computed(
-    () => this.store.etats().find((etat) => etat.ref === this.sentRef()) ?? null,
-  );
+  /** États produits par le dernier envoi (un par type d'état). */
+  readonly sentEtats = signal<readonly Etat[]>([]);
+  readonly sentEtat = computed(() => this.sentEtats()[0] ?? null);
   readonly editing = computed(
     () => this.draft().find((dossier) => dossier.id === this.editId()) ?? null,
   );
-  readonly typeFields = computed(() => TYPE_FIELDS[this.value().type]);
+  readonly typeFields = computed(() => fieldsOf(this.value().type));
   readonly plannedEntity = computed(() => entityOf(this.value().type));
   readonly draftEntities = computed(() => entitySummary(this.draft()));
+
+  /** Dossiers du brouillon répartis par type d'état, et ceux qu'aucun n'accepte. */
+  readonly groups = computed(() => {
+    this.referentiel.value();
+    return draftGroups(this.draft(), this.emetCode(), this.etatType()?.id ?? '');
+  });
+
+  /** Ligne « Destination » de l'en-tête de l'état en cours. */
+  readonly destinationLabel = computed(() => {
+    if (this.autoMode()) {
+      const count = this.groups().groups.length;
+      return count ? `${count} état(s) seront générés` : "Générée à la validation, par type d'état";
+    }
+    const etatType = this.etatType();
+    return etatType ? `${etatType.nom} · ${entityLabel(etatType.recep)}` : '—';
+  });
+
+  /** `Informatique → Service Informatique (SI-001) (2 dossiers) · …` */
+  private readonly groupsText = computed(() =>
+    this.groups()
+      .groups.map(
+        ({ etatType, dossiers }) =>
+          `${etatType.nom} → ${entityLabel(etatType.recep)} (${dossiers.length} dossier${dossiers.length > 1 ? 's' : ''})`,
+      )
+      .join(' · '),
+  );
+
+  readonly groupsLine = computed(() => {
+    const count = this.groups().groups.length;
+    return this.autoMode() && this.draft().length
+      ? `Cet envoi produira ${count} état${count > 1 ? 's' : ''} : ${this.groupsText()}`
+      : '';
+  });
+
+  readonly blockMessage = computed(() => {
+    const { miss } = this.groups();
+    return miss.length
+      ? `Transmission impossible : ${miss.map((d) => `${d.ref} (${d.type})`).join(', ')} n'appartient à aucun type d'état autorisé pour votre entité. Modifiez ou retirez ce dossier.`
+      : '';
+  });
+
+  /** Ligne de compte rendu de l'écran « État transmis ». */
+  readonly sentLine = computed(() => {
+    const etats = this.sentEtats();
+    if (etats.length > 1) {
+      return `Cet envoi a produit ${etats.length} états : ${etats.map((etat) => `${etat.ref} (« ${etat.etTypeNom} », ${etat.dossiers.length} dossier(s)) → ${etat.dest}`).join(' · ')}.`;
+    }
+    const etat = etats[0];
+    return etat
+      ? `L'état ${etat.ref} (type « ${etat.etTypeNom} ») a été transmis à ${etat.dest}.`
+      : '';
+  });
 
   /** Changer de type en cours de modification efface les informations de l'ancien type. */
   readonly editTypeWarning = computed(() => {
@@ -80,11 +183,15 @@ export class CreerEtatFacade {
     (this.session.account()?.entity ?? '').replace(/ \([^)]+\)$/, ''),
   );
 
+  constructor() {
+    void this.store.load().catch(() => undefined);
+  }
+
   // ---------------------------------------------------------------- Saisie
 
   /** Enregistre un champ texte et renvoie la valeur retenue (le n° client est filtré). */
   setText(key: TextFieldKey, raw: string): string {
-    const text = key === 'client' ? raw.replace(/\D/g, '').slice(0, CLIENT_NUMBER_LENGTH) : raw;
+    const text = key === 'client' ? filterClientInput(raw) : raw;
     this.value.update((value) => ({ ...value, [key]: text }));
     this.formError.set('');
     this.revalidate(key, text);
@@ -101,8 +208,61 @@ export class CreerEtatFacade {
     this.value.update((value) => ({ ...value, ...change }));
   }
 
+  setTypeQuery(query: string): void {
+    this.typeQuery.set(query);
+    const found = this.allowed().filter((type) =>
+      type.toLowerCase().includes(query.trim().toLowerCase()),
+    );
+    if (found.length && !found.includes(this.value().type)) {
+      this.setType(found[0]);
+    }
+  }
+
+  /**
+   * Change de type d'état. Si le brouillon contient des dossiers que le nouveau type n'accepte
+   * pas, il est vidé après confirmation.
+   */
+  async setEtatType(id: string): Promise<void> {
+    const current = this.etatType();
+    const next = this.etatTypes().find((etatType) => etatType.id === id);
+    if (!next || id === current?.id) {
+      return;
+    }
+    const draft = this.draft();
+    const refused = draft.filter((dossier) => !next.dossiers.includes(dossier.type));
+    if (draft.length && refused.length) {
+      const confirmed = await this.confirm.ask({
+        title: "Changer de type d'état ?",
+        text: `Le brouillon contient ${draft.length} dossier(s) du type d'état « ${current?.nom ?? ''} ». ${refused.length} ne sont pas acceptés par « ${next.nom} » : en continuant, le brouillon sera vidé. Annuler conserve le type d'état actuel.`,
+        okLabel: 'Changer et vider le brouillon',
+        danger: true,
+      });
+      if (!confirmed) {
+        return;
+      }
+      if (
+        !(await this.run(() => Promise.all(draft.map((dossier) => this.store.remove(dossier.id)))))
+      ) {
+        return;
+      }
+    }
+    this.etatTypeChoice.set(id);
+    if (!this.allowed().includes(this.value().type)) {
+      this.setType(this.allowed()[0] ?? '');
+    }
+    this.value.update((value) => ({ ...value, extra: {} }));
+  }
+
   setType(type: DossierType): void {
-    this.value.update((value) => ({ ...value, type }));
+    // Le produit suit le type : il reste s'il est proposé pour le nouveau type, sinon le premier est retenu.
+    this.value.update((value) => {
+      const produits = produitsOf(type);
+      return {
+        ...value,
+        type,
+        produit: produits.includes(value.produit) ? value.produit : (produits[0] ?? ''),
+      };
+    });
     // Les erreurs des champs propres à l'ancien type n'ont plus d'objet.
     this.errors.update((errors) =>
       Object.fromEntries(
@@ -131,23 +291,23 @@ export class CreerEtatFacade {
   }
 
   resetForm(): void {
-    this.discardUnsavedPieces();
     this.clearForm(true);
   }
 
   // ---------------------------------------------------------- Pièces jointes
 
-  async addPieces(fileList: FileList | null | undefined): Promise<void> {
+  /** Les fichiers retenus restent en mémoire ; ils sont envoyés à l'API avec le dossier. */
+  addPieces(fileList: FileList | null | undefined): void {
     const { accepted, errors } = screenPieces(Array.from(fileList ?? []), this.pieces());
     if (!accepted.length) {
       this.pieceError.set(errors.join(' · '));
       return;
     }
-
     const at = nowIso();
     const by = this.session.account()?.name ?? '';
     const added: PieceJointe[] = accepted.map((file) => ({
       id: `pj-${crypto.randomUUID()}`,
+      file,
       name: file.name,
       size: file.size,
       mime: file.type,
@@ -155,29 +315,30 @@ export class CreerEtatFacade {
       at,
       by,
     }));
-
-    try {
-      await Promise.all(added.map((piece, index) => this.files.put(piece.id, accepted[index])));
-      this.pieces.update((pieces) => [...pieces, ...added]);
-      this.pieceError.set(errors.join(' · '));
-    } catch {
-      this.pieceError.set('Enregistrement des fichiers impossible dans ce navigateur.');
-    }
+    this.pieces.update((pieces) => [...pieces, ...added]);
+    this.pieceError.set(errors.join(' · '));
   }
 
+  /** Une pièce déjà envoyée n'est supprimée de l'API qu'à l'enregistrement du dossier. */
   removePiece(piece: PieceJointe): void {
-    if (!this.isKeptInDraft(piece)) {
-      void this.files.delete(piece.id);
-    }
     this.pieces.update((pieces) => pieces.filter((candidate) => candidate.id !== piece.id));
     this.pieceError.set('');
   }
 
   // ------------------------------------------------- Ajout et modification
 
-  submit(): void {
+  async submit(): Promise<void> {
+    if (this.busy()) {
+      return;
+    }
     if (this.editId() !== null) {
       void this.saveEdit();
+      return;
+    }
+    if (!this.allowed().includes(this.value().type)) {
+      this.formError.set(
+        `Le type de dossier « ${this.value().type} » n'est pas accepté par ${this.autoMode() ? "vos types d'état" : "le type d'état choisi"}.`,
+      );
       return;
     }
     const result = buildDossierData(this.value(), this.pieces(), todayIsoDate());
@@ -185,7 +346,10 @@ export class CreerEtatFacade {
       this.showInvalid(result.error, result.errors);
       return;
     }
-    const dossier = this.store.addDossier(result.data);
+    const dossier = await this.run(() => this.store.add(result.data));
+    if (!dossier) {
+      return;
+    }
     this.clearForm(false);
     this.toast.success(`Dossier ${dossier.ref} ajouté à l'état — statut Temporaire.`);
   }
@@ -242,13 +406,9 @@ export class CreerEtatFacade {
       return;
     }
 
-    this.store.updateDossier(previous.id, result.data, {
-      at: nowIso(),
-      who: this.session.account()?.name ?? '',
-      label: `Dossier modifié avant transmission — ${changes.join(', ')}`,
-      tone: 'warning',
-      pre: true,
-    });
+    if (!(await this.run(() => this.store.update(previous, result.data)))) {
+      return;
+    }
     this.clearForm(true);
     this.toast.success(
       `Dossier ${previous.ref} modifié (${changes.length} champ${changes.length > 1 ? 's' : ''}) — référence inchangée.`,
@@ -271,8 +431,9 @@ export class CreerEtatFacade {
     if (!confirmed) {
       return;
     }
-    this.store.removeDossier(dossier.id);
-    dossier.pieces.forEach((piece) => void this.files.delete(piece.id));
+    if (!(await this.run(() => this.store.remove(dossier.id).then(() => true)))) {
+      return;
+    }
     this.toast.success(`Dossier ${dossier.ref} supprimé de l'état.`);
   }
 
@@ -285,13 +446,23 @@ export class CreerEtatFacade {
       this.toast.warning('Ajoutez au moins un dossier avant de transmettre.');
       return;
     }
+    if (this.groups().miss.length) {
+      this.toast.warning(
+        "Un ou plusieurs dossiers n'appartiennent à aucun type d'état : corrigez-les avant de transmettre.",
+      );
+      return;
+    }
     if (!(await this.confirmLeave())) {
       return;
     }
-    const entities = entitySummary(draft);
+    const groups = this.groups().groups;
+    const etatType = this.etatType();
+    const text = this.autoMode()
+      ? `${draft.length} dossier(s) · cet envoi produira ${groups.length} état(s) : ${this.groupsText()}. Chaque état a sa référence et son bordereau. Cette action est définitive et horodatée.`
+      : `${draft.length} dossier(s) seront transmis à ${etatType ? entityLabel(etatType.recep) : '—'} (type d'état « ${etatType?.nom ?? '—'} »). Cette action est définitive et horodatée.`;
     const confirmed = await this.confirm.ask({
       title: `Valider et transmettre l'état ${this.draftRef()} ?`,
-      text: `${draft.length} dossier(s) seront transmis à l'${ACCUEIL_CENTRAL}, qui les routera vers : ${entities}. Cette action est définitive et horodatée.`,
+      text,
       note: `En confirmant, vous certifiez que les ${draft.length} dossier(s) accompagnent cet état.`,
       okLabel: 'Confirmer la transmission',
     });
@@ -299,24 +470,29 @@ export class CreerEtatFacade {
       return;
     }
 
-    const result = this.store.transmit(account);
-    if (!result.ok) {
-      this.toast.error(result.error);
+    const etats = await this.run(() =>
+      this.store.transmit(this.autoMode() ? null : (etatType?.id ?? null)),
+    );
+    if (!etats?.length) {
       return;
     }
     this.clearForm(true);
-    this.sentRef.set(result.etat.ref);
-    this.toast.success(`État ${result.etat.ref} transmis à l'${ACCUEIL_CENTRAL} — ${entities}.`);
+    this.sentEtats.set(etats);
+    this.toast.success(
+      etats.length > 1
+        ? `${etats.length} états transmis : ${etats.map((etat) => `${etat.ref} → ${etat.dest}`).join(' · ')}`
+        : `État ${etats[0].ref} transmis — ${etats[0].dest}.`,
+    );
   }
 
   startNewEtat(): void {
-    this.sentRef.set('');
+    this.sentEtats.set([]);
   }
 
-  printSent(): void {
-    const etat = this.sentEtat();
-    if (etat) {
-      this.bordereau.open(etat.ref);
+  printEtat(ref: string): void {
+    const etat = this.sentEtats().find((candidate) => candidate.ref === ref);
+    if (etat?.id) {
+      this.bordereau.open(etat.id);
     }
   }
 
@@ -350,7 +526,6 @@ export class CreerEtatFacade {
       danger: true,
     });
     if (confirmed) {
-      this.discardUnsavedPieces();
       this.clearForm(true);
     }
     return confirmed;
@@ -378,7 +553,7 @@ export class CreerEtatFacade {
     const current = this.value();
     this.value.set(
       resetChoices
-        ? emptyDossierForm()
+        ? emptyDossierForm(this.allowed()[0] ?? '')
         : {
             ...emptyDossierForm(),
             type: current.type,
@@ -396,13 +571,18 @@ export class CreerEtatFacade {
     this.editSnapshot = '';
   }
 
-  private isKeptInDraft(piece: PieceJointe): boolean {
-    return this.draft().some((dossier) => dossier.pieces.some((kept) => kept.id === piece.id));
-  }
-
-  private discardUnsavedPieces(): void {
-    this.pieces()
-      .filter((piece) => !this.isKeptInDraft(piece))
-      .forEach((piece) => void this.files.delete(piece.id));
+  /**
+   * Exécute un appel à l'API en bloquant les boutons ; rend `null` en cas d'échec (l'erreur est déjà affichée par
+   * l'intercepteur).
+   */
+  private async run<T>(call: () => Promise<T>): Promise<T | null> {
+    this.busy.set(true);
+    try {
+      return await call();
+    } catch {
+      return null;
+    } finally {
+      this.busy.set(false);
+    }
   }
 }

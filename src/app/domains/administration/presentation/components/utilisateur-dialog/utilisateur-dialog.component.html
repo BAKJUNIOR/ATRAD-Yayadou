@@ -1,0 +1,169 @@
+<app-dialog-head
+  kind="info"
+  [title]="
+    creation
+      ? 'Nouvel utilisateur'
+      : 'Modifier ' + data.utilisateur!.prenom + ' ' + data.utilisateur!.nom
+  "
+  (closed)="dialogRef.close()"
+>
+  <p>
+    {{
+      creation
+        ? "Le matricule sert d'identifiant de connexion. Le mot de passe initial est à communiquer à l'utilisateur."
+        : "Le matricule ne change pas. Le changement d'entité ferme le rattachement actuel."
+    }}
+  </p>
+</app-dialog-head>
+
+<div class="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+  @if (creation) {
+    <label class="form-label gap-1.5 text-[12.5px]">
+      Matricule (identifiant) *
+      <input
+        type="text"
+        class="form-control py-2.5 font-mono"
+        autocomplete="off"
+        placeholder="prenom.nom"
+        [value]="saisie().matricule"
+        [attr.aria-invalid]="!!shown('matricule')"
+        (input)="set('matricule', $event)"
+      />
+      @if (shown('matricule'); as error) {
+        <span class="form-error" role="alert">{{ error }}</span>
+      }
+    </label>
+    <label class="form-label gap-1.5 text-[12.5px]">
+      Mot de passe initial *
+      <input
+        type="password"
+        class="form-control py-2.5"
+        autocomplete="new-password"
+        [value]="saisie().motDePasse"
+        [attr.aria-invalid]="!!shown('motDePasse')"
+        (input)="set('motDePasse', $event)"
+      />
+      @if (shown('motDePasse'); as error) {
+        <span class="form-error" role="alert">{{ error }}</span>
+      }
+    </label>
+  }
+  <label class="form-label gap-1.5 text-[12.5px]">
+    Prénom *
+    <input
+      type="text"
+      class="form-control py-2.5"
+      [value]="saisie().prenom"
+      [attr.aria-invalid]="!!shown('prenom')"
+      (input)="set('prenom', $event)"
+    />
+    @if (shown('prenom'); as error) {
+      <span class="form-error" role="alert">{{ error }}</span>
+    }
+  </label>
+  <label class="form-label gap-1.5 text-[12.5px]">
+    Nom *
+    <input
+      type="text"
+      class="form-control py-2.5"
+      [value]="saisie().nom"
+      [attr.aria-invalid]="!!shown('nom')"
+      (input)="set('nom', $event)"
+    />
+    @if (shown('nom'); as error) {
+      <span class="form-error" role="alert">{{ error }}</span>
+    }
+  </label>
+  <label class="form-label gap-1.5 text-[12.5px]">
+    Adresse e-mail *
+    <input
+      type="email"
+      class="form-control py-2.5"
+      placeholder="prenom.nom@domaine.com"
+      [value]="saisie().email"
+      [attr.aria-invalid]="!!shown('email')"
+      (input)="set('email', $event)"
+    />
+    @if (shown('email'); as error) {
+      <span class="form-error" role="alert">{{ error }}</span>
+    }
+  </label>
+  <label class="form-label gap-1.5 text-[12.5px]">
+    Téléphone
+    <input
+      type="tel"
+      class="form-control py-2.5"
+      placeholder="+225 07 00 00 00 00"
+      [value]="saisie().telephone"
+      (input)="set('telephone', $event)"
+    />
+  </label>
+  <label class="form-label gap-1.5 text-[12.5px]">
+    Entité de rattachement *
+    <select
+      class="form-control py-2.5"
+      [attr.aria-invalid]="!!shown('entiteId')"
+      (change)="set('entiteId', $event)"
+    >
+      <option value="" [selected]="!saisie().entiteId">— Choisir —</option>
+      @for (entite of entites; track entite.id) {
+        <option [value]="entite.id" [selected]="entite.id === saisie().entiteId">
+          {{ entite.label }}
+        </option>
+      }
+    </select>
+    @if (shown('entiteId'); as error) {
+      <span class="form-error" role="alert">{{ error }}</span>
+    }
+  </label>
+  <label class="form-label gap-1.5 text-[12.5px]">
+    Fonction
+    <select class="form-control py-2.5" (change)="set('fonctionId', $event)">
+      <option value="" [selected]="!saisie().fonctionId">— Aucune —</option>
+      @for (fonction of data.fonctions; track fonction.id) {
+        <option [value]="fonction.id" [selected]="fonction.id === saisie().fonctionId">
+          {{ fonction.libelle }}
+        </option>
+      }
+    </select>
+  </label>
+</div>
+
+<fieldset class="flex flex-col gap-2">
+  <legend class="mb-1.5 text-[12.5px] font-medium text-ink-secondary">Profils *</legend>
+  <div class="flex flex-wrap gap-2">
+    @for (profil of data.profils; track profil.code) {
+      <label
+        class="flex cursor-pointer items-center gap-2 rounded-control border border-line px-3 py-2 text-[13px] text-ink"
+        [class]="saisie().profils.includes(profil.code) ? 'border-brand bg-brand-tint-soft' : ''"
+      >
+        <input
+          type="checkbox"
+          class="size-4 accent-brand"
+          [checked]="saisie().profils.includes(profil.code)"
+          (change)="toggleProfil(profil.code)"
+        />
+        {{ profil.nom }}
+      </label>
+    }
+  </div>
+  @if (shown('profils'); as error) {
+    <span class="form-error" role="alert">{{ error }}</span>
+  }
+</fieldset>
+
+@if (serverError(); as error) {
+  <p class="form-error" role="alert">{{ error }}</p>
+}
+
+<div class="dialog-actions">
+  <button type="button" class="dialog-cancel" (click)="dialogRef.close()">Annuler</button>
+  <button
+    type="button"
+    class="dialog-confirm bg-brand hover:bg-brand-dark"
+    [disabled]="pending()"
+    (click)="save()"
+  >
+    {{ pending() ? 'Enregistrement…' : creation ? "Créer l'utilisateur" : 'Enregistrer' }}
+  </button>
+</div>

@@ -20,7 +20,6 @@ import { ToastService } from '../../../../../core/services/toast.service';
 import { contrastRatio, isHexColor } from '../../../../../core/utils/color.util';
 import { initialsOf } from '../../../../../core/utils/text.util';
 import { IconComponent } from '../../../../../shared/ui/icon/icon.component';
-import { TransmissionStore } from '../../../../dossiers/infrastructure/store/transmission.store';
 
 type PreviewTheme = 'light' | 'dark';
 type StatusTone = 'danger' | 'warning' | 'muted';
@@ -67,7 +66,6 @@ function ratioLabel(ratio: number): string {
 export class LogoCouleursComponent implements LeaveAware {
   private readonly brand = inject(BrandService);
   private readonly theme = inject(ThemeService);
-  private readonly store = inject(TransmissionStore);
   private readonly confirm = inject(ConfirmService);
   private readonly toast = inject(ToastService);
 
@@ -77,6 +75,9 @@ export class LogoCouleursComponent implements LeaveAware {
   /** Saisie en cours ; `null` tant que rien n'a été modifié depuis l'enregistrement. */
   private readonly edited = signal<Brand | null>(null);
   private readonly logoErrors = signal<Partial<Record<BrandLogoKey, string>>>({});
+  /** Fichiers choisis, envoyés à l'API à l'enregistrement (l'aperçu montre leur contenu). */
+  private readonly logoFiles = signal<Partial<Record<BrandLogoKey, File>>>({});
+  protected readonly saving = signal(false);
   /** Texte saisi dans un champ couleur, conservé tel quel tant qu'il n'est pas valide. */
   private readonly hexInputs = signal<Partial<Record<BrandColorKey, string>>>({});
   protected readonly previewTheme = signal<PreviewTheme>('light');
@@ -93,6 +94,9 @@ export class LogoCouleursComponent implements LeaveAware {
     }
     if (!draft.shortName.trim()) {
       return 'Le nom court est obligatoire.';
+    }
+    if (!draft.vocab.tiers.trim() || !draft.vocab.dossier.trim()) {
+      return 'Les deux termes du vocabulaire sont obligatoires.';
     }
     return '';
   });
@@ -188,12 +192,8 @@ export class LogoCouleursComponent implements LeaveAware {
 
   /** Variables de marque du brouillon, posées sur le seul bloc d'aperçu. */
   protected readonly previewVars = computed(() => brandVars(this.draft()));
-  protected readonly treatedCount = computed(
-    () =>
-      this.store
-        .dossiers()
-        .filter((dossier) => dossier.status === 'Validé' || dossier.status === 'Clôturé').length,
-  );
+  /** Chiffre d'exemple de la carte d'aperçu (seule la mise en forme est montrée). */
+  protected readonly treatedCount = computed(() => 12);
 
   constructor() {
     // La police choisie doit être chargée pour que l'aperçu la montre avant l'enregistrement.
@@ -228,6 +228,7 @@ export class LogoCouleursComponent implements LeaveAware {
     const reader = new FileReader();
     reader.onload = () => {
       this.setLogoError(key, '');
+      this.logoFiles.update((files) => ({ ...files, [key]: file }));
       this.update({ [key]: reader.result as string });
     };
     reader.onerror = () => this.setLogoError(key, 'Lecture du fichier impossible.');
@@ -235,6 +236,11 @@ export class LogoCouleursComponent implements LeaveAware {
   }
 
   protected removeLogo(key: BrandLogoKey): void {
+    this.logoFiles.update((files) => {
+      const next = { ...files };
+      delete next[key];
+      return next;
+    });
     this.update({ [key]: '' });
     this.setLogoError(key, '');
   }
@@ -276,15 +282,34 @@ export class LogoCouleursComponent implements LeaveAware {
     this.update({ darkDefault: !this.draft().darkDefault });
   }
 
-  protected save(): void {
-    if (this.saveDisabled()) {
+  /** Vocabulaire : mots qui remplacent « Tiers » et « Dossier » dans toute l'application. */
+  protected setVocab(key: 'tiers' | 'dossier', event: Event): void {
+    this.update({
+      vocab: { ...this.draft().vocab, [key]: (event.target as HTMLInputElement).value },
+    });
+  }
+
+  protected restoreVocab(): void {
+    this.update({ vocab: { ...BRAND_DEFAULT.vocab } });
+  }
+
+  protected readonly vocabPreview = computed(() => {
+    const { tiers, dossier } = this.draft().vocab;
+    return `Ex. : « ${tiers} concerné » · « Nouveau ${dossier.toLowerCase()} à transmettre »`;
+  });
+
+  protected async save(): Promise<void> {
+    if (this.saveDisabled() || this.saving()) {
       return;
     }
-    if (!this.brand.save({ ...this.draft() })) {
-      this.toast.error(
-        'Enregistrement impossible : logos trop volumineux pour le stockage du navigateur. Réduisez leur taille.',
-      );
+    this.saving.set(true);
+    try {
+      await this.brand.save({ ...this.draft() }, this.logoFiles());
+    } catch {
+      // Refus de l'API : déjà affiché par l'intercepteur.
       return;
+    } finally {
+      this.saving.set(false);
     }
     this.clearEdition();
     this.theme.followBrandDefault();
@@ -301,7 +326,11 @@ export class LogoCouleursComponent implements LeaveAware {
     if (!confirmed) {
       return;
     }
-    this.brand.reset();
+    try {
+      await this.brand.reset();
+    } catch {
+      return;
+    }
     this.clearEdition();
     this.theme.followBrandDefault();
     this.toast.success(`Thème ${BRAND_DEFAULT.shortName} par défaut rétabli.`);
@@ -332,6 +361,7 @@ export class LogoCouleursComponent implements LeaveAware {
 
   private clearEdition(): void {
     this.edited.set(null);
+    this.logoFiles.set({});
     this.logoErrors.set({});
     this.hexInputs.set({});
   }

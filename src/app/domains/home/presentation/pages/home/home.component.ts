@@ -1,33 +1,41 @@
 import { Component, computed, inject } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
-import { NAVIGATION } from '../../../../../core/navigation/navigation';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { catchError, forkJoin, of } from 'rxjs';
+import { Router } from '@angular/router';
+import { NAVIGATION, ROLE_CAPABILITY } from '../../../../../core/navigation/navigation';
 import { SessionService } from '../../../../../core/services/session.service';
+import { ToastService } from '../../../../../core/services/toast.service';
 import { formatDate, formatStamp, isoDateToFr } from '../../../../../core/utils/date.util';
-import { entityCode } from '../../../../../core/utils/text.util';
 import { IconComponent, IconName } from '../../../../../shared/ui/icon/icon.component';
 import { StatCardComponent } from '../../../../../shared/ui/stat-card/stat-card.component';
 import { StatusBadgeComponent } from '../../../../../shared/ui/status-badge/status-badge.component';
 import { pendingEtats, remainingCount } from '../../../../accueil/domain/reception';
+import { ReceptionContext } from '../../../../accueil/presentation/reception-context.service';
+import { hasCapability, referentiel } from '../../../../dossiers/domain/referentiel';
 import { Account, Role } from '../../../../auth/domain/entities/account.entity';
-import { DEMO_ACCOUNTS } from '../../../../auth/infrastructure/mock/auth.mock';
 import { Etat } from '../../../../dossiers/domain/entities/etat.entity';
 import { isLocked } from '../../../../dossiers/domain/workflow';
-import { TransmissionStore } from '../../../../dossiers/infrastructure/store/transmission.store';
-import { SLA_TARGET, sla } from '../../../../pilotage/domain/indicators';
-import { isLate, unassigned } from '../../../../traitement/domain/portfolio';
+import { UtilisateurApi } from '../../../../administration/infrastructure/api/utilisateur.api';
+import { BrouillonStore } from '../../../../agence/infrastructure/store/brouillon.store';
+import { statusOf } from '../../../../dossiers/domain/entities/dossier-api.entity';
+import { SLA_TARGET } from '../../../../pilotage/domain/indicators';
+import { PilotageApi } from '../../../../pilotage/infrastructure/api/pilotage.api';
+import { isLate } from '../../../../traitement/domain/portfolio';
 import { TraitementContext } from '../../../../traitement/presentation/traitement-context.service';
 import { Dashboard, DashboardAction } from '../../../domain/entities/dashboard.entity';
-import { DASHBOARD_MOCK } from '../../../infrastructure/mock/dashboard.mock';
+import { DASHBOARD_TEXTS } from '../../../domain/dashboard.texts';
 
 const LIFECYCLE = [
-  { title: 'Agence', description: "Crée les dossiers et constitue l'état de transmission." },
   {
-    title: 'Accueil / entité centrale',
+    title: 'Entité émettrice',
+    description: "Crée les dossiers et constitue l'état de transmission (agence, service…).",
+  },
+  {
+    title: 'Entité réceptrice',
     description:
-      'Confirme la réception ; chaque dossier est routé automatiquement vers son entité.',
+      'Confirme la réception ; chaque dossier est dispatché vers son entité de traitement, ou pris en charge directement si elle le traite.',
   },
   { title: 'Entité de traitement', description: 'Instruit, valide puis clôture le dossier.' },
-  { title: 'Pilotage', description: 'Suit les KPI, les délais et la charge par entité.' },
 ];
 
 const PRIMARY_ICON: Record<Role, IconName> = {
@@ -38,37 +46,34 @@ const PRIMARY_ICON: Record<Role, IconName> = {
   admin: 'users',
 };
 
-const ROLE_SHORT: Record<Role, string> = {
-  agence: 'Agence',
-  accueil: 'Accueil',
-  traitement: 'Traitement',
-  manager: 'Pilotage',
-  admin: 'Admin',
-};
-
 /** Accueil commun à tous les profils : son contenu dépend du rôle connecté. */
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, IconComponent, StatCardComponent, StatusBadgeComponent],
+  imports: [IconComponent, StatCardComponent, StatusBadgeComponent],
   templateUrl: './home.component.html',
 })
 export class HomeComponent {
   private readonly session = inject(SessionService);
-  private readonly store = inject(TransmissionStore);
+  private readonly brouillon = inject(BrouillonStore);
+  private readonly pilotageApi = inject(PilotageApi);
+  private readonly utilisateurApi = inject(UtilisateurApi);
   private readonly router = inject(Router);
   private readonly traitement = inject(TraitementContext);
+  private readonly reception = inject(ReceptionContext);
+  private readonly toast = inject(ToastService);
 
   protected readonly lifecycle = LIFECYCLE;
-  protected readonly demoAccounts = DEMO_ACCOUNTS;
-  protected readonly roleShort = ROLE_SHORT;
-  protected readonly role = this.session.role;
 
   protected readonly dashboard = computed<Dashboard | null>(() => {
     const account = this.session.account();
     if (!account) {
       return null;
     }
-    const base = DASHBOARD_MOCK[account.role];
+    // Textes de l'écran propres au profil ; la salutation reprend le prénom du compte connecté.
+    const base = {
+      ...DASHBOARD_TEXTS[account.role],
+      greeting: `Bonjour ${account.name.split(' ')[0]}`,
+    };
     // Les profils dont le parcours est construit affichent les données réelles.
     if (account.role === 'agence') {
       return { ...base, ...this.agenceDashboard(account) };
@@ -82,6 +87,9 @@ export class HomeComponent {
     if (account.role === 'manager') {
       return { ...base, ...this.managerDashboard() };
     }
+    if (account.role === 'admin') {
+      return { ...base, ...this.adminDashboard() };
+    }
     return base;
   });
 
@@ -94,6 +102,20 @@ export class HomeComponent {
     return role ? PRIMARY_ICON[role] : 'plus';
   });
 
+  /** Écran principal du profil, refusé si l'entité n'a pas la capacité correspondante. */
+  protected openPrimary(): void {
+    const account = this.session.account();
+    const capability = account ? ROLE_CAPABILITY[account.role] : undefined;
+    const entity = account?.role === 'traitement' ? this.traitement.entite() : account?.entity;
+    if (capability && !hasCapability(entity ?? '', capability)) {
+      this.toast.warning(
+        "Votre entité n'a pas la capacité requise (Administration › Paramétrage › Entités).",
+      );
+      return;
+    }
+    void this.router.navigateByUrl(this.primaryPath());
+  }
+
   protected runAction(actions: DashboardAction[], event: Event): void {
     const select = event.target as HTMLSelectElement;
     const action = actions.find((candidate) => candidate.id === select.value);
@@ -103,17 +125,10 @@ export class HomeComponent {
     }
   }
 
-  /** Bascule de profil sans repasser par la connexion (démonstration). */
-  protected switchTo(account: Account): void {
-    this.session.signIn(account);
-  }
-
   private agenceDashboard(account: Account): Partial<Dashboard> {
-    const draft = this.store.draft();
-    const etats = this.store.etats().filter((etat) => etat.code === entityCode(account.entity));
-    const closed = this.store
-      .dossiers()
-      .filter((dossier) => dossier.agence === account.entity && dossier.status === 'Clôturé');
+    const draft = this.brouillon.draft();
+    const etats = this.brouillon.etatsEmis();
+    const closed = this.brouillon.clotures();
     return {
       subline: `${draft.length} dossier(s) au statut Temporaire dans l'état en cours de constitution.`,
       stats: [
@@ -132,37 +147,29 @@ export class HomeComponent {
         {
           label: 'En attente de réception',
           value: String(etats.filter((etat) => !etat.receivedAt).length),
-          hint: "non confirmés par l'Accueil",
+          hint: "non confirmés par l'entité réceptrice",
           tone: 'danger',
         },
         {
           label: 'Dossiers clôturés',
-          value: String(closed.length),
+          value: String(closed),
           hint: 'cumul',
           tone: 'success',
         },
       ],
-      rows: etats
-        .slice(-5)
-        .reverse()
-        .map((etat) => ({
-          ref: etat.ref,
-          label: `${etat.type} — ${etat.dossiers.length} dossier(s)`,
-          meta: this.etatMeta(etat),
-          status: etat.status,
-        })),
+      rows: etats.slice(0, 5).map((etat) => ({
+        ref: etat.ref,
+        label: `${etat.etTypeNom ?? etat.type} — ${etat.count ?? etat.dossiers.length} dossier(s)`,
+        meta: this.etatMeta(etat),
+        status: etat.status,
+      })),
     };
   }
 
   private accueilDashboard(): Partial<Dashboard> {
-    const etats = this.store.etats();
-    const dossiers = this.store.dossiers();
+    const etats = this.reception.etats();
     const pending = pendingEtats(etats).length;
-    const routedRefs = new Set(dossiers.map((dossier) => dossier.ref));
-    const toAssign = etats
-      .filter((etat) => etat.receivedAt)
-      .flatMap((etat) => etat.dossiers)
-      .filter((dossier) => !routedRefs.has(dossier.ref)).length;
+    const toAssign = this.reception.nonPrisEnCharge();
     return {
       subline: `${pending} état(s) de transmission attendent une confirmation de réception.`,
       stats: [
@@ -186,12 +193,12 @@ export class HomeComponent {
         },
         {
           label: 'Dossiers affectés',
-          value: String(dossiers.length),
+          value: String(this.reception.dossiersReceptionnes()),
           hint: 'au total',
           tone: 'success',
         },
       ],
-      rows: [...etats].reverse().map((etat) => ({
+      rows: etats.map((etat) => ({
         ref: etat.ref,
         label: `${etat.agence} — ${etat.dossiers.length} dossier(s)`,
         meta: this.etatMeta(etat),
@@ -207,7 +214,8 @@ export class HomeComponent {
     const mine = context.myDossiers();
     const active = mine.filter((dossier) => !isLocked(dossier)).length;
     const late = mine.filter((dossier) => isLate(dossier, context.today)).length;
-    const waiting = unassigned(entity).length;
+    const waiting =
+      context.mode() === 'pool' ? context.poolDossiers().length : context.bacDossiers().length;
     const done = entity.filter(
       (dossier) => dossier.status === 'Validé' || dossier.status === 'Clôturé',
     ).length;
@@ -245,47 +253,114 @@ export class HomeComponent {
     };
   }
 
-  private managerDashboard(): Partial<Dashboard> {
-    const today = this.traitement.today;
-    const dossiers = this.store.dossiers();
-    const result = sla(dossiers, today);
-    const late = dossiers.filter((dossier) => isLate(dossier, today));
-    const ongoing = dossiers.filter(
-      (dossier) => dossier.status === 'En cours' || dossier.status === 'Reçu',
-    );
-    // Points d'attention : les retards d'abord, puis les dossiers encore ouverts.
-    const attention = [
-      ...late,
-      ...dossiers.filter((dossier) => !late.includes(dossier) && dossier.status !== 'Clôturé'),
-    ].slice(0, 5);
+  /** Indicateurs du réseau calculés par l'API (tableau de bord et retards). */
+  private readonly pilotage = toSignal(
+    this.session.role() === 'manager'
+      ? forkJoin({
+          tableau: this.pilotageApi.tableauDeBord(),
+          delais: this.pilotageApi.delais(),
+        }).pipe(catchError(() => of(null)))
+      : of(null),
+    { initialValue: null },
+  );
+
+  /** Comptes des utilisateurs (administrateur), pour les chiffres et les dernières connexions. */
+  private readonly utilisateurs = toSignal(
+    this.session.role() === 'admin'
+      ? this.utilisateurApi.rechercher({ taille: 500 }).pipe(catchError(() => of(null)))
+      : of(null),
+    { initialValue: null },
+  );
+
+  private adminDashboard(): Partial<Dashboard> {
+    const users = this.utilisateurs()?.content ?? [];
+    const ref = referentiel();
+    const since = Date.now() - 24 * 3600 * 1000;
+    const recent = users
+      .filter((user) => user.derniereConnexion)
+      .sort((a, b) => (b.derniereConnexion ?? '').localeCompare(a.derniereConnexion ?? ''));
+    const traitantes = ref.entites.filter((entite) => entite.trait).length;
     return {
-      subline: `Taux de respect des délais : ${result.rate} % sur ${result.treated.length} dossier(s) traités (objectif ${SLA_TARGET} %).`,
+      subline: 'Gestion des utilisateurs, des entités et des circuits de traitement.',
+      stats: [
+        {
+          label: 'Utilisateurs actifs',
+          value: String(users.filter((user) => user.actif).length),
+          hint: `${users.length} compte(s) au total`,
+          tone: 'heading',
+        },
+        {
+          label: 'Entités émettrices',
+          value: String(ref.entites.filter((entite) => entite.emet).length),
+          hint: `${traitantes} entité(s) de traitement`,
+          tone: 'brand',
+        },
+        {
+          label: 'Types de dossier',
+          value: String(ref.dossierTypes.length),
+          hint: `${ref.etatTypes.length} type(s) d'état`,
+          tone: 'info',
+        },
+        {
+          label: 'Connexions 24 h',
+          value: String(
+            recent.filter((user) => Date.parse(user.derniereConnexion ?? '') >= since).length,
+          ),
+          hint: 'utilisateurs connectés',
+          tone: 'success',
+        },
+      ],
+      listTitle: 'Dernières connexions',
+      rows: recent.slice(0, 5).map((user) => ({
+        ref: user.matricule,
+        label: `${user.prenom} ${user.nom}${user.entite ? ` — ${user.entite.nom}` : ''}`,
+        meta: `Connecté le ${formatStamp(user.derniereConnexion ?? '')}`,
+        status: user.actif ? 'Validé' : 'Clôturé',
+      })),
+    };
+  }
+
+  private managerDashboard(): Partial<Dashboard> {
+    const pilotage = this.pilotage();
+    if (!pilotage) {
+      return { subline: 'Chargement des indicateurs…', stats: [], rows: [] };
+    }
+    const { tableau, delais } = pilotage;
+    const rate = tableau.respectDelais ?? 100;
+    return {
+      subline: `Taux de respect des délais : ${rate} % sur ${tableau.termines} dossier(s) traités (objectif ${SLA_TARGET} %).`,
       stats: [
         {
           label: 'Dossiers traités',
-          value: String(result.treated.length),
+          value: String(tableau.termines),
           hint: 'validés ou clôturés',
           tone: 'heading',
         },
         {
           label: 'En cours',
-          value: String(ongoing.length),
+          value: String(tableau.enCours),
           hint: 'dans le réseau',
           tone: 'warning',
         },
-        { label: 'En retard', value: String(late.length), hint: 'délai dépassé', tone: 'danger' },
+        {
+          label: 'En retard',
+          value: String(tableau.enRetard),
+          hint: 'délai dépassé',
+          tone: 'danger',
+        },
         {
           label: 'Respect des délais',
-          value: `${result.rate} %`,
+          value: `${rate} %`,
           hint: `objectif ${SLA_TARGET} %`,
-          tone: result.rate >= SLA_TARGET ? 'success' : 'warning',
+          tone: rate >= SLA_TARGET ? 'success' : 'warning',
         },
       ],
-      rows: attention.map((dossier) => ({
-        ref: dossier.ref,
-        label: `${dossier.client} — ${dossier.type}`,
-        meta: `${dossier.agence} · échéance ${isoDateToFr(dossier.echeanceIso)}`,
-        status: late.includes(dossier) ? 'En retard' : dossier.status,
+      // Points d'attention : les dossiers en retard, du plus critique au moins critique.
+      rows: delais.retards.slice(0, 5).map((retard) => ({
+        ref: retard.reference,
+        label: `${retard.client} — ${retard.typeDossier}`,
+        meta: `${retard.agence} · échéance ${isoDateToFr(retard.echeance)} · ${retard.joursDeRetard} j de retard`,
+        status: retard.joursDeRetard > 0 ? 'En retard' : statusOf(retard.statut),
       })),
     };
   }

@@ -1,6 +1,5 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
 import { formatStamp } from '../../../../../core/utils/date.util';
-import { TransmissionStore } from '../../../../dossiers/infrastructure/store/transmission.store';
 import {
   AUDIT_CATEGORIES,
   AuditFilter,
@@ -16,15 +15,17 @@ import {
   templateUrl: './journal-audit.component.html',
 })
 export class JournalAuditComponent {
-  private readonly store = inject(TransmissionStore);
-
   protected readonly categories = AUDIT_CATEGORIES;
   protected readonly categoryText = CATEGORY_TEXT;
   protected readonly formatStamp = formatStamp;
 
   protected readonly filter = signal<AuditFilter>(EMPTY_AUDIT_FILTER);
 
-  private readonly all = computed(() => auditEvents(this.store.etats(), this.store.dossiers()));
+  /**
+   * Événements de la piste d'audit : fournis par le module audit du backend, pas encore construit. Rien n'est
+   * affiché d'ici là plutôt que des événements reconstitués dans le navigateur.
+   */
+  private readonly all = computed<ReturnType<typeof auditEvents>>(() => []);
   protected readonly users = computed(() =>
     [...new Set(this.all().map((event) => event.who))].sort(),
   );

@@ -1,8 +1,12 @@
+import { endpoints } from './endpoints';
+
 /**
- * Environnement de production.
- * `apiUrl` est à renseigner au moment du branchement de l'API.
+ * Environnement de production (`ng build`). `baseUrl` : adresse de l'API, à renseigner ; vide = même origine que
+ * le front. `config/app-config.json` peut la surcharger au déploiement, sans reconstruire.
  */
 export const environment = {
   production: true,
-  apiUrl: '',
+  name: 'prod',
+  baseUrl: '',
+  endpoints,
 };

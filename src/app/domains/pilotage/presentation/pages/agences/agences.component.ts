@@ -1,7 +1,8 @@
 import { Component, computed, inject } from '@angular/core';
-import { DemoClock } from '../../../../../core/services/demo-clock.service';
-import { TransmissionStore } from '../../../../dossiers/infrastructure/store/transmission.store';
-import { agenceComparison } from '../../../domain/indicators';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { catchError, of } from 'rxjs';
+import { agenceComparisonFromApi } from '../../../domain/indicators';
+import { PilotageApi } from '../../../infrastructure/api/pilotage.api';
 import { TONE_BAR, TONE_TEXT } from '../../tone';
 
 /** Pilotage : comparatif des agences d'origine. */
@@ -61,13 +62,17 @@ import { TONE_BAR, TONE_TEXT } from '../../tone';
   `,
 })
 export class AgencesComponent {
-  private readonly store = inject(TransmissionStore);
-  private readonly clock = inject(DemoClock);
-
   protected readonly toneBar = TONE_BAR;
   protected readonly toneText = TONE_TEXT;
 
-  protected readonly rows = computed(() =>
-    agenceComparison(this.store.dossiers(), this.clock.today()),
+  /** Comparatif calculé par l'API, de l'agence la plus en retard à la moins en retard. */
+  private readonly agences = toSignal(
+    inject(PilotageApi)
+      .agences()
+      .pipe(catchError(() => of([]))),
+    {
+      initialValue: [],
+    },
   );
+  protected readonly rows = computed(() => agenceComparisonFromApi(this.agences()));
 }

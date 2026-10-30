@@ -1,13 +1,15 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { map } from 'rxjs';
 import { Router, RouterLink } from '@angular/router';
-import { SessionService } from '../../../../../core/services/session.service';
 import { formatDate, formatTime } from '../../../../../core/utils/date.util';
 import { STATUS_KEYS, Status } from '../../../../../shared/models/status';
 import { IconComponent, IconName } from '../../../../../shared/ui/icon/icon.component';
 import { StatusBadgeComponent } from '../../../../../shared/ui/status-badge/status-badge.component';
 import { DOSSIER_TYPES, DossierType } from '../../../../dossiers/domain/dossier-catalog';
+import { etatFromApi } from '../../../../dossiers/domain/entities/dossier-api.entity';
 import { canPrintEtat } from '../../../../dossiers/domain/entities/etat.entity';
-import { TransmissionStore } from '../../../../dossiers/infrastructure/store/transmission.store';
+import { EtatApi } from '../../../../dossiers/infrastructure/api/etat.api';
 import { BordereauService } from '../../../../dossiers/presentation/bordereau.service';
 import {
   EMPTY_CRITERIA,
@@ -16,8 +18,9 @@ import {
   countCriteria,
   matchesCriteria,
   shortStatusLabel,
-  suiviDossiers,
+  suiviRowFromApi,
 } from '../../../domain/suivi';
+import { SuiviAgenceApi } from '../../../infrastructure/api/suivi-agence.api';
 
 // Mêmes pictogrammes que le prototype : « À compléter » reprend l'horloge, « Retourné en agence » la liste.
 const FILTER_ICONS: Partial<Record<Status, IconName>> = {
@@ -39,8 +42,8 @@ type TextCriterion = Exclude<keyof SuiviCriteria, 'type'>;
   templateUrl: './suivi-dossiers.component.html',
 })
 export class SuiviDossiersComponent {
-  private readonly store = inject(TransmissionStore);
-  private readonly session = inject(SessionService);
+  private readonly suiviApi = inject(SuiviAgenceApi);
+  private readonly etatApi = inject(EtatApi);
   private readonly bordereau = inject(BordereauService);
   private readonly router = inject(Router);
 
@@ -55,11 +58,17 @@ export class SuiviDossiersComponent {
   protected readonly statusFilter = signal<Status | null>(null);
   private readonly pickedEtat = signal('');
 
-  private readonly agenceCode = computed(
-    () => this.session.account()?.entity.match(/\(([^)]+)\)/)?.[1] ?? '',
+  /** Dossiers de l'agence lus dans l'API, du plus récemment saisi au plus ancien. */
+  private readonly all = toSignal(
+    this.suiviApi.dossiers().pipe(map((suivi) => suivi.dossiers.map(suiviRowFromApi))),
+    { initialValue: [] },
   );
-  private readonly all = computed(() =>
-    suiviDossiers(this.store.etats(), this.store.dossiers(), this.agenceCode()),
+  /** États émis par l'agence, pour l'impression de leur bordereau. */
+  private readonly etats = toSignal(
+    this.etatApi.emis().pipe(map((etats) => etats.map(etatFromApi))),
+    {
+      initialValue: [],
+    },
   );
   private readonly matching = computed(() =>
     this.all().filter((dossier) => matchesCriteria(dossier, this.applied())),
@@ -120,9 +129,8 @@ export class SuiviDossiersComponent {
 
   // --- Impression du bordereau d'un état
   protected readonly printableEtats = computed(() =>
-    this.store
-      .etats()
-      .filter((etat) => etat.code === this.agenceCode() && canPrintEtat(etat))
+    this.etats()
+      .filter((etat) => canPrintEtat(etat))
       .sort((a, b) => b.sentAt.localeCompare(a.sentAt)),
   );
 
@@ -132,7 +140,7 @@ export class SuiviDossiersComponent {
     if (printable.some((etat) => etat.ref === this.pickedEtat())) {
       return this.pickedEtat();
     }
-    const shown = [...new Set(this.rows().map((dossier) => dossier.etat.ref))];
+    const shown = [...new Set(this.rows().map((dossier) => dossier.etatRef))];
     if (shown.length === 1 && printable.some((etat) => etat.ref === shown[0])) {
       return shown[0];
     }
@@ -170,14 +178,14 @@ export class SuiviDossiersComponent {
     this.pickedEtat.set((event.target as HTMLSelectElement).value);
   }
 
-  protected open(ref: string): void {
-    void this.router.navigate(['/agence/suivi', ref]);
+  protected open(id: string): void {
+    void this.router.navigate(['/agence/suivi', id]);
   }
 
   protected printSelected(): void {
-    const ref = this.selectedEtat();
-    if (ref) {
-      this.bordereau.open(ref);
+    const etat = this.printableEtats().find((candidate) => candidate.ref === this.selectedEtat());
+    if (etat?.id) {
+      this.bordereau.open(etat.id);
     }
   }
 }

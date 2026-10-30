@@ -5,8 +5,7 @@ import { ToastService } from '../../../../../core/services/toast.service';
 import { StatCardComponent } from '../../../../../shared/ui/stat-card/stat-card.component';
 import { Priorite } from '../../../../dossiers/domain/dossier-catalog';
 import { RoutedDossier } from '../../../../dossiers/domain/entities/dossier.entity';
-import { TransmissionStore } from '../../../../dossiers/infrastructure/store/transmission.store';
-import { unassigned } from '../../../domain/portfolio';
+import { TraitementStore } from '../../../infrastructure/store/traitement.store';
 import { TraitementContext } from '../../traitement-context.service';
 
 const NOT_ASSIGNED = 'Non affecté';
@@ -24,7 +23,7 @@ const PRIORITY_TEXT: Record<Priorite, string> = {
   templateUrl: './affectation.component.html',
 })
 export class AffectationComponent {
-  private readonly store = inject(TransmissionStore);
+  private readonly store = inject(TraitementStore);
   private readonly confirm = inject(ConfirmService);
   private readonly toast = inject(ToastService);
   protected readonly context = inject(TraitementContext);
@@ -33,9 +32,10 @@ export class AffectationComponent {
   protected readonly priorityText = PRIORITY_TEXT;
 
   /** Gestionnaire choisi pour chaque dossier du bac, avant confirmation. */
-  private readonly picks = signal<Record<number, string>>({});
+  private readonly picks = signal<Record<string, string>>({});
 
-  protected readonly rows = computed(() => unassigned(this.context.entityDossiers()));
+  /** Bac du répartiteur : dossiers reçus sans gestionnaire, lus dans l'API. */
+  protected readonly rows = this.context.bacDossiers;
   private readonly active = computed(() =>
     this.context.entityDossiers().filter((dossier) => dossier.gest && dossier.status !== 'Clôturé'),
   );
@@ -86,11 +86,11 @@ export class AffectationComponent {
     if (!confirmed) {
       return;
     }
-    const result = this.store.assign(dossier.id, gestionnaire, this.context.user());
-    if (result.ok) {
-      this.toast.success(result.message);
-    } else {
-      this.toast.warning(result.message);
+    try {
+      await this.store.assign(dossier.id, gestionnaire);
+    } catch {
+      return;
     }
+    this.toast.success(`Dossier ${dossier.ref} affecté à ${gestionnaire}.`);
   }
 }

@@ -1,84 +1,122 @@
 <app-auth-page-layout>
-  <div class="flex w-full max-w-[380px] animate-enter flex-col gap-6">
-    <div class="flex flex-col gap-1.5">
-      <h1 class="text-[23px] font-semibold tracking-[-0.01em] text-ink">Connexion</h1>
-      <p class="text-[13.5px] text-ink-muted">Accédez à votre espace de traçabilité.</p>
-    </div>
+  <div class="flex w-full max-w-[400px] animate-enter flex-col gap-5">
+    <section class="flex flex-col gap-7" aria-labelledby="signin-title">
+      <header class="flex flex-col gap-1.5">
+        <h1 id="signin-title" class="text-[24px] font-semibold tracking-[-0.015em] text-ink">
+          Connexion
+        </h1>
+        <p class="text-[13.5px] text-ink-muted">Accédez à votre espace de traçabilité.</p>
+      </header>
 
-    <form class="flex flex-col gap-4" novalidate (submit)="submit($event)">
-      <label class="flex flex-col gap-1.5 text-[12.5px] font-medium text-ink-secondary">
-        Identifiant
-        <input
-          type="text"
-          autocomplete="username"
-          placeholder="prenom.nom"
-          class="rounded-control border border-line-strong bg-card px-3 py-2.5 text-[14px] font-normal text-ink outline-none placeholder:text-ink-faint focus:border-brand focus:ring-3 focus:ring-brand/16"
-          [formField]="signInForm.ident"
-          [attr.aria-describedby]="error() ? 'signin-error' : null"
-        />
-      </label>
+      <form class="flex flex-col gap-4" novalidate (submit)="submit($event)">
+        <div class="flex flex-col gap-1.5">
+          <label for="signin-ident" class="text-[12.5px] font-medium text-ink-secondary">
+            Identifiant
+          </label>
+          <div class="relative">
+            <app-icon
+              name="user"
+              [size]="17"
+              class="pointer-events-none absolute start-3.5 top-1/2 -translate-y-1/2 text-ink-faint"
+            />
+            <input
+              id="signin-ident"
+              type="text"
+              autocomplete="username"
+              autocapitalize="none"
+              spellcheck="false"
+              placeholder="prenom.nom"
+              class="h-11 w-full rounded-control border border-line-strong bg-card ps-10 pe-3 text-[14px] text-ink outline-none transition-shadow placeholder:text-ink-faint focus:border-brand focus:ring-3 focus:ring-brand/16"
+              [formField]="signInForm.ident"
+              [attr.aria-invalid]="error() ? true : null"
+              [attr.aria-describedby]="error() ? 'signin-error' : null"
+            />
+          </div>
+        </div>
 
-      <label class="flex flex-col gap-1.5 text-[12.5px] font-medium text-ink-secondary">
-        Mot de passe
-        <input
-          type="password"
-          autocomplete="current-password"
-          placeholder="••••••••"
-          class="rounded-control border border-line-strong bg-card px-3 py-2.5 text-[14px] font-normal text-ink outline-none placeholder:text-ink-faint focus:border-brand focus:ring-3 focus:ring-brand/16"
-          [formField]="signInForm.password"
-          [attr.aria-describedby]="error() ? 'signin-error' : null"
-        />
-      </label>
-
-      @if (error()) {
-        <p
-          id="signin-error"
-          role="alert"
-          class="rounded-control border border-danger-line bg-danger-bg px-3 py-2.5 text-[12.5px] text-danger"
-        >
-          {{ error() }}
-        </p>
-      }
-
-      <button appButton type="submit" variant="secondary" class="mt-1 py-3 text-[14px]">
-        Se connecter
-      </button>
-    </form>
-
-    <section
-      class="flex flex-col gap-2.5 border-t border-line pt-4"
-      aria-labelledby="demo-accounts"
-    >
-      <h2
-        id="demo-accounts"
-        class="text-[11.5px] font-semibold tracking-[0.1em] text-ink-muted uppercase"
-      >
-        Comptes de démonstration
-      </h2>
-      <ul class="flex flex-col gap-1.5">
-        @for (account of demoAccounts; track account.ident) {
-          <li>
+        <div class="flex flex-col gap-1.5">
+          <label for="signin-password" class="text-[12.5px] font-medium text-ink-secondary">
+            Mot de passe
+          </label>
+          <div class="relative">
+            <app-icon
+              name="lock"
+              [size]="17"
+              class="pointer-events-none absolute start-3.5 top-1/2 -translate-y-1/2 text-ink-faint"
+            />
+            <input
+              id="signin-password"
+              autocomplete="current-password"
+              placeholder="Votre mot de passe"
+              class="h-11 w-full rounded-control border border-line-strong bg-card ps-10 pe-12 text-[14px] text-ink outline-none transition-shadow placeholder:text-ink-faint focus:border-brand focus:ring-3 focus:ring-brand/16"
+              [type]="passwordShown() ? 'text' : 'password'"
+              [formField]="signInForm.password"
+              [attr.aria-invalid]="error() ? true : null"
+              [attr.aria-describedby]="error() ? 'signin-error' : null"
+            />
             <button
               type="button"
-              class="flex w-full items-center justify-between gap-3 rounded-control border px-3 py-2 text-start transition-colors hover:border-brand hover:bg-brand-tint-soft"
-              [class]="
-                isSelected(account) ? 'border-brand bg-brand-tint-soft' : 'border-line bg-card'
+              class="absolute end-1.5 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-control text-ink-muted transition-colors hover:bg-soft hover:text-ink focus-visible:ring-3 focus-visible:ring-brand/24 focus-visible:outline-none"
+              [attr.aria-label]="
+                passwordShown() ? 'Masquer le mot de passe' : 'Afficher le mot de passe'
               "
-              [attr.aria-pressed]="isSelected(account)"
-              title="Remplir le formulaire avec ce compte"
-              (click)="fill(account)"
+              [attr.aria-pressed]="passwordShown()"
+              [attr.title]="
+                passwordShown() ? 'Masquer le mot de passe' : 'Afficher le mot de passe'
+              "
+              (click)="togglePassword()"
             >
-              <span class="flex min-w-0 flex-col gap-0.5">
-                <span class="text-[13px] font-medium text-ink">{{ account.name }}</span>
-                <span class="text-[11.5px] text-ink-muted">{{ account.roleLabel }}</span>
-              </span>
-              <span class="font-mono text-[11px] whitespace-nowrap text-brand-ink">
-                {{ account.ident }}
-              </span>
+              <app-icon [name]="passwordShown() ? 'eye-off' : 'eye'" [size]="17" />
             </button>
-          </li>
+          </div>
+        </div>
+
+        <label
+          class="flex w-fit cursor-pointer items-center gap-2.5 text-[13px] text-ink-secondary select-none"
+        >
+          <input
+            type="checkbox"
+            class="size-4 cursor-pointer rounded accent-brand"
+            [formField]="signInForm.remember"
+          />
+          Se souvenir de moi
+        </label>
+
+        @if (error()) {
+          <p
+            id="signin-error"
+            role="alert"
+            class="flex items-start gap-2.5 rounded-control border border-danger-line bg-danger-bg px-3 py-2.5 text-[12.5px] leading-[1.45] text-danger"
+          >
+            <app-icon name="alert" [size]="16" class="mt-px" />
+            <span>{{ error() }}</span>
+          </p>
         }
-      </ul>
+
+        <button
+          appButton
+          type="submit"
+          class="mt-1 h-11 text-[14px] font-semibold disabled:cursor-wait disabled:opacity-75"
+          [disabled]="pending()"
+          [attr.aria-busy]="pending()"
+        >
+          @if (pending()) {
+            <span
+              class="size-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+              aria-hidden="true"
+            ></span>
+            Connexion…
+          } @else {
+            Se connecter
+            <app-icon name="arrow-right" [size]="16" />
+          }
+        </button>
+      </form>
     </section>
+
+    <p class="text-center text-[12px] text-ink-muted">
+      Accès réservé aux utilisateurs habilités. En cas d'oubli du mot de passe, contactez votre
+      administrateur.
+    </p>
   </div>
 </app-auth-page-layout>

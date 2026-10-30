@@ -647,6 +647,16 @@ html.dark {
     @apply text-[11px] font-semibold tracking-[0.08em] text-ink-muted uppercase;
   }
 
+  /* Pastille d'une liste (types de dossier, entités) ; la couleur est donnée à l'usage. */
+  .chip {
+    @apply inline-flex items-center rounded-full px-[9px] py-[3px] text-[12px] font-medium whitespace-nowrap;
+  }
+
+  /* Pastille d'avertissement accolée à un libellé (« À vérifier », « À rattacher »). */
+  .tag-warning {
+    @apply rounded-full border border-warning-line bg-warning-bg px-2 py-px text-[11px] font-semibold whitespace-nowrap text-warning;
+  }
+
   .icon-button {
     @apply flex size-[34px] flex-none items-center justify-center rounded-control border border-line-strong bg-card text-ink-secondary transition-colors hover:border-brand hover:text-brand-ink;
   }
@@ -866,11 +876,19 @@ html.dark {
   }
 }
 
-.map-grid {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto;
+.entites-grid {
+  grid-template-columns: 84px minmax(0, 1.4fr) minmax(0, 0.7fr) minmax(0, 1.4fr) auto;
 }
 
-.grid-table tr.map-grid {
+.grid-table tr.entites-grid {
+  gap: 0 16px;
+}
+
+.circuit-grid {
+  grid-template-columns: minmax(140px, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+}
+
+.grid-table tr.circuit-grid {
   gap: 8px 16px;
 }
 
