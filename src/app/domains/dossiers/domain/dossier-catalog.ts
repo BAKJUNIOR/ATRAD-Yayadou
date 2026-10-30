@@ -89,7 +89,9 @@ export function operationIdOf(type: DossierType, produit: Produit): string | nul
 
 /** Libellé du produit d'un dossier à partir de son identifiant d'opération. */
 export function produitLabelOf(type: DossierType, operationId: string | null): Produit {
-  return (operationId && typeProduits[type]?.find((option) => option.id === operationId)?.label) || '';
+  return (
+    (operationId && typeProduits[type]?.find((option) => option.id === operationId)?.label) || ''
+  );
 }
 
 /** Champs propres à un type ; un type ajouté par l'administrateur reçoit ceux du jeu. */

@@ -6,10 +6,15 @@ import {
   dossierFromApi,
   etatFromApi,
 } from '../../../dossiers/domain/entities/dossier-api.entity';
-import { Dossier, DossierData, PieceJointe } from '../../../dossiers/domain/entities/dossier.entity';
+import {
+  Dossier,
+  DossierData,
+  PieceJointe,
+} from '../../../dossiers/domain/entities/dossier.entity';
 import { Etat } from '../../../dossiers/domain/entities/etat.entity';
 import { DossierApi } from '../../../dossiers/infrastructure/api/dossier.api';
 import { EtatApi } from '../../../dossiers/infrastructure/api/etat.api';
+import { SuiviAgenceApi } from '../api/suivi-agence.api';
 
 /**
  * Brouillon de l'entité émettrice, tenu par l'API : les dossiers Temporaire en attente de transmission, avec
@@ -20,21 +25,36 @@ import { EtatApi } from '../../../dossiers/infrastructure/api/etat.api';
 export class BrouillonStore {
   private readonly dossierApi = inject(DossierApi);
   private readonly etatApi = inject(EtatApi);
+  private readonly suiviApi = inject(SuiviAgenceApi);
 
   private readonly dossiers = signal<Dossier[]>([]);
   private readonly loaded = signal(false);
 
   readonly draft = this.dossiers.asReadonly();
   readonly isLoaded = this.loaded.asReadonly();
+  /** États émis par l'agence (sans leurs dossiers) et nombre de ses dossiers clôturés, pour l'accueil. */
+  readonly etatsEmis = signal<Etat[]>([]);
+  readonly clotures = signal(0);
   /** Création du plus ancien dossier du brouillon. */
   readonly draftCreatedAt = computed(() =>
-    this.dossiers().reduce((oldest, dossier) => (!oldest || dossier.createdAt < oldest ? dossier.createdAt : oldest), ''),
+    this.dossiers().reduce(
+      (oldest, dossier) => (!oldest || dossier.createdAt < oldest ? dossier.createdAt : oldest),
+      '',
+    ),
   );
   /** L'API attribue la référence de l'état à sa transmission. */
   readonly draftRef = computed(() => 'Nouvel état');
 
   async load(): Promise<void> {
-    const dossiers = await firstValueFrom(this.dossierApi.brouillon());
+    const [dossiers, etats, suivi] = await Promise.all([
+      firstValueFrom(this.dossierApi.brouillon()),
+      firstValueFrom(this.etatApi.emis()),
+      firstValueFrom(this.suiviApi.dossiers()),
+    ]);
+    this.etatsEmis.set(etats.map(etatFromApi));
+    this.clotures.set(
+      suivi.compteurs.find((compteur) => compteur.etape === 'CLOTURE')?.nombre ?? 0,
+    );
     this.dossiers.set(await Promise.all(dossiers.map((dossier) => this.withPieces(dossier))));
     this.loaded.set(true);
   }
@@ -58,7 +78,9 @@ export class BrouillonStore {
     );
     await this.sendPieces(previous.id, data.pieces);
     const dossier = await this.withPieces(saved);
-    this.dossiers.update((list) => list.map((candidate) => (candidate.id === dossier.id ? dossier : candidate)));
+    this.dossiers.update((list) =>
+      list.map((candidate) => (candidate.id === dossier.id ? dossier : candidate)),
+    );
     return dossier;
   }
 

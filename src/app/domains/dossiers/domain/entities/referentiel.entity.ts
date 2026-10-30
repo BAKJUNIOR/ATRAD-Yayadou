@@ -1,6 +1,7 @@
 import { Entite, EtatType } from '../datasets';
 import { DossierType, ProduitOption, TypeField } from '../dossier-catalog';
 import { Circuit, SaisieMode } from '../referentiel';
+import type { ApiTransition } from './dossier-api.entity';
 
 /** Entité de l'organisation, telle que renvoyée par l'API (`entites.base`). */
 export interface ApiEntite {
@@ -78,6 +79,7 @@ export interface ApiParametrage {
   modeSaisie: 'CHOIX' | 'AUTO';
   formulaires: ApiFormulaire[];
   motifsRetour: ApiMotif[];
+  circuits: ApiCircuit[];
 }
 
 /** Ce que l'API fournit au référentiel du front (le vocabulaire vient de la marque). */
@@ -93,6 +95,17 @@ export interface ReferentielApiPart {
   typeOperations: Record<DossierType, ProduitOption[]>;
   /** Motifs de retour (non-éligibilité), pour afficher ceux d'un dossier retourné. */
   motifsRetour: MotifOption[];
+  /** Code du circuit de statuts de chaque type de dossier. */
+  typeCircuits: Record<DossierType, string>;
+  /** Transitions de chaque circuit, par code de circuit. */
+  workflows: Record<string, ApiTransition[]>;
+}
+
+/** Circuit de statuts (`circuits.byCode`) : ses passages autorisés. */
+export interface ApiCircuit {
+  code: string;
+  libelle: string;
+  transitions: ApiTransition[];
 }
 
 /** Motif proposé (retour, rejet), avec son identifiant dans l'API. */
@@ -116,7 +129,9 @@ export interface ApiMotif {
 export function referentielFromApi(api: ApiParametrage): ReferentielApiPart {
   const codeOf = new Map(api.entites.map((entite) => [entite.id, entite.code]));
   const typesDossier = api.typesDossier.filter((type) => type.actif);
-  const formulaireOf = new Map(api.formulaires.map((formulaire) => [formulaire.typeDossier.id, formulaire]));
+  const formulaireOf = new Map(
+    api.formulaires.map((formulaire) => [formulaire.typeDossier.id, formulaire]),
+  );
   const parType = <T>(value: (type: ApiTypeDossier) => T): Record<DossierType, T> =>
     Object.fromEntries(typesDossier.map((type) => [type.nom, value(type)]));
 
@@ -136,7 +151,9 @@ export function referentielFromApi(api: ApiParametrage): ReferentielApiPart {
         id: type.id,
         nom: type.nom,
         recep: codeOf.get(type.entiteReceptriceId) ?? '',
-        emet: type.emettriceIds.map((id) => codeOf.get(id)).filter((code): code is string => !!code),
+        emet: type.emettriceIds
+          .map((id) => codeOf.get(id))
+          .filter((code): code is string => !!code),
       })),
     dossierTypes: typesDossier.map((type) => type.nom),
     circuits: parType((type) => ({
@@ -147,10 +164,19 @@ export function referentielFromApi(api: ApiParametrage): ReferentielApiPart {
     saisieMode: api.modeSaisie === 'AUTO' ? 'auto' : 'choix',
     typeIds: parType((type) => type.id),
     typeFields: parType((type) => (formulaireOf.get(type.id)?.champs ?? []).map(fieldOf)),
-    typePieces: parType((type) => (formulaireOf.get(type.id)?.pieces ?? []).map((piece) => piece.libelle)),
+    typePieces: parType((type) =>
+      (formulaireOf.get(type.id)?.pieces ?? []).map((piece) => piece.libelle),
+    ),
     motifsRetour: api.motifsRetour.map((motif) => ({ id: motif.id, label: motif.libelle })),
+    typeCircuits: parType((type) => type.circuit),
+    workflows: Object.fromEntries(
+      api.circuits.map((circuit) => [circuit.code, circuit.transitions]),
+    ),
     typeOperations: parType((type) =>
-      (formulaireOf.get(type.id)?.operations ?? []).map((operation) => ({ id: operation.id, label: operation.libelle })),
+      (formulaireOf.get(type.id)?.operations ?? []).map((operation) => ({
+        id: operation.id,
+        label: operation.libelle,
+      })),
     ),
   };
 }
@@ -169,7 +195,8 @@ function fieldOf(champ: ApiChamp): TypeField {
           : champ.typeDonnee === 'LISTE'
             ? 'select'
             : 'text',
-    options: champ.typeDonnee === 'LISTE' ? champ.valeurs.map((valeur) => valeur.libelle) : undefined,
+    options:
+      champ.typeDonnee === 'LISTE' ? champ.valeurs.map((valeur) => valeur.libelle) : undefined,
     placeholder: champ.aide ?? undefined,
     optional: !champ.obligatoire,
     // L'API accepte tout nombre positif ou nul.

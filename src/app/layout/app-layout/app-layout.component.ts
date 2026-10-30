@@ -1,10 +1,13 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, effect, inject, untracked } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
 import { NAVIGATION } from '../../core/navigation/navigation';
 import { BrandService } from '../../core/services/brand.service';
 import { PageTitleStrategy } from '../../core/services/page-title.strategy';
 import { SessionService } from '../../core/services/session.service';
 import { SidebarService } from '../../core/services/sidebar.service';
+import { ReceptionContext } from '../../domains/accueil/presentation/reception-context.service';
+import { BrouillonStore } from '../../domains/agence/infrastructure/store/brouillon.store';
+import { TraitementContext } from '../../domains/traitement/presentation/traitement-context.service';
 import { AppHeaderComponent } from '../app-header/app-header.component';
 import { AppSidebarComponent } from '../app-sidebar/app-sidebar.component';
 import { BackdropComponent } from '../backdrop/backdrop.component';
@@ -72,4 +75,26 @@ export class AppLayoutComponent {
   });
   /** Sur l'accueil, le fil d'Ariane s'arrête au parcours. */
   protected readonly showPageCrumb = computed(() => this.pageTitle() !== HOME_TITLE);
+
+  private readonly brouillon = inject(BrouillonStore);
+  private readonly reception = inject(ReceptionContext);
+  private readonly traitement = inject(TraitementContext);
+
+  constructor() {
+    // Données du profil connecté, lues dans l'API à l'ouverture de la session (pastilles du menu, accueil).
+    effect(() => {
+      const account = this.session.account();
+      untracked(() => {
+        if (account?.role === 'agence') {
+          void this.brouillon.load().catch(() => undefined);
+        }
+        if (account?.role === 'traitement') {
+          void this.traitement.load();
+        }
+        if (this.reception.canReceive()) {
+          this.reception.load();
+        }
+      });
+    });
+  }
 }

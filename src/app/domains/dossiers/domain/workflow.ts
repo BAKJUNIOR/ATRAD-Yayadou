@@ -1,6 +1,8 @@
 import { Status } from '../../../shared/models/status';
 import { DossierType } from './dossier-catalog';
+import { ApiTransition, statusCodeOf, statusOf } from './entities/dossier-api.entity';
 import { RoutedDossier } from './entities/dossier.entity';
+import { referentiel } from './referentiel';
 
 export const ATTENTE_DOCS: Status = 'En attente de document(s) complémentaire(s)';
 
@@ -37,10 +39,39 @@ const RECLAMATION_CIRCUIT: Circuit = {
   [ATTENTE_DOCS]: ['En cours', 'Dossier retourné'],
 };
 
-/** Statuts autorisés à la suite du statut courant, selon le circuit du type de dossier. */
+/** Passages de l'API autorisés depuis le statut courant du dossier, selon le circuit de son type. */
+function apiTransitions(dossier: { type: DossierType; status: Status }): ApiTransition[] | null {
+  const { typeCircuits, workflows } = referentiel();
+  const transitions = workflows[typeCircuits[dossier.type] ?? ''];
+  if (!transitions?.length) {
+    return null;
+  }
+  const source = statusCodeOf(dossier.status);
+  return transitions.filter((transition) => transition.source === source);
+}
+
+/**
+ * Statuts autorisés à la suite du statut courant, selon le circuit du type de dossier lu dans l'API (à défaut,
+ * les circuits standard et réclamation du prototype).
+ */
 export function nextStatuses(dossier: { type: DossierType; status: Status }): readonly Status[] {
+  const transitions = apiTransitions(dossier);
+  if (transitions) {
+    return [...new Set(transitions.map((transition) => statusOf(transition.cible)))];
+  }
   const circuit = dossier.type === 'Réclamation' ? RECLAMATION_CIRCUIT : STANDARD_CIRCUIT;
   return circuit[dossier.status] ?? [];
+}
+
+/** Code d'action de l'API qui mène le dossier au statut visé (ex. `VALIDER`), vide s'il n'y en a pas. */
+export function actionCodeTo(
+  dossier: { type: DossierType; status: Status },
+  target: Status,
+): string {
+  const cible = statusCodeOf(target);
+  return (
+    apiTransitions(dossier)?.find((transition) => transition.cible === cible)?.actionCode ?? ''
+  );
 }
 
 export function isLocked(dossier: { status: Status }): boolean {

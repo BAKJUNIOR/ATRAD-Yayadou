@@ -2,7 +2,11 @@ import { Service, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../../environments/environment';
 import { BaseService } from '../../../../core/services/base.service';
-import { ApiDossierDetail, ApiDossierSuivi, ApiEtapeSuivi } from '../../../dossiers/domain/entities/dossier-api.entity';
+import {
+  ApiDossierDetail,
+  ApiDossierSuivi,
+  ApiEtapeSuivi,
+} from '../../../dossiers/domain/entities/dossier-api.entity';
 
 /** Réponse de `suivi.agence` : compteurs par étape et dossiers de l'agence, du plus récent au plus ancien. */
 export interface ApiSuiviAgence {

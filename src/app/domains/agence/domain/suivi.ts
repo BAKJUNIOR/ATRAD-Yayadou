@@ -9,7 +9,11 @@ import {
   routedFromApi,
   statusOfEtape,
 } from '../../dossiers/domain/entities/dossier-api.entity';
-import { DossierLog, EtatDossier, RoutedDossier } from '../../dossiers/domain/entities/dossier.entity';
+import {
+  DossierLog,
+  EtatDossier,
+  RoutedDossier,
+} from '../../dossiers/domain/entities/dossier.entity';
 import { Etat } from '../../dossiers/domain/entities/etat.entity';
 import { etatInfo } from '../../dossiers/domain/referentiel';
 

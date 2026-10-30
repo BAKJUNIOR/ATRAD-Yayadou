@@ -117,6 +117,8 @@ export class ReferentielStore {
       typePieces: stored.typePieces ?? {},
       typeOperations: stored.typeOperations ?? {},
       motifsRetour: stored.motifsRetour ?? [],
+      typeCircuits: stored.typeCircuits ?? {},
+      workflows: stored.workflows ?? {},
     };
   }
 

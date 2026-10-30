@@ -37,7 +37,9 @@ export class DossiersRetournesComponent {
   }
 
   private load(): void {
-    this.api.retours().subscribe((retours) => this.pending.set(pendingReturns(retours.map(retourneFromApi))));
+    this.api
+      .retours()
+      .subscribe((retours) => this.pending.set(pendingReturns(retours.map(retourneFromApi))));
   }
 
   /** Entités ayant au moins un dossier à renvoyer, avec leur nombre. */

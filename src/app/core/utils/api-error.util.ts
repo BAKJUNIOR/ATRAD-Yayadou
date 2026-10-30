@@ -1,7 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { FieldError } from '../models/response-wrapper.model';
 
-const UNREACHABLE = 'Impossible de joindre le serveur. Vérifiez votre connexion ou réessayez plus tard.';
+const UNREACHABLE =
+  'Impossible de joindre le serveur. Vérifiez votre connexion ou réessayez plus tard.';
 const FALLBACK = 'Une erreur est survenue. Veuillez réessayer.';
 /** Réponse qui ne vient pas de l'API (page du serveur web, proxy) : message selon le statut. */
 const WITHOUT_API_BODY: Record<number, string> = {

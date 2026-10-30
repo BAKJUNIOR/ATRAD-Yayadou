@@ -61,6 +61,7 @@ const parametrage: ApiParametrage = {
   ],
   modeSaisie: 'AUTO',
   motifsRetour: [{ id: 'm-1', parentId: null, libelle: 'Revenus insuffisants' }],
+  circuits: [],
   formulaires: [
     {
       typeDossier: typeDossier('td-pret', 'Demande de prêt'),
@@ -148,6 +149,8 @@ describe('referentielFromApi', () => {
       },
     ]);
     expect(referentiel.typePieces['Demande de prêt']).toEqual(['Bulletins de salaire']);
-    expect(referentiel.typeOperations['Demande de prêt']).toEqual([{ id: 'op-habitat', label: 'Prêt habitat' }]);
+    expect(referentiel.typeOperations['Demande de prêt']).toEqual([
+      { id: 'op-habitat', label: 'Prêt habitat' },
+    ]);
   });
 });

@@ -34,7 +34,9 @@ describe('brandFromMarque', () => {
     expect(brand.font).toBe('Inter');
     expect(brand.radius).toBe(12);
     expect(brand.darkDefault).toBe(true);
-    expect(brand.logoFull).toBe('https://api.exemple.test/api/v1/branding/logos/LOGO_COMPLET?v=1a2b3c4d');
+    expect(brand.logoFull).toBe(
+      'https://api.exemple.test/api/v1/branding/logos/LOGO_COMPLET?v=1a2b3c4d',
+    );
     expect(brand.logoIcon).toBe('');
   });
 

@@ -98,7 +98,10 @@ export class SessionService {
       sessionStorage.removeItem(SESSION_KEY);
       localStorage.removeItem(SESSION_KEY);
       if (session) {
-        (this.remember ? localStorage : sessionStorage).setItem(SESSION_KEY, JSON.stringify(session));
+        (this.remember ? localStorage : sessionStorage).setItem(
+          SESSION_KEY,
+          JSON.stringify(session),
+        );
       }
     } catch {
       // Sans sessionStorage, la session ne dure que le temps de la page.

@@ -1,8 +1,8 @@
 import { Service, computed, inject } from '@angular/core';
-import { isUnassigned, pendingEtats, pendingReturns } from '../accueil/domain/reception';
+import { pendingEtats } from '../accueil/domain/reception';
 import { ReceptionContext } from '../accueil/presentation/reception-context.service';
 import { isLocked } from '../dossiers/domain/workflow';
-import { isLate, unassigned } from '../traitement/domain/portfolio';
+import { isLate } from '../traitement/domain/portfolio';
 import { TraitementContext } from '../traitement/presentation/traitement-context.service';
 
 /** Compteurs affichés à côté des entrées du menu, par identifiant d'entrée. */
@@ -12,18 +12,17 @@ export class NavBadgesService {
   private readonly reception = inject(ReceptionContext);
 
   readonly counts = computed<Record<string, number>>(() => {
-    // Écrans de réception : états et dossiers de l'entité réceptrice de l'utilisateur.
-    const dossiers = this.reception.dossiers();
+    // Écrans de réception : états et compteurs de l'entité réceptrice de l'utilisateur.
     const mine = this.traitement.myDossiers();
     return {
       recherche: pendingEtats(this.reception.etats()).length,
-      affectation: dossiers.filter(isUnassigned).length,
-      retours: pendingReturns(dossiers).length,
+      affectation: this.reception.nonPrisEnCharge(),
+      retours: this.reception.retoursARenvoyer(),
       // Profil traitement : portefeuille du membre incarné et bac de son entité.
       mesdossiers: mine.filter((dossier) => !isLocked(dossier)).length,
       retard: mine.filter((dossier) => isLate(dossier, this.traitement.today)).length,
-      affectint: unassigned(this.traitement.entityDossiers()).length,
-      pool: unassigned(this.traitement.entityDossiers()).length,
+      affectint: this.traitement.bacDossiers().length,
+      pool: this.traitement.poolDossiers().length,
     };
   });
 }

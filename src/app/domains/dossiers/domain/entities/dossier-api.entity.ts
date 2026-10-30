@@ -9,7 +9,14 @@ import {
   produitLabelOf,
 } from '../dossier-catalog';
 import { entiteByCode, entites, labelOf, referentiel } from '../referentiel';
-import { Dossier, DossierData, DossierLog, EtatDossier, PieceJointe, RoutedDossier } from './dossier.entity';
+import {
+  Dossier,
+  DossierData,
+  DossierLog,
+  EtatDossier,
+  PieceJointe,
+  RoutedDossier,
+} from './dossier.entity';
 import { Etat } from './etat.entity';
 
 // ------------------------------------------------------------------ Réponses de l'API
@@ -142,6 +149,11 @@ const PRIORITE_OF: Record<ApiPriorite, Priorite> = {
   HAUTE: 'Haute',
   URGENTE: 'Urgente',
 };
+
+/** Code de statut de l'API pour un statut affiché. */
+export function statusCodeOf(status: Status): string {
+  return Object.entries(STATUS_OF_CODE).find(([, label]) => label === status)?.[0] ?? '';
+}
 
 /** Statut affiché pour un code de statut de l'API (dossier ou état). */
 export function statusOf(code: string): Status {
@@ -469,7 +481,8 @@ export function logsFromApi(historique: readonly ApiHistorique[]): DossierLog[] 
         label = evenement.commentaire || cible || evenement.typeEvenement;
     }
     const tone =
-      evenement.typeEvenement === 'CHANGEMENT_STATUT' && FINAL_OK.includes(evenement.statutCible ?? '')
+      evenement.typeEvenement === 'CHANGEMENT_STATUT' &&
+      FINAL_OK.includes(evenement.statutCible ?? '')
         ? 'success'
         : TONE_OF_EVENT[evenement.typeEvenement];
     return {
@@ -503,7 +516,9 @@ export function routedFromApi(detail: ApiDossierDetail, etatRef = ''): RoutedDos
   const reception = detail.historique.find((evenement) => evenement.typeEvenement === 'RECEPTION');
   const attribution = [...detail.historique]
     .reverse()
-    .find((evenement) => evenement.versUtilisateurId && evenement.versUtilisateurId === api.affecteAId);
+    .find(
+      (evenement) => evenement.versUtilisateurId && evenement.versUtilisateurId === api.affecteAId,
+    );
   return {
     ...dossierFromApi(api, detail.pieces),
     log: logs,
@@ -516,6 +531,7 @@ export function routedFromApi(detail: ApiDossierDetail, etatRef = ''): RoutedDos
     echeanceIso: api.echeance ?? '',
     delai: '',
     gest: attribution?.versUtilisateur ?? '',
+    gestId: api.affecteAId ?? undefined,
     gestAt: api.affecteLe ?? '',
     docsMissing: suspens?.piecesManquantes,
     docsReqAt: suspens?.demandeLe,

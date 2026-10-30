@@ -240,7 +240,9 @@ export class CreerEtatFacade {
       if (!confirmed) {
         return;
       }
-      if (!(await this.run(() => Promise.all(draft.map((dossier) => this.store.remove(dossier.id)))))) {
+      if (
+        !(await this.run(() => Promise.all(draft.map((dossier) => this.store.remove(dossier.id)))))
+      ) {
         return;
       }
     }
@@ -255,7 +257,11 @@ export class CreerEtatFacade {
     // Le produit suit le type : il reste s'il est proposé pour le nouveau type, sinon le premier est retenu.
     this.value.update((value) => {
       const produits = produitsOf(type);
-      return { ...value, type, produit: produits.includes(value.produit) ? value.produit : (produits[0] ?? '') };
+      return {
+        ...value,
+        type,
+        produit: produits.includes(value.produit) ? value.produit : (produits[0] ?? ''),
+      };
     });
     // Les erreurs des champs propres à l'ancien type n'ont plus d'objet.
     this.errors.update((errors) =>
@@ -464,7 +470,9 @@ export class CreerEtatFacade {
       return;
     }
 
-    const etats = await this.run(() => this.store.transmit(this.autoMode() ? null : (etatType?.id ?? null)));
+    const etats = await this.run(() =>
+      this.store.transmit(this.autoMode() ? null : (etatType?.id ?? null)),
+    );
     if (!etats?.length) {
       return;
     }

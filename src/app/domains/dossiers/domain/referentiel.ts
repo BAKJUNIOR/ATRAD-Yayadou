@@ -8,6 +8,7 @@ import {
   setTypeCatalog,
 } from './dossier-catalog';
 import { Entite, EntityCapability, EtatType } from './datasets';
+import type { ApiTransition } from './entities/dossier-api.entity';
 import type { MotifOption } from './entities/referentiel.entity';
 
 /** Circuit d'un type de dossier : type d'état qui le transmet et entité qui le traite. */
@@ -49,6 +50,8 @@ export interface Referentiel {
   typePieces: Record<DossierType, string[]>;
   typeOperations: Record<DossierType, ProduitOption[]>;
   motifsRetour: MotifOption[];
+  typeCircuits: Record<DossierType, string>;
+  workflows: Record<string, ApiTransition[]>;
 }
 
 export const NATURES = ['Agence', 'Service', 'Département', 'Direction', 'Cellule', 'Autre'];
@@ -81,6 +84,8 @@ export function defaultReferentiel(): Referentiel {
     typePieces: {},
     typeOperations: {},
     motifsRetour: [],
+    typeCircuits: {},
+    workflows: {},
   };
 }
 

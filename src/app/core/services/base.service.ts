@@ -28,26 +28,40 @@ export class BaseService {
 
   create<T>(endPoint: string, data?: unknown, options?: RequestOptions): Observable<T> {
     return this.unwrap(
-      this.http.post<ResponseWrapper<T>>(this.url(endPoint), data ?? null, { context: contextOf(options) }),
+      this.http.post<ResponseWrapper<T>>(this.url(endPoint), data ?? null, {
+        context: contextOf(options),
+      }),
     );
   }
 
   update<T>(endPoint: string, data?: unknown, options?: RequestOptions): Observable<T> {
     return this.unwrap(
-      this.http.put<ResponseWrapper<T>>(this.url(endPoint), data ?? null, { context: contextOf(options) }),
+      this.http.put<ResponseWrapper<T>>(this.url(endPoint), data ?? null, {
+        context: contextOf(options),
+      }),
     );
   }
 
   delete<T>(endPoint: string, options?: RequestOptions): Observable<T> {
-    return this.unwrap(this.http.delete<ResponseWrapper<T>>(this.url(endPoint), { context: contextOf(options) }));
+    return this.unwrap(
+      this.http.delete<ResponseWrapper<T>>(this.url(endPoint), { context: contextOf(options) }),
+    );
   }
 
   /** Envoi d'un fichier en multipart, dans le champ `fichier` attendu par le backend. */
-  upload<T>(method: 'POST' | 'PUT', endPoint: string, file: File, options?: RequestOptions): Observable<T> {
+  upload<T>(
+    method: 'POST' | 'PUT',
+    endPoint: string,
+    file: File,
+    options?: RequestOptions,
+  ): Observable<T> {
     const body = new FormData();
     body.append('fichier', file, file.name);
     return this.unwrap(
-      this.http.request<ResponseWrapper<T>>(method, this.url(endPoint), { body, context: contextOf(options) }),
+      this.http.request<ResponseWrapper<T>>(method, this.url(endPoint), {
+        body,
+        context: contextOf(options),
+      }),
     );
   }
 

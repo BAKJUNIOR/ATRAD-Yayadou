@@ -22,6 +22,9 @@ export const endpoints = {
   motifs: {
     base: 'api/v1/motifs',
   },
+  circuits: {
+    byCode: (code: string) => `api/v1/circuits/${code}`,
+  },
   brouillon: {
     base: 'api/v1/brouillon/dossiers',
     byId: (id: string) => `api/v1/brouillon/dossiers/${id}`,
@@ -40,6 +43,35 @@ export const endpoints = {
   retours: {
     base: 'api/v1/retours',
     renvoi: 'api/v1/retours/renvoi',
+  },
+  traitement: {
+    mesDossiers: 'api/v1/traitement/mes-dossiers',
+    pool: 'api/v1/traitement/pool',
+    bac: 'api/v1/traitement/bac',
+    recherche: 'api/v1/traitement/recherche',
+    dossier: (id: string) => `api/v1/traitement/dossiers/${id}`,
+    prendre: (id: string) => `api/v1/traitement/dossiers/${id}/prendre`,
+    affecter: (id: string) => `api/v1/traitement/dossiers/${id}/affecter`,
+    actions: (id: string) => `api/v1/traitement/dossiers/${id}/actions`,
+    demandeDocuments: (id: string) => `api/v1/traitement/dossiers/${id}/demande-documents`,
+    retour: (id: string) => `api/v1/traitement/dossiers/${id}/retour`,
+  },
+  repartition: {
+    byEntite: (entiteId: string) => `api/v1/entites/${entiteId}/repartition`,
+  },
+  pilotage: {
+    tableauDeBord: 'api/v1/pilotage/tableau-de-bord',
+    delais: 'api/v1/pilotage/delais',
+    agences: 'api/v1/pilotage/agences',
+  },
+  notifications: {
+    base: 'api/v1/notifications',
+    nonLues: 'api/v1/notifications/non-lues',
+    lue: (id: string) => `api/v1/notifications/${id}/lue`,
+    toutesLues: 'api/v1/notifications/lues',
+    /** Point de connexion WebSocket (STOMP) et file personnelle des notifications. */
+    socket: 'ws/websocket',
+    file: '/user/queue/notifications',
   },
   suivi: {
     agence: 'api/v1/suivi/agence',

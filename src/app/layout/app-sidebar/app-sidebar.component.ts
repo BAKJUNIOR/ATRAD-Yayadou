@@ -1,34 +1,17 @@
-import { Dialog } from '@angular/cdk/dialog';
 import { Location, NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
 import { HOME, NAVIGATION, NavMenu, ROLE_CAPABILITY } from '../../core/navigation/navigation';
-import { BrandService } from '../../core/services/brand.service';
-import { DemoClock } from '../../core/services/demo-clock.service';
-import { StorageService } from '../../core/services/storage.service';
-import { ThemeService } from '../../core/services/theme.service';
-import { ToastService } from '../../core/services/toast.service';
-import { formatDate } from '../../core/utils/date.util';
 import { SessionService } from '../../core/services/session.service';
 import { SidebarService } from '../../core/services/sidebar.service';
 import { initialsOf } from '../../core/utils/text.util';
 import { ReceptionContext } from '../../domains/accueil/presentation/reception-context.service';
-import { DatasetId } from '../../domains/dossiers/domain/datasets';
-import { hasCapability, labelOf, traitEntites } from '../../domains/dossiers/domain/referentiel';
+import { hasCapability } from '../../domains/dossiers/domain/referentiel';
 import { ReferentielStore } from '../../domains/dossiers/infrastructure/store/referentiel.store';
-import { PieceFileStore } from '../../domains/dossiers/infrastructure/store/piece-file.store';
-import { RoutingStore } from '../../domains/dossiers/infrastructure/store/routing.store';
-import { TransmissionStore } from '../../domains/dossiers/infrastructure/store/transmission.store';
-import { ProfileStore } from '../../domains/profile/infrastructure/store/profile.store';
 import { NavBadgesService } from '../../domains/notifications/nav-badges.service';
 import { TraitementContext } from '../../domains/traitement/presentation/traitement-context.service';
 import { BrandMarkComponent } from '../../shared/ui/brand-mark/brand-mark.component';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
-import {
-  ResetDemoDialogComponent,
-  ResetDemoDialogData,
-} from '../reset-demo-dialog/reset-demo-dialog.component';
 
 @Component({
   selector: 'app-sidebar',
@@ -40,41 +23,14 @@ export class AppSidebarComponent {
   private readonly router = inject(Router);
   private readonly location = inject(Location);
   protected readonly sidebar = inject(SidebarService);
-  private readonly clock = inject(DemoClock);
-  private readonly store = inject(TransmissionStore);
-  private readonly files = inject(PieceFileStore);
-  private readonly routing = inject(RoutingStore);
-  private readonly storage = inject(StorageService);
-  private readonly brand = inject(BrandService);
-  private readonly profiles = inject(ProfileStore);
-  private readonly theme = inject(ThemeService);
-  private readonly toast = inject(ToastService);
-  private readonly dialog = inject(Dialog);
   protected readonly badges = inject(NavBadgesService).counts;
 
   protected readonly account = this.session.account;
   protected readonly collapsed = this.sidebar.isCollapsed;
 
-  protected readonly traitement = inject(TraitementContext);
   private readonly referentiel = inject(ReferentielStore);
   private readonly reception = inject(ReceptionContext);
-  protected readonly isTraitement = computed(() => this.session.role() === 'traitement');
-
-  /** Entités proposées dans « Voir en tant que », avec leurs capacités. */
-  protected readonly entites = computed(() => {
-    this.referentiel.value();
-    return traitEntites().map((entite) => {
-      const caps = [
-        entite.emet && 'Émettrice',
-        entite.recep && 'Réceptrice',
-        entite.trait && 'Traitement',
-      ].filter(Boolean);
-      return {
-        name: labelOf(entite),
-        label: `${entite.nom} · ${caps.join(' + ')} · ${entite.code}`,
-      };
-    });
-  });
+  private readonly traitement = inject(TraitementContext);
 
   protected readonly menu = computed((): NavMenu | null => {
     this.referentiel.value();
@@ -116,16 +72,6 @@ export class AppSidebarComponent {
       ],
     };
   });
-
-  protected onEntite(event: Event): void {
-    this.traitement.setEntite((event.target as HTMLSelectElement).value);
-    void this.router.navigate(['/']);
-  }
-
-  protected onUser(event: Event): void {
-    this.traitement.setUser((event.target as HTMLSelectElement).value);
-    void this.router.navigate(['/']);
-  }
 
   protected readonly initials = computed(() => initialsOf(this.account()?.name ?? ''));
 
@@ -172,46 +118,6 @@ export class AppSidebarComponent {
         .filter((group) => group.children?.some((child) => url.startsWith(child.path!)))
         .map((group) => group.id),
     );
-  }
-
-  /** `Date de démo : 18/10/2026 (+6 j)` */
-  protected readonly demoDateLabel = computed(() => {
-    const offset = this.clock.offset();
-    return `Date de démo : ${formatDate(this.clock.today())}${offset ? ` (+${offset} j)` : ''}`;
-  });
-
-  protected advanceDay(): void {
-    this.clock.advance();
-    this.toast.info(`Date de démo : ${formatDate(this.clock.today())} — retards recalculés.`);
-  }
-
-  /**
-   * Efface les données de démo et recharge l'application avec le jeu de données choisi : tout
-   * le paramétrage (référentiel, routage, marque, thème) revient à celui de ce jeu.
-   */
-  protected async resetDemo(): Promise<void> {
-    const ref = this.dialog.open<DatasetId, ResetDemoDialogData>(ResetDemoDialogComponent, {
-      data: { current: this.referentiel.datasetId },
-      ariaLabel: 'Réinitialiser les données de démo',
-      backdropClass: 'app-dialog-backdrop',
-    });
-    const dataset = await firstValueFrom(ref.closed);
-    if (!dataset) {
-      return;
-    }
-    this.referentiel.chooseDataset(dataset);
-    this.store.reset();
-    // Effacé tout de suite : le rechargement n'attend pas l'enregistrement du store.
-    this.storage.remove('atrad_live_data_v1');
-    this.routing.reset();
-    this.referentiel.reset();
-    await this.files.clear().catch(() => undefined);
-    this.clock.reset();
-    this.storage.remove('atrad_notif_read_v1');
-    this.brand.reset();
-    this.profiles.reset();
-    this.theme.clearChoice();
-    location.assign('/');
   }
 
   protected closeDrawer(): void {

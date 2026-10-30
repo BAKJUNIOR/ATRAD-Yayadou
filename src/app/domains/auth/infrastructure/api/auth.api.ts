@@ -30,7 +30,10 @@ export class AuthApi {
       .pipe(
         switchMap(({ accessToken }) =>
           this.baseService
-            .getOne<Utilisateur>(this.moiEndpoints.base, undefined, { token: accessToken, silentErrors: true })
+            .getOne<Utilisateur>(this.moiEndpoints.base, undefined, {
+              token: accessToken,
+              silentErrors: true,
+            })
             .pipe(map((utilisateur) => ({ token: accessToken, account: accountOf(utilisateur) }))),
         ),
       );
@@ -40,7 +43,11 @@ export class AuthApi {
 function accountOf(utilisateur: Utilisateur): Account {
   const account = accountFromUtilisateur(utilisateur);
   if (!account) {
-    throw new ApiError(403, 'PROFIL_INCONNU', "Ce compte n'a aucun profil utilisable dans l'application.");
+    throw new ApiError(
+      403,
+      'PROFIL_INCONNU',
+      "Ce compte n'a aucun profil utilisable dans l'application.",
+    );
   }
   return account;
 }

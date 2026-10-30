@@ -9,7 +9,13 @@ import { etatInfo } from '../../../../dossiers/domain/referentiel';
 import { entityOf } from '../../../../dossiers/domain/routing';
 import { etatFromApi } from '../../../../dossiers/domain/entities/dossier-api.entity';
 import { EtatApi } from '../../../../dossiers/infrastructure/api/etat.api';
-import { SuiviDossier, receptionLabel, returnNotice, suiviDossierOf, timelineOf } from '../../../domain/suivi';
+import {
+  SuiviDossier,
+  receptionLabel,
+  returnNotice,
+  suiviDossierOf,
+  timelineOf,
+} from '../../../domain/suivi';
 import { SuiviAgenceApi } from '../../../infrastructure/api/suivi-agence.api';
 
 const RECEPTION_TEXT = { brand: 'text-brand-ink', danger: 'text-danger', warning: 'text-warning' };

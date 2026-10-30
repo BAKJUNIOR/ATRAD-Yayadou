@@ -1,96 +1,62 @@
 import { Service, computed, inject } from '@angular/core';
-import { SessionService } from '../../../core/services/session.service';
 import { DemoClock } from '../../../core/services/demo-clock.service';
-import { entityCode } from '../../../core/utils/text.util';
-import { entiteOf, normalizeEntity } from '../../dossiers/domain/referentiel';
-import {
-  ENTITES,
-  MODE_LABEL,
-  entitySettings,
-  functionsOf,
-  shortEntity,
-} from '../../dossiers/domain/routing';
-import { ReferentielStore } from '../../dossiers/infrastructure/store/referentiel.store';
-import { RoutingStore } from '../../dossiers/infrastructure/store/routing.store';
-import { TransmissionStore } from '../../dossiers/infrastructure/store/transmission.store';
+import { SessionService } from '../../../core/services/session.service';
+import { entityCode } from '../../dossiers/domain/referentiel';
+import { AssignmentMode, MODE_LABEL, shortEntity } from '../../dossiers/domain/routing';
+import { ApiModeRepartition } from '../infrastructure/api/traitement.api';
+import { TraitementStore } from '../infrastructure/store/traitement.store';
+
+const MODE_OF: Record<ApiModeRepartition, AssignmentMode> = {
+  AUTOMATIQUE: 'auto',
+  POOL: 'pool',
+  REPARTITEUR: 'disp',
+};
 
 /**
- * Point de vue de l'agent de traitement connecté : son entité, ses fonctions et le portefeuille
- * correspondant. Le sélecteur « Voir en tant que » change d'entité ou de membre pour la
- * démonstration ; il disparaîtra avec l'authentification réelle.
+ * Point de vue de l'agent de traitement connecté : son entité, ses droits et ses portefeuilles, lus dans l'API
+ * (`load()`).
  */
 @Service()
 export class TraitementContext {
   private readonly session = inject(SessionService);
-  private readonly store = inject(TransmissionStore);
-  private readonly routing = inject(RoutingStore);
-  private readonly referentiel = inject(ReferentielStore);
-
-  /** Réglages de l'entité, tels que paramétrés par l'administrateur. */
-  private readonly settings = computed(() => {
-    this.routing.config();
-    return entitySettings(this.entite());
-  });
-
+  private readonly store = inject(TraitementStore);
   private readonly clock = inject(DemoClock);
 
-  /** Date du jour (`yyyy-MM-dd`) ; suit la date de démonstration. */
+  /** Date du jour (`yyyy-MM-dd`). */
   get today(): string {
     return this.clock.today();
   }
 
-  /** Entité de l'agent ; à défaut de correspondance, la première du référentiel. */
-  readonly entite = computed(() => {
-    this.referentiel.value();
-    const entity = normalizeEntity(this.session.account()?.entity ?? '');
-    return ENTITES.some((candidate) => candidate.name === entity)
-      ? entity
-      : (ENTITES[0]?.name ?? entity);
-  });
+  /** Entité de l'agent, au format `Nom (CODE)`. */
+  readonly entite = computed(() => this.session.account()?.entity ?? '');
   readonly entiteShort = computed(() => shortEntity(this.entite()));
-  readonly team = computed(() => this.settings()?.team ?? []);
-
-  /** Membre de l'équipe incarné : l'utilisateur connecté s'il en fait partie, sinon le premier. */
-  readonly user = computed(() => {
-    const name = this.session.account()?.name ?? '';
-    return this.team().includes(name) ? name : (this.team()[0] ?? name);
-  });
+  readonly team = this.store.team;
+  readonly user = computed(() => this.session.account()?.name ?? '');
   /** Signature des opérations : `Fatou Bamba — ET-007`. */
   readonly signature = computed(() => `${this.user()} — ${entityCode(this.entite())}`);
 
-  readonly mode = computed(() => this.settings()?.mode ?? 'auto');
+  readonly mode = computed<AssignmentMode>(
+    () => MODE_OF[this.store.repartition()?.mode ?? 'AUTOMATIQUE'],
+  );
   readonly modeLabel = computed(() => MODE_LABEL[this.mode()]);
-  readonly functions = computed(() => {
-    this.settings();
-    return functionsOf(this.user(), this.entite());
-  });
+  readonly functions = this.store.functions;
 
-  /** Dossiers de l'entité, puis ceux du membre incarné. */
+  /** Tous les dossiers de l'entité pour le droit « Rechercher », sinon ceux de l'agent. */
   readonly entityDossiers = computed(() =>
-    this.store.dossiers().filter((dossier) => dossier.entite === this.entite()),
+    this.functions().rechercher ? this.store.entity() : this.store.mine(),
   );
-  readonly myDossiers = computed(() =>
-    this.entityDossiers().filter((dossier) => dossier.gest === this.user()),
-  );
+  readonly myDossiers = this.store.mine;
+  /** Dossiers en attente d'un gestionnaire : pool partagé ou bac du répartiteur. */
+  readonly poolDossiers = this.store.pool;
+  readonly bacDossiers = this.store.bac;
 
-  setEntite(entite: string): void {
-    this.impersonate(entite, entitySettings(entite)?.team[0] ?? this.user());
+  /** Recharge l'équipe et les portefeuilles ; une erreur est déjà signalée par l'intercepteur. */
+  load(): Promise<void> {
+    return this.store.load().catch(() => undefined);
   }
 
-  setUser(user: string): void {
-    this.impersonate(this.entite(), user);
-  }
-
-  private impersonate(entite: string, user: string): void {
-    const account = this.session.account();
-    if (!account) {
-      return;
-    }
-    this.session.impersonate({
-      ...account,
-      name: user,
-      entity: entite,
-      roleLabel: `${entiteOf(entite)?.recep ? 'Entité réceptrice + traitement' : 'Entité de traitement'} — ${shortEntity(entite)}`,
-    });
+  /** Attend que l'équipe et les droits soient lus (gardes des routes). */
+  ready(): Promise<void> {
+    return this.store.ready().catch(() => undefined);
   }
 }

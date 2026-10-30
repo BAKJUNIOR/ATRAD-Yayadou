@@ -2,7 +2,11 @@ import { Service, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../../environments/environment';
 import { BaseService } from '../../../../core/services/base.service';
-import { ApiDossier, ApiDossierBrouillon, ApiPieceJointe } from '../../domain/entities/dossier-api.entity';
+import {
+  ApiDossier,
+  ApiDossierBrouillon,
+  ApiPieceJointe,
+} from '../../domain/entities/dossier-api.entity';
 
 /** Brouillon de l'entité émettrice (dossiers au statut Temporaire) et pièces jointes des dossiers. */
 @Service()

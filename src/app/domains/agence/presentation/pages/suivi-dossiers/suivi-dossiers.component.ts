@@ -64,9 +64,12 @@ export class SuiviDossiersComponent {
     { initialValue: [] },
   );
   /** États émis par l'agence, pour l'impression de leur bordereau. */
-  private readonly etats = toSignal(this.etatApi.emis().pipe(map((etats) => etats.map(etatFromApi))), {
-    initialValue: [],
-  });
+  private readonly etats = toSignal(
+    this.etatApi.emis().pipe(map((etats) => etats.map(etatFromApi))),
+    {
+      initialValue: [],
+    },
+  );
   private readonly matching = computed(() =>
     this.all().filter((dossier) => matchesCriteria(dossier, this.applied())),
   );

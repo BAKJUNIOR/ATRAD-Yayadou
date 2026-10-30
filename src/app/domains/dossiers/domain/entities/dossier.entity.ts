@@ -98,6 +98,8 @@ export interface RoutedDossier extends Dossier {
   delai: string;
   /** Gestionnaire en charge ; vide tant que le dossier n'est pas pris en charge. */
   gest: string;
+  /** Identifiant (UUID) du gestionnaire en charge dans l'API. */
+  gestId?: string;
   gestAt: string;
   comments?: DossierComment[];
   validatedAt?: string;
