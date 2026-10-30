@@ -19,6 +19,16 @@ export interface ApiNotification {
   creeLe: string;
 }
 
+/**
+ * Message temps réel de la file `/user/queue/notifications` : nouvelle notification, notification lue, ou tout lu
+ * (`notification` absente), avec le nombre de non-lues calculé par le serveur.
+ */
+export interface EvenementNotification {
+  type: 'notification:new' | 'notification:read' | 'notification:read-all';
+  notification: ApiNotification | null;
+  nonLues: number;
+}
+
 /** Cloche des notifications de l'utilisateur connecté. */
 @Service()
 export class NotificationApi {

@@ -4,37 +4,48 @@ export interface StompMessage {
   body: string;
 }
 
+/** Réglages et rappels d'un client STOMP. */
+export interface StompOptions {
+  url: string;
+  /** En-têtes de la trame CONNECT, relus à chaque (re)connexion (jeton à jour). */
+  connectHeaders: () => Record<string, string>;
+  destination: string;
+  onMessage: (message: StompMessage) => void;
+  /** Connexion établie et abonnement fait : l'appelant peut rattraper ce qui a été manqué. */
+  onConnected?: () => void;
+  /** Connexion perdue, ou refusée par le serveur. */
+  onDisconnected?: (refused: boolean) => void;
+  /** Tentatives de reconnexion avant d'abandonner (10 par défaut). */
+  maxAttempts?: number;
+  /** Premier délai de reconnexion, doublé à chaque échec jusqu'à 30 s (2 s par défaut). */
+  retryMs?: number;
+}
+
 const NUL = '\u0000';
+const MAX_DELAY_MS = 30_000;
 
 /**
- * Client STOMP 1.2 minimal sur le WebSocket du navigateur : connexion avec en-têtes (jeton), un abonnement, lecture
- * des messages. Suffisant pour la file de notifications du backend (Spring, transport WebSocket de SockJS) sans
- * dépendance supplémentaire. Se reconnecte tout seul tant que `stop()` n'a pas été appelé.
+ * Client STOMP 1.2 minimal sur le WebSocket du navigateur, sans dépendance : connexion avec en-têtes (jeton), un
+ * abonnement, lecture des messages. Reconnexion bornée et progressive, comme le client Socket.IO d'ATHL ; une
+ * trame `ERROR` du serveur (jeton refusé) arrête les tentatives.
  */
 export class StompClient {
   private socket: WebSocket | null = null;
   private stopped = false;
+  private attempts = 0;
   private retry: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(
-    private readonly url: string,
-    private readonly connectHeaders: () => Record<string, string>,
-    private readonly destination: string,
-    private readonly onMessage: (message: StompMessage) => void,
-    private readonly retryMs = 10_000,
-  ) {}
+  constructor(private readonly options: StompOptions) {}
 
   start(): void {
     this.stopped = false;
+    this.attempts = 0;
     this.open();
   }
 
   stop(): void {
     this.stopped = true;
-    if (this.retry) {
-      clearTimeout(this.retry);
-      this.retry = null;
-    }
+    this.clearRetry();
     if (this.socket?.readyState === WebSocket.OPEN) {
       this.socket.send(frame('DISCONNECT', {}));
     }
@@ -45,7 +56,7 @@ export class StompClient {
   private open(): void {
     let socket: WebSocket;
     try {
-      socket = new WebSocket(this.url);
+      socket = new WebSocket(this.options.url);
     } catch {
       this.scheduleRetry();
       return;
@@ -53,38 +64,55 @@ export class StompClient {
     this.socket = socket;
     socket.onopen = () =>
       socket.send(
-        frame('CONNECT', {
-          'accept-version': '1.2',
-          'heart-beat': '0,0',
-          ...this.connectHeaders(),
-        }),
+        frame('CONNECT', { 'accept-version': '1.2', 'heart-beat': '0,0', ...this.options.connectHeaders() }),
       );
     socket.onmessage = (event) => {
       for (const raw of String(event.data).split(NUL)) {
         const parsed = parse(raw);
         if (parsed?.command === 'CONNECTED') {
-          socket.send(frame('SUBSCRIBE', { id: 'sub-0', destination: this.destination }));
+          socket.send(frame('SUBSCRIBE', { id: 'sub-0', destination: this.options.destination }));
+          this.attempts = 0;
+          this.options.onConnected?.();
         } else if (parsed?.command === 'MESSAGE') {
-          this.onMessage({ headers: parsed.headers, body: parsed.body });
+          this.options.onMessage({ headers: parsed.headers, body: parsed.body });
+        } else if (parsed?.command === 'ERROR') {
+          // Connexion refusée (jeton invalide ou expiré) : inutile d'insister.
+          this.stopped = true;
+          this.options.onDisconnected?.(true);
+          socket.close();
         }
       }
     };
     socket.onclose = () => {
       if (this.socket === socket) {
         this.socket = null;
-        this.scheduleRetry();
+        if (!this.stopped) {
+          this.options.onDisconnected?.(false);
+          this.scheduleRetry();
+        }
       }
     };
   }
 
   private scheduleRetry(): void {
-    if (!this.stopped && !this.retry) {
-      this.retry = setTimeout(() => {
-        this.retry = null;
-        if (!this.stopped) {
-          this.open();
-        }
-      }, this.retryMs);
+    const max = this.options.maxAttempts ?? 10;
+    if (this.stopped || this.retry || this.attempts >= max) {
+      return;
+    }
+    const delay = Math.min(MAX_DELAY_MS, (this.options.retryMs ?? 2000) * 2 ** this.attempts);
+    this.attempts++;
+    this.retry = setTimeout(() => {
+      this.retry = null;
+      if (!this.stopped) {
+        this.open();
+      }
+    }, delay);
+  }
+
+  private clearRetry(): void {
+    if (this.retry) {
+      clearTimeout(this.retry);
+      this.retry = null;
     }
   }
 }
@@ -94,9 +122,7 @@ function frame(command: string, headers: Record<string, string>, body = ''): str
   return `${command}\n${lines.join('\n')}\n\n${body}${NUL}`;
 }
 
-function parse(
-  raw: string,
-): { command: string; headers: Record<string, string>; body: string } | null {
+function parse(raw: string): { command: string; headers: Record<string, string>; body: string } | null {
   const text = raw.replace(/^\n+/, '');
   if (!text) {
     return null;

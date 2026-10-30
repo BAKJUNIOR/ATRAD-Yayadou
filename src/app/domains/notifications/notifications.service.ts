@@ -5,7 +5,11 @@ import { AppConfigService } from '../../core/services/app-config.service';
 import { SessionService } from '../../core/services/session.service';
 import { formatStamp } from '../../core/utils/date.util';
 import { Role } from '../auth/domain/entities/account.entity';
-import { ApiNotification, NotificationApi } from './infrastructure/api/notification.api';
+import {
+  ApiNotification,
+  EvenementNotification,
+  NotificationApi,
+} from './infrastructure/api/notification.api';
 
 export type NotificationTone = 'info' | 'warn' | 'danger';
 
@@ -25,9 +29,14 @@ const TONE: Record<ApiNotification['niveau'], NotificationTone> = {
   DANGER: 'danger',
 };
 
+/** État de la connexion temps réel. */
+export type RealtimeState = 'off' | 'connecting' | 'live' | 'refused';
+
 /**
- * Notifications de l'utilisateur connecté, tenues par l'API : la liste est lue à l'ouverture de la session, puis
- * chaque nouvelle notification arrive en temps réel (WebSocket STOMP, file `/user/queue/notifications`).
+ * Notifications de l'utilisateur connecté, tenues par l'API : la liste et le nombre de non-lues sont lus à
+ * l'ouverture de la session, puis tenus à jour en temps réel (WebSocket STOMP, file `/user/queue/notifications`).
+ * Le serveur signale les nouvelles notifications, les lectures et « tout lu », avec le nombre de non-lues : tous
+ * les onglets de l'utilisateur restent alignés. À chaque reconnexion, liste et compteur sont relus.
  */
 @Service()
 export class NotificationsService {
@@ -37,6 +46,7 @@ export class NotificationsService {
 
   private readonly list = signal<ApiNotification[]>([]);
   private readonly unread = signal(0);
+  private readonly state = signal<RealtimeState>('off');
   private socket: StompClient | null = null;
 
   readonly items = computed<AppNotification[]>(() => {
@@ -52,6 +62,7 @@ export class NotificationsService {
   });
 
   readonly unreadCount = this.unread.asReadonly();
+  readonly realtime = this.state.asReadonly();
 
   constructor() {
     effect(() => {
@@ -66,9 +77,7 @@ export class NotificationsService {
       return;
     }
     this.api.marquerLue(id).subscribe(() => {
-      this.list.update((list) =>
-        list.map((item) => (item.id === id ? { ...item, lu: true } : item)),
-      );
+      this.setRead(id);
       this.unread.update((count) => Math.max(0, count - 1));
     });
   }
@@ -81,38 +90,76 @@ export class NotificationsService {
   }
 
   private open(): void {
-    this.api.liste().subscribe((page) => this.list.set(page.content));
-    this.api.nonLues().subscribe(({ nonLues }) => this.unread.set(nonLues));
+    this.refresh();
     this.socket?.stop();
-    this.socket = new StompClient(
-      this.socketUrl(),
-      () => ({ Authorization: `Bearer ${this.session.token() ?? ''}` }),
-      environment.endpoints.notifications.file,
-      (message) => this.receive(message.body),
-    );
+    this.state.set('connecting');
+    let first = true;
+    this.socket = new StompClient({
+      url: this.socketUrl(),
+      connectHeaders: () => ({ Authorization: `Bearer ${this.session.token() ?? ''}` }),
+      destination: environment.endpoints.notifications.file,
+      onMessage: (message) => this.receive(message.body),
+      onConnected: () => {
+        this.state.set('live');
+        // Rattrapage de ce qui est arrivé pendant la coupure.
+        if (!first) {
+          this.refresh();
+        }
+        first = false;
+      },
+      onDisconnected: (refused) => this.state.set(refused ? 'refused' : 'connecting'),
+    });
     this.socket.start();
   }
 
   private close(): void {
     this.socket?.stop();
     this.socket = null;
+    this.state.set('off');
     this.list.set([]);
     this.unread.set(0);
   }
 
+  private refresh(): void {
+    this.api.liste().subscribe((page) => this.list.set(page.content));
+    this.api.nonLues().subscribe(({ nonLues }) => this.unread.set(nonLues));
+  }
+
   private receive(body: string): void {
+    let event: EvenementNotification;
     try {
-      const notification = JSON.parse(body) as ApiNotification;
-      this.list.update((list) => [
-        notification,
-        ...list.filter((item) => item.id !== notification.id),
-      ]);
-      if (!notification.lu) {
-        this.unread.update((count) => count + 1);
-      }
+      event = JSON.parse(body) as EvenementNotification;
     } catch {
-      // Message illisible : ignoré.
+      return; // Message illisible : ignoré.
     }
+    const notification = event.notification;
+    switch (event.type) {
+      case 'notification:new':
+        if (notification) {
+          this.list.update((list) => [
+            notification,
+            ...list.filter((item) => item.id !== notification.id),
+          ]);
+        }
+        break;
+      case 'notification:read':
+        if (notification) {
+          this.setRead(notification.id);
+        }
+        break;
+      case 'notification:read-all':
+        this.list.update((list) => list.map((item) => ({ ...item, lu: true })));
+        break;
+      default:
+        return;
+    }
+    this.unread.set(event.nonLues);
+  }
+
+  private setRead(id: string): void {
+    this.list.update((list) =>
+      list.map((item) => (item.id === id ? { ...item, lu: true } : item)),
+    );
   }
 
   /** `ws(s)://` sur l'adresse de l'API, ou sur l'origine du front quand elle est vide (proxy). */
