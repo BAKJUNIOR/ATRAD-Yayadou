@@ -1,7 +1,9 @@
 import { DialogRef } from '@angular/cdk/dialog';
 import { Component, computed, inject, signal } from '@angular/core';
+import { apiErrorMessage } from '../../../../../core/utils/api-error.util';
 import { DialogHeadComponent } from '../../../../../shared/ui/dialog-head/dialog-head.component';
 import { PASSWORD_MIN_LENGTH, PasswordChange, passwordErrors } from '../../../domain/profile.rules';
+import { ProfileApi } from '../../../infrastructure/api/profile.api';
 
 const FIELDS: { key: keyof PasswordChange; label: string; autocomplete: string }[] = [
   { key: 'current', label: 'Mot de passe actuel', autocomplete: 'current-password' },
@@ -9,7 +11,7 @@ const FIELDS: { key: keyof PasswordChange; label: string; autocomplete: string }
   { key: 'confirmation', label: 'Confirmer le nouveau mot de passe', autocomplete: 'new-password' },
 ];
 
-/** Saisie d'un nouveau mot de passe ; se ferme sur `true` quand la saisie est valide. */
+/** Changement du mot de passe, enregistré par l'API ; se ferme sur `true` une fois le mot de passe changé. */
 @Component({
   selector: 'app-password-dialog',
   imports: [DialogHeadComponent],
@@ -34,9 +36,17 @@ const FIELDS: { key: keyof PasswordChange; label: string; autocomplete: string }
         }
       </label>
     }
+    @if (serverError(); as error) {
+      <p class="form-error" role="alert">{{ error }}</p>
+    }
     <div class="dialog-actions">
       <button type="button" class="dialog-cancel" (click)="dialogRef.close()">Annuler</button>
-      <button type="button" class="dialog-confirm bg-brand hover:bg-brand-dark" (click)="submit()">
+      <button
+        type="button"
+        class="dialog-confirm bg-brand hover:bg-brand-dark"
+        [disabled]="pending()"
+        (click)="submit()"
+      >
         Changer le mot de passe
       </button>
     </div>
@@ -44,6 +54,9 @@ const FIELDS: { key: keyof PasswordChange; label: string; autocomplete: string }
 })
 export class PasswordDialogComponent {
   protected readonly dialogRef = inject<DialogRef<boolean>>(DialogRef);
+  private readonly api = inject(ProfileApi);
+  protected readonly serverError = signal('');
+  protected readonly pending = signal(false);
 
   protected readonly fields = FIELDS;
   protected readonly minLength = PASSWORD_MIN_LENGTH;
@@ -64,8 +77,18 @@ export class PasswordDialogComponent {
 
   protected submit(): void {
     this.submitted.set(true);
-    if (!Object.keys(this.errors()).length) {
-      this.dialogRef.close(true);
+    this.serverError.set('');
+    if (Object.keys(this.errors()).length || this.pending()) {
+      return;
     }
+    const { current, next, confirmation } = this.change();
+    this.pending.set(true);
+    this.api.changerMotDePasse(current, next, confirmation).subscribe({
+      next: () => this.dialogRef.close(true),
+      error: (error: unknown) => {
+        this.pending.set(false);
+        this.serverError.set(apiErrorMessage(error));
+      },
+    });
   }
 }

@@ -1,7 +1,7 @@
 import { Status } from '../../../../shared/models/status';
 import { EtatDossier } from './dossier.entity';
 
-/** Trace d'un pointage de réception par l'Accueil. */
+/** Trace d'un pointage de réception par l'entité réceptrice. */
 export interface ReceptionLog {
   at: string;
   by: string;
@@ -17,8 +17,10 @@ export interface EtatPrint {
   by: string;
 }
 
-/** État de transmission : lot de dossiers émis par une agence vers l'Accueil central. */
+/** État de transmission : lot de dossiers émis par une entité vers une entité réceptrice. */
 export interface Etat {
+  /** Identifiant (UUID) de l'état dans l'API. */
+  id?: string;
   ref: string;
   agence: string;
   /** Code de l'agence émettrice (ex. `AG-014`). */
@@ -31,8 +33,16 @@ export interface Etat {
   receivedAt: string;
   receivedBy?: string;
   emetteur: string;
+  /** Type d'état (`TE-01`) et son nom au moment de l'envoi. */
+  etType?: string;
+  etTypeNom?: string;
+  /** Code de l'entité réceptrice ; absent des états antérieurs aux types d'état. */
+  recep?: string;
+  /** Entité réceptrice : `Accueil central (EC-001)`. */
   dest: string;
   dossiers: EtatDossier[];
+  /** Nombre de dossiers de l'état, connu même quand `dossiers` n'est pas chargé (listes). */
+  count?: number;
   prints: EtatPrint[];
   recLog?: ReceptionLog[];
 }

@@ -22,6 +22,8 @@ export interface Brand {
   radius: number;
   /** Mode sombre pour les utilisateurs qui n'ont pas encore choisi eux-mêmes. */
   darkDefault: boolean;
+  /** Mots qui remplacent « Tiers » et « Dossier » dans toute l'application. */
+  vocab: { tiers: string; dossier: string };
 }
 
 export type BrandLogoKey = 'logoFull' | 'logoIcon' | 'favicon';
@@ -47,9 +49,9 @@ export const FONT_QUERY: Partial<Record<BrandFont, string>> = {
 };
 
 export const BRAND_DEFAULT: Brand = {
-  appName: 'ATRAD',
-  shortName: 'ATRAD',
-  org: 'YAYADOU',
+  appName: 'YDXTrace — Démo',
+  shortName: 'YDXTrace',
+  org: '',
   logoFull: '',
   logoIcon: '',
   favicon: '',
@@ -64,6 +66,7 @@ export const BRAND_DEFAULT: Brand = {
   font: 'Geist',
   radius: 10,
   darkDefault: false,
+  vocab: { tiers: 'Tiers', dossier: 'Dossier' },
 };
 
 export interface Palette {
@@ -81,7 +84,7 @@ export interface Palette {
 export const PALETTES: Palette[] = [
   {
     id: 'atrad',
-    label: 'ATRAD (défaut)',
+    label: 'Par défaut',
     primary: '#0F6E70',
     primaryDark: '#0A5254',
     accent: '#8CCFD0',

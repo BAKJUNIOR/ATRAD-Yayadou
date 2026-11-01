@@ -7,10 +7,10 @@
         </h2>
         <p class="text-[13.5px] text-pretty text-ink-muted">{{ dashboard.subline }}</p>
       </div>
-      <a class="btn-primary" [routerLink]="primaryPath()">
+      <button type="button" class="btn-primary" (click)="openPrimary()">
         <app-icon [name]="primaryIcon()" [size]="16" [strokeWidth]="2.2" />
         {{ dashboard.primaryLabel }}
-      </a>
+      </button>
     </div>
 
     <div class="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-3.5">
@@ -122,30 +122,6 @@
               </li>
             }
           </ol>
-        </section>
-
-        <section class="flex flex-col gap-2.5 rounded-brand bg-navy p-[18px] text-side">
-          <h2 class="text-[14px] font-semibold text-white">Changer de rôle</h2>
-          <p class="text-[12px] text-side-muted">
-            Pour la démonstration, basculez d'un profil à l'autre sans vous reconnecter.
-          </p>
-          <div class="flex flex-wrap gap-[7px] pt-1">
-            @for (account of demoAccounts; track account.ident) {
-              <button
-                type="button"
-                class="rounded-full border px-[11px] py-1.5 text-[12px] transition-colors hover:bg-white/14"
-                [class]="
-                  account.role === role()
-                    ? 'border-brand-mid bg-brand-mid text-brand-on-mid hover:bg-brand-mid'
-                    : 'border-white/20 text-side'
-                "
-                [attr.aria-pressed]="account.role === role()"
-                (click)="switchTo(account)"
-              >
-                {{ roleShort[account.role] }}
-              </button>
-            }
-          </div>
         </section>
       </div>
     </div>

@@ -189,7 +189,7 @@
             @let dossier = row.dossier;
             <tr
               class="portfolio-grid cursor-pointer items-center border-b border-soft px-5 py-[13px] transition-colors hover:bg-subtle"
-              (click)="open(dossier.ref)"
+              (click)="open(dossier.id)"
             >
               <td class="font-mono text-[12.5px] whitespace-nowrap text-brand-ink">
                 {{ dossier.ref }}
@@ -245,7 +245,7 @@
                     cdkMenu
                     class="flex w-[260px] animate-enter flex-col gap-0.5 rounded-brand border border-line bg-card p-1.5 shadow-[0_12px_32px_-8px_rgba(16,24,40,0.28),0_2px_6px_rgba(16,24,40,0.08)]"
                   >
-                    <button type="button" cdkMenuItem class="menu-item" (click)="open(dossier.ref)">
+                    <button type="button" cdkMenuItem class="menu-item" (click)="open(dossier.id)">
                       <app-icon name="eye" class="text-brand-ink" [size]="15" />
                       <span>Consulter</span>
                     </button>
@@ -255,7 +255,7 @@
                       class="menu-item"
                       [cdkMenuItemDisabled]="!!row.assignDisabledReason"
                       [attr.title]="row.assignDisabledReason || null"
-                      (click)="open(dossier.ref)"
+                      (click)="open(dossier.id)"
                     >
                       <app-icon name="user-plus" class="text-info" [size]="15" />
                       <span>Affecter au gestionnaire</span>

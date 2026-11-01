@@ -5,8 +5,7 @@ import { isoDateToFr } from '../../../../../core/utils/date.util';
 import { Priorite } from '../../../../dossiers/domain/dossier-catalog';
 import { RoutedDossier } from '../../../../dossiers/domain/entities/dossier.entity';
 import { DELAI_PRIORITE } from '../../../../dossiers/domain/routing';
-import { TransmissionStore } from '../../../../dossiers/infrastructure/store/transmission.store';
-import { unassigned } from '../../../domain/portfolio';
+import { TraitementStore } from '../../../infrastructure/store/traitement.store';
 import { TraitementContext } from '../../traitement-context.service';
 
 const PRIORITY_TEXT: Record<Priorite, string> = {
@@ -22,7 +21,7 @@ const PRIORITY_TEXT: Record<Priorite, string> = {
   templateUrl: './pool.component.html',
 })
 export class PoolComponent {
-  private readonly store = inject(TransmissionStore);
+  private readonly store = inject(TraitementStore);
   private readonly toast = inject(ToastService);
   protected readonly context = inject(TraitementContext);
 
@@ -31,7 +30,7 @@ export class PoolComponent {
 
   /** Dossiers sans gestionnaire, les plus prioritaires puis les plus anciens d'abord. */
   protected readonly rows = computed(() =>
-    unassigned(this.context.entityDossiers()).sort(
+    [...this.context.poolDossiers()].sort(
       (a, b) =>
         DELAI_PRIORITE[a.prio] - DELAI_PRIORITE[b.prio] || a.affecte.localeCompare(b.affecte),
     ),
@@ -41,12 +40,12 @@ export class PoolComponent {
     return `${count} dossier${count > 1 ? 's' : ''} en attente`;
   });
 
-  protected take(dossier: RoutedDossier): void {
-    const result = this.store.take(dossier.id, this.context.user());
-    if (result.ok) {
-      this.toast.success(result.message);
-    } else {
-      this.toast.warning(result.message);
+  protected async take(dossier: RoutedDossier): Promise<void> {
+    try {
+      await this.store.take(dossier.id);
+    } catch {
+      return;
     }
+    this.toast.success(`Dossier ${dossier.ref} pris en charge : il est dans « Mes dossiers ».`);
   }
 }

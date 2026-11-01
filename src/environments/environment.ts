@@ -1,8 +1,12 @@
+import { endpoints } from './endpoints';
+
 /**
- * Environnement local.
- * Les endpoints seront ajoutés ici, domaine par domaine, au moment du branchement de l'API.
+ * Environnement local. `baseUrl` vide : les appels partent vers `/api` et `/ws` sur l'origine du front, et
+ * `ng serve` les relaie vers le backend local (`proxy.conf.json`).
  */
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:8080',
+  name: 'local',
+  baseUrl: '',
+  endpoints,
 };

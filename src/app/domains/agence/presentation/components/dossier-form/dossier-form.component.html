@@ -1,6 +1,8 @@
 @let value = facade.value();
 @let errors = facade.errors();
 @let editing = facade.editing();
+@let labels = facade.labels;
+@let etatType = facade.etatType();
 
 <section class="panel overflow-hidden" aria-labelledby="dossier-form-title">
   <header class="border-b border-line px-5 py-4">
@@ -30,22 +32,66 @@
 
   <form class="flex flex-col gap-3 px-[18px] py-4" novalidate (submit)="submit($event)">
     <div class="flex flex-col gap-2.5">
-      <app-form-field label="Type de dossier *">
+      @if (!facade.autoMode()) {
+        <label class="form-label flex flex-col gap-1">
+          Type d'état de transmission *
+          <select class="form-control" (change)="onEtatType($event)">
+            @for (option of facade.etatTypes(); track option.id) {
+              <option [value]="option.id" [selected]="option.id === etatType?.id">
+                {{ option.nom }}
+              </option>
+            }
+          </select>
+          <span
+            class="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12px] font-normal text-ink-muted"
+          >
+            <app-icon name="arrow-right" [size]="12" [strokeWidth]="2.2" />
+            Réceptionné par :
+            <strong class="font-semibold whitespace-nowrap text-ink">{{ recepLine() }}</strong>
+          </span>
+        </label>
+      } @else {
+        <p
+          class="rounded-control border border-line bg-subtle px-[11px] py-2 text-[12px] leading-[1.45] text-ink-secondary"
+        >
+          Génération automatique : à la validation, un état est créé par type d'état (une
+          destination par état).
+        </p>
+      }
+      @if (!facade.etatTypes().length) {
+        <p role="alert" class="text-[12px] font-medium text-danger">
+          Aucun type d'état n'autorise votre entité à émettre. Contactez l'administrateur.
+        </p>
+      }
+
+      <label class="form-label flex flex-col gap-1">
+        {{ labels.type }} *
+        @if (facade.typeSearchOn()) {
+          <input
+            type="search"
+            class="form-control bg-subtle px-2.5 py-[7px] text-[12.5px]"
+            placeholder="Rechercher dans la liste…"
+            aria-label="Rechercher dans la liste"
+            [value]="facade.typeQuery()"
+            (input)="onTypeQuery($event)"
+          />
+        }
         <select class="form-control" (change)="onType($event)">
-          @for (type of types; track type) {
+          @for (type of facade.typeOptions(); track type) {
             <option [value]="type" [selected]="type === value.type">{{ type }}</option>
           }
         </select>
-      </app-form-field>
+      </label>
 
-      <app-form-field label="Numéro client *" [error]="errors['client'] ?? ''">
+      <app-form-field [label]="labels.client + ' *'" [error]="errors['client'] ?? ''">
         <input
           type="text"
-          inputmode="numeric"
+          [attr.inputmode]="labels.clientRule === 'digits12' ? 'numeric' : 'text'"
           autocomplete="off"
-          class="form-control font-mono"
-          placeholder="12 chiffres, ex. 000123456789"
-          [attr.maxlength]="clientLength"
+          class="form-control"
+          [class.font-mono]="labels.clientRule !== 'objet'"
+          [placeholder]="labels.clientPlaceholder"
+          [attr.maxlength]="labels.clientMax"
           [value]="value.client"
           [attr.aria-invalid]="!!errors['client']"
           (input)="onText('client', $event)"
@@ -53,20 +99,30 @@
         />
       </app-form-field>
 
-      <app-form-field label="Prénom du client" [error]="errors['prenom'] ?? ''">
-        <input
-          type="text"
-          autocomplete="off"
-          class="form-control"
-          placeholder="Prénom"
-          [value]="value.prenom"
-          [attr.aria-invalid]="!!errors['prenom']"
-          (input)="onText('prenom', $event)"
-          (blur)="facade.validateField('prenom')"
-        />
-      </app-form-field>
+      @if (labels.showPrenom) {
+        <app-form-field
+          [label]="labels.prenom + (labels.identityRequired ? ' *' : '')"
+          [error]="errors['prenom'] ?? ''"
+        >
+          <input
+            type="text"
+            autocomplete="off"
+            class="form-control"
+            placeholder="Prénom"
+            [value]="value.prenom"
+            [attr.aria-invalid]="!!errors['prenom']"
+            (input)="onText('prenom', $event)"
+            (blur)="facade.validateField('prenom')"
+          />
+        </app-form-field>
+      }
 
-      <app-form-field label="Nom du client" [error]="errors['nom'] ?? ''">
+      <app-form-field
+        [label]="
+          labels.nom + (labels.identityRequired || labels.clientRule === 'objet' ? ' *' : '')
+        "
+        [error]="errors['nom'] ?? ''"
+      >
         <input
           type="text"
           autocomplete="off"
@@ -79,34 +135,47 @@
         />
       </app-form-field>
 
-      <app-form-field label="N° de compte" [error]="errors['compte'] ?? ''">
-        <input
-          type="text"
-          autocomplete="off"
-          class="form-control font-mono"
-          placeholder="CPT-0000000"
-          [value]="value.compte"
-          [attr.aria-invalid]="!!errors['compte']"
-          (input)="onText('compte', $event)"
-          (blur)="facade.validateField('compte')"
-        />
-      </app-form-field>
+      @if (labels.showCompte) {
+        <app-form-field
+          [label]="labels.compte + (labels.identityRequired ? ' *' : '')"
+          [error]="errors['compte'] ?? ''"
+        >
+          <input
+            type="text"
+            autocomplete="off"
+            class="form-control font-mono"
+            [placeholder]="labels.comptePlaceholder"
+            [value]="value.compte"
+            [attr.aria-invalid]="!!errors['compte']"
+            (input)="onText('compte', $event)"
+            (blur)="facade.validateField('compte')"
+          />
+        </app-form-field>
+      }
 
-      <app-form-field label="Type de produit *">
-        <select class="form-control" (change)="onProduit($event)">
-          @for (produit of produits; track produit) {
-            <option [value]="produit" [selected]="produit === value.produit">{{ produit }}</option>
-          }
-        </select>
-      </app-form-field>
+      @if (labels.showProduit) {
+        <app-form-field [label]="labels.produit + ' *'">
+          <select class="form-control" (change)="onProduit($event)">
+            @for (produit of produits(); track produit) {
+              <option [value]="produit" [selected]="produit === value.produit">
+                {{ produit }}
+              </option>
+            }
+          </select>
+        </app-form-field>
+      }
 
-      <app-form-field label="Priorité">
-        <select class="form-control" (change)="onPriorite($event)">
-          @for (priorite of priorites; track priorite) {
-            <option [value]="priorite" [selected]="priorite === value.prio">{{ priorite }}</option>
-          }
-        </select>
-      </app-form-field>
+      @if (labels.showPrio) {
+        <app-form-field label="Priorité">
+          <select class="form-control" (change)="onPriorite($event)">
+            @for (priorite of priorites; track priorite) {
+              <option [value]="priorite" [selected]="priorite === value.prio">
+                {{ priorite }}
+              </option>
+            }
+          </select>
+        </app-form-field>
+      }
 
       @for (field of facade.typeFields(); track field.key) {
         <app-form-field

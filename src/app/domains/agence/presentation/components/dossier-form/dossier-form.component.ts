@@ -1,18 +1,18 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormFieldComponent } from '../../../../../shared/ui/form-field/form-field.component';
 import { IconComponent } from '../../../../../shared/ui/icon/icon.component';
 import {
-  DOSSIER_TYPES,
   DossierType,
   PRIORITES,
-  PRODUITS,
   Priorite,
   Produit,
   TypeField,
+  produitsOf,
 } from '../../../../dossiers/domain/dossier-catalog';
 import { fileSizeLabel } from '../../../../dossiers/domain/piece.rules';
 import { PieceOpener } from '../../../../dossiers/presentation/piece-opener.service';
-import { BaseFieldKey, CLIENT_NUMBER_LENGTH } from '../../../domain/dossier-form.rules';
+import { entityLabel } from '../../../../dossiers/domain/referentiel';
+import { BaseFieldKey } from '../../../domain/dossier-form.rules';
 import { CreerEtatFacade } from '../../creer-etat.facade';
 
 /** Saisie ou modification d'un dossier de l'état en cours de constitution. */
@@ -25,18 +25,36 @@ export class DossierFormComponent {
   protected readonly facade = inject(CreerEtatFacade);
   protected readonly pieceOpener = inject(PieceOpener);
 
-  protected readonly types = DOSSIER_TYPES;
-  protected readonly produits = PRODUITS;
+  /** Produits du type de dossier choisi. */
+  protected readonly produits = computed(() => produitsOf(this.facade.value().type));
   protected readonly priorites = PRIORITES;
-  protected readonly clientLength = CLIENT_NUMBER_LENGTH;
   protected readonly sizeLabel = fileSizeLabel;
 
   protected readonly dragging = signal(false);
+
+  /** Entité réceptrice du type d'état choisi. */
+  protected readonly recepLine = computed(() => {
+    const etatType = this.facade.etatType();
+    return etatType ? entityLabel(etatType.recep) : '—';
+  });
 
   protected onText(key: BaseFieldKey | 'note', event: Event): void {
     const control = event.target as HTMLInputElement | HTMLTextAreaElement;
     // Réécrit la valeur retenue : le n° client n'accepte que des chiffres.
     control.value = this.facade.setText(key, control.value);
+  }
+
+  protected onEtatType(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const previous = this.facade.etatType()?.id ?? '';
+    void this.facade.setEtatType(select.value).then(() => {
+      // Changement refusé : la liste revient au type d'état conservé.
+      select.value = this.facade.etatType()?.id ?? previous;
+    });
+  }
+
+  protected onTypeQuery(event: Event): void {
+    this.facade.setTypeQuery((event.target as HTMLInputElement).value);
   }
 
   protected onType(event: Event): void {

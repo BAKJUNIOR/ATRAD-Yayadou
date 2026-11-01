@@ -11,7 +11,7 @@
         (change)="onEntite($event)"
       >
         <option value="" [selected]="!entite()">Toutes les entités</option>
-        @for (option of entites; track option.name) {
+        @for (option of entites(); track option.name) {
           <option [value]="option.name" [selected]="option.name === entite()">
             {{ option.name }}
           </option>
