@@ -1,0 +1,17 @@
+# Déploiement sur le VPS (utilisé par .github/workflows/deployment.yml).
+# Le nginx du front sert le site sur le port 80 et relaie /api et /ws vers atrad-back
+# (même réseau Docker, voir web-atrad.conf).
+services:
+  atrad-front:
+    image: bakjunior58/atrad-front:1.0.0
+    container_name: atrad-front
+    restart: always
+    ports:
+      - "80:80"
+    networks:
+      - atrad-network
+
+networks:
+  atrad-network:
+    external: true
+    name: atrad-network
