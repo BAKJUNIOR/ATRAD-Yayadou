@@ -1,0 +1,7 @@
+# Reverse proxy HTTPS du VPS (utilisé par compose.yaml) : Caddy obtient et renouvelle seul le
+# certificat Let's Encrypt, redirige le HTTP vers le HTTPS et relaie tout (WebSocket compris)
+# vers le nginx du front, qui sert le site et relaie /api et /ws vers atrad-back.
+atrad.yayadou.net {
+	encode gzip
+	reverse_proxy atrad-front:80
+}

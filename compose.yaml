@@ -1,15 +1,34 @@
 # Déploiement sur le VPS (utilisé par .github/workflows/deployment.yml).
-# Le nginx du front sert le site sur le port 80 et relaie /api et /ws vers atrad-back
-# (même réseau Docker, voir web-atrad.conf).
+# Caddy (ports 80 et 443, HTTPS) relaie vers le nginx du front, qui sert le site et relaie
+# /api et /ws vers atrad-back (même réseau Docker, voir Caddyfile et web-atrad.conf).
 services:
   atrad-front:
     image: bakjunior58/atrad-front:1.0.0
     container_name: atrad-front
     restart: always
-    ports:
-      - "80:80"
     networks:
       - atrad-network
+
+  atrad-proxy:
+    image: caddy:2-alpine
+    container_name: atrad-proxy
+    restart: always
+    depends_on:
+      - atrad-front
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificats Let's Encrypt : gardés entre les déploiements (limite de délivrance).
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - atrad-network
+
+volumes:
+  caddy_data:
+  caddy_config:
 
 networks:
   atrad-network:
