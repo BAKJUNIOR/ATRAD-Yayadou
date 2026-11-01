@@ -19,7 +19,7 @@ export const AGENCE_ROUTES: Routes = [
       ),
   },
   {
-    path: 'suivi/:ref',
+    path: 'suivi/:id',
     title: 'Détail du dossier',
     loadComponent: () =>
       import('./pages/suivi-dossier-detail/suivi-dossier-detail.component').then(

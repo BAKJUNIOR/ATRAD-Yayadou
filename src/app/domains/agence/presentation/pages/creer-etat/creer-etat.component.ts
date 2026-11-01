@@ -4,18 +4,19 @@ import { DraftEtatComponent } from '../../components/draft-etat/draft-etat.compo
 import { EtatTransmisComponent } from '../../components/etat-transmis/etat-transmis.component';
 import { CreerEtatFacade } from '../../creer-etat.facade';
 
-/** Parcours agence : saisir des dossiers, constituer un état puis le transmettre à l'Accueil. */
+/** Parcours agence : saisir des dossiers, constituer un état puis le transmettre à son entité réceptrice. */
 @Component({
   selector: 'app-creer-etat',
   imports: [DossierFormComponent, DraftEtatComponent, EtatTransmisComponent],
   providers: [CreerEtatFacade],
   host: { '(window:beforeunload)': 'onBeforeUnload($event)' },
   template: `
-    @if (facade.sentEtat(); as etat) {
+    @if (facade.sentEtats().length) {
       <app-etat-transmis
-        [etat]="etat"
+        [etats]="facade.sentEtats()"
+        [line]="facade.sentLine()"
         (newEtat)="facade.startNewEtat()"
-        (print)="facade.printSent()"
+        (print)="facade.printEtat($event)"
       />
     } @else {
       <div class="flex animate-enter flex-wrap items-start gap-[18px]">

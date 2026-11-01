@@ -4,6 +4,10 @@ import { DossierType, Priorite, Produit } from '../dossier-catalog';
 
 export interface PieceJointe {
   id: string;
+  /** Dossier de l'API qui porte la pièce ; absent tant qu'elle n'est pas envoyée. */
+  dossierId?: string;
+  /** Fichier choisi, gardé en mémoire jusqu'à son envoi à l'API. */
+  file?: File;
   name: string;
   size: number;
   mime: string;
@@ -50,7 +54,8 @@ export interface DossierData {
 
 /** Dossier d'un état en cours de constitution (statut Temporaire). */
 export interface Dossier extends DossierData {
-  id: number;
+  /** Identifiant (UUID) du dossier dans l'API. */
+  id: string;
   ref: string;
   createdAt: string;
   log: DossierLog[];
@@ -73,7 +78,7 @@ export interface EtatDossier extends Dossier {
 }
 
 /**
- * Dossier réceptionné par l'Accueil et routé vers son entité de traitement.
+ * Dossier réceptionné par l'entité réceptrice et dispatché vers son entité de traitement.
  * Il vit désormais indépendamment de l'état qui l'a transmis.
  */
 export interface RoutedDossier extends Dossier {
@@ -86,11 +91,15 @@ export interface RoutedDossier extends Dossier {
   /** Date du routage vers l'entité. */
   affecte: string;
   affectedBy: string;
+  /** Traité par l'entité réceptrice elle-même : pas d'étape de dispatch. */
+  direct?: boolean;
   /** Échéance de traitement (`yyyy-MM-dd`), déduite de la priorité. */
   echeanceIso: string;
   delai: string;
   /** Gestionnaire en charge ; vide tant que le dossier n'est pas pris en charge. */
   gest: string;
+  /** Identifiant (UUID) du gestionnaire en charge dans l'API. */
+  gestId?: string;
   gestAt: string;
   comments?: DossierComment[];
   validatedAt?: string;

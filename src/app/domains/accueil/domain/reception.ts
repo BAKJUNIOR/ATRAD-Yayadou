@@ -2,7 +2,7 @@ import { Status } from '../../../shared/models/status';
 import { DOSSIER_TYPES, DossierType } from '../../dossiers/domain/dossier-catalog';
 import { RoutedDossier } from '../../dossiers/domain/entities/dossier.entity';
 import { Etat } from '../../dossiers/domain/entities/etat.entity';
-import { DEFAULT_MAPPING, ENTITES } from '../../dossiers/domain/routing';
+import { ENTITES, entityOf } from '../../dossiers/domain/routing';
 
 /** Critères de recherche d'un état ; une chaîne vide signifie « tous ». */
 export interface EtatCriteria {
@@ -77,7 +77,7 @@ export function searchEtats(etats: readonly Etat[], criteria: EtatCriteria): Eta
     .sort((a, b) => b.sentAt.localeCompare(a.sentAt));
 }
 
-/** Dossiers d'un état que l'Accueil n'a pas encore pointés comme reçus. */
+/** Dossiers d'un état que l'entité réceptrice n'a pas encore pointés comme reçus. */
 export function remainingCount(etat: Etat): number {
   return etat.dossiers.filter((dossier) => !dossier.rec).length;
 }
@@ -133,7 +133,10 @@ export function trackingKpis(
     {
       label: 'Dossiers réceptionnés',
       value: tracked.length,
-      hint: 'routés vers une entité',
+      hint:
+        tracked.length && tracked.every((dossier) => dossier.direct)
+          ? "pris en charge par l'entité"
+          : 'dispatchés ou pris en charge',
       textClass: 'text-brand-ink',
     },
     {
@@ -190,7 +193,7 @@ export function trackingGroups(
             `${dossier.ref} ${dossier.client} ${dossier.etat}`.toLowerCase().includes(query),
         )
         .sort((a, b) => b.affecte.localeCompare(a.affecte));
-      const types = DOSSIER_TYPES.filter((type) => DEFAULT_MAPPING[type] === entite.name);
+      const types = DOSSIER_TYPES.filter((type) => entityOf(type) === entite.name);
       return {
         entite: entite.name,
         types: types.join(' · '),
@@ -203,5 +206,5 @@ export function trackingGroups(
 
 /** Règle de routage affichée pour information : type de dossier → entité. */
 export function routingRules(): { type: DossierType; entite: string }[] {
-  return DOSSIER_TYPES.map((type) => ({ type, entite: DEFAULT_MAPPING[type] || '—' }));
+  return DOSSIER_TYPES.map((type) => ({ type, entite: entityOf(type) || '—' }));
 }

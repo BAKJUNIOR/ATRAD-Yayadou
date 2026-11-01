@@ -12,6 +12,8 @@ export interface ConfirmOptions {
   cancelLabel?: string;
   /** Action destructrice : bouton de confirmation en rouge. */
   danger?: boolean;
+  /** Pastille de l'en-tête ; par défaut `danger` si l'action est destructrice, sinon `info`. */
+  tone?: 'danger' | 'warning' | 'success' | 'info';
 }
 
 @Service()

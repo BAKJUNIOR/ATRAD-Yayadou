@@ -20,12 +20,12 @@
         </dd>
       </div>
       <div class="flex items-baseline justify-between gap-3">
-        <dt class="whitespace-nowrap">Agence émettrice</dt>
+        <dt class="whitespace-nowrap">Entité émettrice</dt>
         <dd class="text-end text-ink">{{ facade.agenceName() }}</dd>
       </div>
       <div class="flex items-baseline justify-between gap-3">
         <dt class="whitespace-nowrap">Destination</dt>
-        <dd class="text-end text-ink">{{ destination }}</dd>
+        <dd class="text-end text-ink">{{ facade.destinationLabel() }}</dd>
       </div>
       <div class="flex items-baseline justify-between gap-3">
         <dt class="whitespace-nowrap">Créé le</dt>
@@ -96,7 +96,7 @@
             }
             <button
               type="button"
-              class="flex size-[30px] flex-none items-center justify-center rounded-[calc(var(--radius-brand)*0.7)] border border-line bg-card text-ink-secondary transition-colors hover:border-brand hover:bg-brand-tint-soft hover:text-brand-ink"
+              class="flex size-[30px] flex-none items-center justify-center rounded-[calc(var(--radius-brand)*0.7)] border border-info-line bg-card text-info transition-colors hover:bg-info-bg"
               title="Modifier le dossier"
               [attr.aria-label]="'Modifier ' + dossier.ref"
               (click)="facade.startEdit(dossier)"
@@ -105,7 +105,7 @@
             </button>
             <button
               type="button"
-              class="flex size-[30px] flex-none items-center justify-center rounded-[calc(var(--radius-brand)*0.7)] border border-line bg-card text-ink-secondary transition-colors hover:border-danger-line hover:bg-danger-bg hover:text-danger"
+              class="flex size-[30px] flex-none items-center justify-center rounded-[calc(var(--radius-brand)*0.7)] border border-danger-line bg-card text-danger-solid transition-colors hover:bg-danger-bg"
               title="Supprimer le dossier de l'état"
               [attr.aria-label]="'Supprimer ' + dossier.ref"
               (click)="facade.remove(dossier)"
@@ -136,13 +136,29 @@
       <p
         class="rounded-control border border-brand-tint-line bg-brand-tint-soft px-3 py-[9px] text-[12.5px] leading-[1.45] text-brand-ink"
       >
-        <strong class="font-semibold">Entités concernées :</strong> {{ facade.draftEntities() }}
+        <strong class="font-semibold">Entités de traitement prévues :</strong>
+        {{ facade.draftEntities() }}
       </p>
+      @if (facade.groupsLine()) {
+        <p
+          class="rounded-control border border-info-line bg-info-bg px-3 py-[9px] text-[12.5px] leading-[1.45] font-medium text-info"
+        >
+          {{ facade.groupsLine() }}
+        </p>
+      }
+      @if (facade.blockMessage()) {
+        <p
+          role="alert"
+          class="rounded-control border border-danger-line bg-danger-bg px-3 py-[9px] text-[12.5px] leading-[1.45] font-medium text-danger"
+        >
+          ⚠ {{ facade.blockMessage() }}
+        </p>
+      }
     }
     <button
       type="button"
       class="btn-primary w-full py-3"
-      [disabled]="!draft.length"
+      [disabled]="!draft.length || facade.groups().miss.length > 0"
       [attr.title]="
         draft.length ? null : 'Ajoutez au moins un dossier pour pouvoir transmettre l\'état.'
       "

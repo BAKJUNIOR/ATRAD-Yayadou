@@ -3,7 +3,13 @@ import { STATUS_KEYS, Status } from '../../../shared/models/status';
 import { DOSSIER_TYPES, DossierType } from '../../dossiers/domain/dossier-catalog';
 import { RoutedDossier } from '../../dossiers/domain/entities/dossier.entity';
 import { Etat } from '../../dossiers/domain/entities/etat.entity';
+import { statusOf } from '../../dossiers/domain/entities/dossier-api.entity';
 import { daysLeft, isLate } from '../../traitement/domain/portfolio';
+import {
+  ApiAgenceIndicateurs,
+  ApiRespectDelais,
+  ApiTableauDeBord,
+} from '../infrastructure/api/pilotage.api';
 
 const DAY_MS = 86_400_000;
 
@@ -173,7 +179,7 @@ export function kpiCards(
       bar: percent(late.length, total),
     },
     {
-      label: "Non reçus à l'Accueil",
+      label: 'Non reçus à la réception',
       value: String(notReceived.length),
       hint: `${partial} état(s) reçu(s) partiellement`,
       tone: 'warning',
@@ -291,6 +297,125 @@ export function agenceComparison(dossiers: readonly RoutedDossier[], todayIso: s
       };
     })
     .sort((a, b) => b.lateRate - a.lateRate);
+}
+
+// ------------------------------------------------------------------ Indicateurs calculés par l'API
+
+/** `2,4 j`, ou `—` sans dossier terminé. */
+export function delayLabel(days: number | null | undefined): string {
+  return days === null || days === undefined ? '—' : `${days.toFixed(1).replace('.', ',')} j`;
+}
+
+/** Cartes du tableau de bord à partir de `pilotage.tableauDeBord`. */
+export function kpiCardsFromApi(tableau: ApiTableauDeBord): KpiCard[] {
+  const rate = tableau.respectDelais ?? 100;
+  return [
+    {
+      label: 'Dossiers traités',
+      value: String(tableau.termines),
+      hint: 'validés, traités ou clôturés',
+      tone: 'success',
+      bar: percent(tableau.termines, tableau.total),
+    },
+    {
+      label: 'En cours',
+      value: String(tableau.enCours),
+      hint: 'en instruction ou à prendre en charge',
+      tone: 'warning',
+      bar: percent(tableau.enCours, tableau.total),
+    },
+    {
+      label: 'En retard',
+      value: String(tableau.enRetard),
+      hint: 'délai dépassé',
+      tone: 'danger',
+      bar: percent(tableau.enRetard, tableau.total),
+    },
+    {
+      label: 'Non reçus à la réception',
+      value: String(tableau.nonRecus),
+      hint: `${tableau.etatsRecusPartiellement} état(s) reçu(s) partiellement`,
+      tone: 'warning',
+      bar: percent(tableau.nonRecus, tableau.total + tableau.nonRecus),
+    },
+    {
+      label: 'Respect des délais',
+      value: `${rate} %`,
+      hint: `${tableau.terminesDansLesDelais} traités dans les délais sur ${tableau.termines}`,
+      tone: rate >= SLA_TARGET ? 'success' : 'warning',
+      bar: rate,
+    },
+  ];
+}
+
+export function byStatusFromApi(tableau: ApiTableauDeBord) {
+  return tableau.parStatut.map((indicateur) => {
+    const status = statusOf(indicateur.code);
+    return {
+      label: status,
+      count: indicateur.nombre,
+      share: indicateur.pourcentage,
+      modifier: `status-${STATUS_KEYS[status]}`,
+    };
+  });
+}
+
+/** Volume par type, rapporté au type le plus fréquent. */
+export function byTypeFromApi(tableau: ApiTableauDeBord) {
+  const max = Math.max(1, ...tableau.parType.map((indicateur) => indicateur.nombre));
+  return tableau.parType.map((indicateur) => ({
+    label: indicateur.libelle,
+    count: indicateur.nombre,
+    share: percent(indicateur.nombre, max),
+  }));
+}
+
+export function agencePerformanceFromApi(
+  agences: readonly ApiAgenceIndicateurs[],
+): AgencePerformance[] {
+  return agences.map((agence) => ({
+    agence: `${agence.nom} (${agence.code})`,
+    total: agence.total,
+    ongoing: agence.enCours,
+    late: agence.enRetard,
+    rate: agence.respectDelais,
+    tone: slaTone(agence.respectDelais ?? 100),
+  }));
+}
+
+/** Dossiers en retard, du plus critique au moins critique (ordre de l'API). */
+export function lateDossiersFromApi(delais: ApiRespectDelais) {
+  return delais.retards.map((retard) => ({
+    dossier: {
+      id: retard.dossierId,
+      ref: retard.reference,
+      client: retard.client,
+      agence: retard.agence,
+      type: retard.typeDossier,
+    },
+    days: retard.joursDeRetard,
+  }));
+}
+
+/** Agences de la moins respectueuse des délais à la plus respectueuse ; sans dossier terminé : 100 %. */
+export function agenceRankingFromApi(delais: ApiRespectDelais) {
+  return agencePerformanceFromApi(delais.classementAgences).map((entry, index) => ({
+    ...entry,
+    rate: entry.rate ?? 100,
+    rank: index + 1,
+  }));
+}
+
+/** Comparatif des agences, par taux de dossiers en retard décroissant (ordre de l'API). */
+export function agenceComparisonFromApi(agences: readonly ApiAgenceIndicateurs[]) {
+  return agences.map((agence) => ({
+    agence: `${agence.nom} (${agence.code})`,
+    total: agence.total,
+    averageDelay: delayLabel(agence.delaiMoyenJours),
+    lateRate: agence.tauxRetard,
+    tone: (agence.tauxRetard >= 20 ? 'danger' : agence.tauxRetard >= 10 ? 'warning' : 'success') as
+      'danger' | 'warning' | 'success',
+  }));
 }
 
 export const REPORTS = [

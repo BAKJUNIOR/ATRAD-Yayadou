@@ -12,12 +12,12 @@ import {
   STATUS_ACTIONS,
   nextStatuses,
 } from '../../dossiers/domain/workflow';
-import { TransmissionStore } from '../../dossiers/infrastructure/store/transmission.store';
+
 import {
   ActionDialogComponent,
   ActionDialogData,
 } from './components/action-dialog/action-dialog.component';
-import { TraitementContext } from './traitement-context.service';
+import { TraitementStore } from '../infrastructure/store/traitement.store';
 
 /** Transition proposée dans un menu d'actions. */
 export interface TransitionOption {
@@ -25,6 +25,8 @@ export interface TransitionOption {
   kind: DossierActionKind;
   label: string;
   icon: IconName;
+  /** Couleur de l'icône, selon la nature du statut visé. */
+  iconClass: string;
   danger: boolean;
 }
 
@@ -38,13 +40,22 @@ const TRANSITION_ICONS: Partial<Record<Status, IconName>> = {
   Traité: 'check-circle',
 };
 
+const TRANSITION_ICON_CLASSES: Partial<Record<Status, string>> = {
+  Validé: 'text-success',
+  Clôturé: 'text-ink-muted',
+  [ATTENTE_DOCS]: 'text-warning',
+  'Dossier retourné': 'text-danger',
+  'En cours': 'text-info',
+  Projeté: 'text-info',
+  Traité: 'text-success',
+};
+
 /** Ouvre la confirmation d'une action de traitement puis l'applique au dossier. */
 @Service()
 export class DossierActionsService {
   private readonly dialog = inject(Dialog);
-  private readonly store = inject(TransmissionStore);
+  private readonly store = inject(TraitementStore);
   private readonly toast = inject(ToastService);
-  private readonly context = inject(TraitementContext);
 
   /** Transitions autorisées par le circuit du dossier, prêtes à afficher. */
   transitions(dossier: RoutedDossier): TransitionOption[] {
@@ -66,13 +77,15 @@ export class DossierActionsService {
           kind: action.kind,
           label,
           icon: TRANSITION_ICONS[target] ?? 'plus',
+          iconClass: TRANSITION_ICON_CLASSES[target] ?? 'text-ink-muted',
           danger: target === 'Dossier retourné',
         },
       ];
     });
   }
 
-  async run(dossier: RoutedDossier, kind: DossierActionKind, target?: Status): Promise<void> {
+  /** Ouvre la confirmation puis applique l'action par l'API ; rend `true` si elle a été appliquée. */
+  async run(dossier: RoutedDossier, kind: DossierActionKind, target?: Status): Promise<boolean> {
     // Un dossier en attente de documents se retourne faute de documents, pas pour non-éligibilité.
     const effective: DossierActionKind =
       kind === 'retour_noneligible' && dossier.status === ATTENTE_DOCS ? 'retour_docs' : kind;
@@ -83,13 +96,14 @@ export class DossierActionsService {
     });
     const action = await firstValueFrom(ref.closed);
     if (!action) {
-      return;
+      return false;
     }
-    const result = this.store.applyAction(dossier.id, action, this.context.signature());
-    if (result.ok) {
-      this.toast.success(result.message);
-    } else {
-      this.toast.warning(result.message);
+    try {
+      this.toast.success(await this.store.act(dossier, action));
+      return true;
+    } catch {
+      // Refus de l'API : déjà affiché par l'intercepteur.
+      return false;
     }
   }
 }

@@ -5,7 +5,7 @@ const TODAY = '2026-10-18';
 
 function dossier(ref: string, patch: Partial<RoutedDossier>): RoutedDossier {
   return {
-    id: Number(ref.slice(-1)),
+    id: ref,
     ref,
     num: '000123456789',
     prenom: '',

@@ -1,5 +1,5 @@
 import { Service, computed, inject, signal } from '@angular/core';
-import { TransmissionStore } from '../../dossiers/infrastructure/store/transmission.store';
+import { ReceptionContext } from './reception-context.service';
 import {
   EMPTY_ETAT_CRITERIA,
   EtatCriteria,
@@ -14,7 +14,7 @@ import {
  */
 @Service()
 export class EtatSearchState {
-  private readonly store = inject(TransmissionStore);
+  private readonly reception = inject(ReceptionContext);
 
   /** Critères en cours de saisie ; ils ne s'appliquent qu'à la validation du formulaire. */
   readonly draft = signal<EtatCriteria>(EMPTY_ETAT_CRITERIA);
@@ -23,7 +23,7 @@ export class EtatSearchState {
 
   readonly active = computed(() => isSearchActive(this.applied()));
   readonly results = computed(() =>
-    this.active() ? searchEtats(this.store.etats(), this.applied()) : [],
+    this.active() ? searchEtats(this.reception.etats(), this.applied()) : [],
   );
   readonly draftAdvancedCount = computed(() => advancedCount(this.draft()));
   readonly appliedAdvancedCount = computed(() => advancedCount(this.applied()));

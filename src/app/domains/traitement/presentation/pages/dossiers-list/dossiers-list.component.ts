@@ -1,6 +1,7 @@
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { Component, computed, inject, input } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { SessionService } from '../../../../../core/services/session.service';
 import { formatDate } from '../../../../../core/utils/date.util';
 import { STATUS_KEYS } from '../../../../../shared/models/status';
 import { IconComponent, IconName } from '../../../../../shared/ui/icon/icon.component';
@@ -66,6 +67,7 @@ type TextCriterion = Exclude<keyof PortfolioCriteria, 'type'>;
 })
 export class DossiersListComponent {
   private readonly context = inject(TraitementContext);
+  private readonly session = inject(SessionService);
   private readonly router = inject(Router);
   protected readonly state = inject(PortfolioFilterState);
   protected readonly actions = inject(DossierActionsService);
@@ -194,12 +196,13 @@ export class DossiersListComponent {
     this.state.search();
   }
 
-  protected open(ref: string): void {
-    void this.router.navigate(['/traitement/dossiers', ref]);
+  protected open(id: string): void {
+    void this.router.navigate(['/traitement/dossiers', id]);
   }
 
   private toRow(dossier: RoutedDossier) {
-    const next = nextStatuses(dossier);
+    // Seul le gestionnaire en charge peut faire avancer un dossier : pas d'action rapide sur ceux des autres.
+    const next = dossier.gestId === this.session.account()?.id ? nextStatuses(dossier) : [];
     const quick: DossierActionKind | null = next.includes('Validé')
       ? 'valider'
       : next.includes('Clôturé')

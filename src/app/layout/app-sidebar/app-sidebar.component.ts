@@ -1,19 +1,13 @@
-import { NgTemplateOutlet } from '@angular/common';
+import { Location, NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { NAVIGATION } from '../../core/navigation/navigation';
-import { ConfirmService } from '../../core/services/confirm.service';
-import { DemoClock } from '../../core/services/demo-clock.service';
-import { StorageService } from '../../core/services/storage.service';
-import { ThemeService } from '../../core/services/theme.service';
-import { ToastService } from '../../core/services/toast.service';
-import { formatDate } from '../../core/utils/date.util';
+import { HOME, NAVIGATION, NavMenu, ROLE_CAPABILITY } from '../../core/navigation/navigation';
 import { SessionService } from '../../core/services/session.service';
 import { SidebarService } from '../../core/services/sidebar.service';
 import { initialsOf } from '../../core/utils/text.util';
-import { ENTITES } from '../../domains/dossiers/domain/routing';
-import { PieceFileStore } from '../../domains/dossiers/infrastructure/store/piece-file.store';
-import { TransmissionStore } from '../../domains/dossiers/infrastructure/store/transmission.store';
+import { ReceptionContext } from '../../domains/accueil/presentation/reception-context.service';
+import { hasCapability } from '../../domains/dossiers/domain/referentiel';
+import { ReferentielStore } from '../../domains/dossiers/infrastructure/store/referentiel.store';
 import { NavBadgesService } from '../../domains/notifications/nav-badges.service';
 import { TraitementContext } from '../../domains/traitement/presentation/traitement-context.service';
 import { BrandMarkComponent } from '../../shared/ui/brand-mark/brand-mark.component';
@@ -27,54 +21,63 @@ import { IconComponent } from '../../shared/ui/icon/icon.component';
 export class AppSidebarComponent {
   private readonly session = inject(SessionService);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
   protected readonly sidebar = inject(SidebarService);
-  private readonly clock = inject(DemoClock);
-  private readonly store = inject(TransmissionStore);
-  private readonly files = inject(PieceFileStore);
-  private readonly storage = inject(StorageService);
-  private readonly theme = inject(ThemeService);
-  private readonly toast = inject(ToastService);
-  private readonly confirm = inject(ConfirmService);
   protected readonly badges = inject(NavBadgesService).counts;
 
   protected readonly account = this.session.account;
   protected readonly collapsed = this.sidebar.isCollapsed;
 
-  protected readonly traitement = inject(TraitementContext);
-  protected readonly entites = ENTITES;
-  protected readonly isTraitement = computed(() => this.session.role() === 'traitement');
+  private readonly referentiel = inject(ReferentielStore);
+  private readonly reception = inject(ReceptionContext);
+  private readonly traitement = inject(TraitementContext);
 
-  protected readonly menu = computed(() => {
+  protected readonly menu = computed((): NavMenu | null => {
+    this.referentiel.value();
     const role = this.session.role();
     if (!role) {
       return null;
     }
     const menu = NAVIGATION[role];
+    // Une entité privée de la capacité de son profil ne garde que l'accueil.
+    const capability = ROLE_CAPABILITY[role];
+    const entity = role === 'traitement' ? this.traitement.entite() : this.account()?.entity;
+    if (capability && !hasCapability(entity ?? '', capability)) {
+      return { ...menu, items: [HOME] };
+    }
     if (role !== 'traitement') {
       return menu;
     }
     // L'agent ne voit que les écrans correspondant à ses fonctions dans l'entité.
     const functions = this.traitement.functions();
+    const items = menu.items.filter((item) => !item.requires || functions[item.requires]);
+    if (!this.reception.canReceive()) {
+      return { ...menu, items };
+    }
+    // Entité qui réceptionne et traite : les écrans de réception puis ceux de traitement.
+    const treatment = items.filter((item) => item.id !== HOME.id);
     return {
       ...menu,
-      items: menu.items.filter((item) => !item.requires || functions[item.requires]),
+      items: [
+        HOME,
+        {
+          id: 'grpRec',
+          label: 'Réception',
+          icon: '⇲',
+          children: NAVIGATION.accueil.items.slice(1),
+        },
+        ...(treatment.length
+          ? [{ id: 'grpTr', label: 'Traitement', icon: '◫', children: treatment }]
+          : []),
+      ],
     };
   });
 
-  protected onEntite(event: Event): void {
-    this.traitement.setEntite((event.target as HTMLSelectElement).value);
-    void this.router.navigate(['/']);
-  }
-
-  protected onUser(event: Event): void {
-    this.traitement.setUser((event.target as HTMLSelectElement).value);
-    void this.router.navigate(['/']);
-  }
-
   protected readonly initials = computed(() => initialsOf(this.account()?.name ?? ''));
 
-  // Les groupes sont dépliés par défaut : on ne retient que ceux que l'utilisateur a repliés.
-  private readonly closedGroups = signal<ReadonlySet<string>>(new Set());
+  // Les groupes sont repliés par défaut : un clic les déplie. Seul le groupe de l'écran
+  // affiché au chargement est ouvert d'emblée, pour que l'entrée active reste visible.
+  private readonly openGroups = signal<ReadonlySet<string>>(this.groupsOfCurrentUrl());
 
   // Le repli ne concerne que les écrans larges : en tiroir mobile, les libellés restent visibles.
   protected readonly labelClass = computed(() => (this.collapsed() ? 'lg:hidden' : ''));
@@ -82,10 +85,10 @@ export class AppSidebarComponent {
     this.collapsed() ? 'lg:justify-center lg:px-0' : '',
   );
   protected readonly nestedItemClass = computed(() =>
-    this.collapsed() ? this.itemClass() : 'ps-9',
+    this.collapsed() ? `ps-11 ${this.itemClass()}` : 'ps-11',
   );
   protected readonly asideClass = computed(() => {
-    const width = this.collapsed() ? 'lg:w-[72px]' : 'lg:w-[254px]';
+    const width = this.collapsed() ? 'lg:w-[92px]' : 'lg:w-[300px]';
     const drawer = this.sidebar.isMobileOpen()
       ? 'translate-x-0 shadow-2xl'
       : '-translate-x-full max-lg:invisible';
@@ -93,12 +96,12 @@ export class AppSidebarComponent {
   });
 
   protected isGroupOpen(id: string): boolean {
-    return !this.closedGroups().has(id);
+    return this.openGroups().has(id);
   }
 
   protected toggleGroup(id: string): void {
-    this.closedGroups.update((closed) => {
-      const next = new Set(closed);
+    this.openGroups.update((open) => {
+      const next = new Set(open);
       if (!next.delete(id)) {
         next.add(id);
       }
@@ -106,34 +109,15 @@ export class AppSidebarComponent {
     });
   }
 
-  /** `Date de démo : 18/10/2026 (+6 j)` */
-  protected readonly demoDateLabel = computed(() => {
-    const offset = this.clock.offset();
-    return `Date de démo : ${formatDate(this.clock.today())}${offset ? ` (+${offset} j)` : ''}`;
-  });
-
-  protected advanceDay(): void {
-    this.clock.advance();
-    this.toast.info(`Date de démo : ${formatDate(this.clock.today())} — retards recalculés.`);
-  }
-
-  protected async resetDemo(): Promise<void> {
-    const confirmed = await this.confirm.ask({
-      title: 'Réinitialiser les données de démo ?',
-      text: 'Tous les dossiers et états créés pendant cette démonstration seront effacés.',
-      okLabel: 'Réinitialiser',
-      danger: true,
-    });
-    if (!confirmed) {
-      return;
-    }
-    this.store.reset();
-    void this.files.clear();
-    this.clock.reset();
-    this.storage.remove('atrad_notif_read_v1');
-    this.theme.setTheme('light');
-    await this.router.navigate(['/']);
-    this.toast.info('Données de démo réinitialisées.');
+  private groupsOfCurrentUrl(): Set<string> {
+    const groups = this.menu()?.items.filter((item) => item.children) ?? [];
+    // `Location` et non `Router.url` : la coquille est créée avant la fin de la navigation.
+    const url = this.location.path();
+    return new Set(
+      groups
+        .filter((group) => group.children?.some((child) => url.startsWith(child.path!)))
+        .map((group) => group.id),
+    );
   }
 
   protected closeDrawer(): void {

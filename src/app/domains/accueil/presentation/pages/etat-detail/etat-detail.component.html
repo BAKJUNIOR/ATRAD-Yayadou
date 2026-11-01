@@ -12,8 +12,7 @@
     >
       <app-icon name="info" class="mt-px" [size]="16" [strokeWidth]="2" />
       <span class="text-pretty text-ink">
-        L'Accueil confirme la réception du dossier (type, client). Le contrôle du contenu est
-        effectué par l'entité de traitement.
+        {{ helpLine() }}
       </span>
     </p>
 
@@ -47,8 +46,10 @@
           <dd class="text-[13.5px] text-ink">{{ etat.emetteur }}</dd>
         </div>
         <div class="flex flex-col gap-[3px]">
-          <dt class="text-[11.5px] tracking-[0.06em] text-ink-muted uppercase">Destination</dt>
-          <dd class="text-[13.5px] text-ink">{{ etat.dest }}</dd>
+          <dt class="text-[11.5px] tracking-[0.06em] text-ink-muted uppercase">
+            Type d'état · réceptrice
+          </dt>
+          <dd class="text-[13.5px] text-ink">« {{ info().nom }} » · {{ info().dest }}</dd>
         </div>
         <div class="flex flex-col gap-[3px]">
           <dt class="text-[11.5px] tracking-[0.06em] text-ink-muted uppercase">Réception</dt>

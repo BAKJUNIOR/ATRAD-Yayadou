@@ -106,7 +106,7 @@
           />
         </label>
         <label class="form-label gap-1.5 text-[12.5px]">
-          Agence émettrice
+          Entité émettrice
           <select class="form-control text-[13px]" (change)="onSelect('agence', $event)">
             <option value="" [selected]="!criteria.agence">Toutes les agences</option>
             @for (agence of agences(); track agence) {
@@ -205,7 +205,9 @@
                 </span>
               </td>
               <td class="truncate text-[12.5px] text-ink-secondary">{{ etat.type }}</td>
-              <td class="font-mono text-[12.5px] text-ink">{{ etat.dossiers.length }}</td>
+              <td class="font-mono text-[12.5px] text-ink">
+                {{ etat.count ?? etat.dossiers.length }}
+              </td>
               <td class="font-mono text-[12px] whitespace-nowrap text-ink-muted">
                 {{ formatStamp(etat.sentAt) }}
               </td>

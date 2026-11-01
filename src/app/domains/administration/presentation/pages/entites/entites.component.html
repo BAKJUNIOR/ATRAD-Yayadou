@@ -1,0 +1,200 @@
+@let draft = this.draft();
+
+<div class="flex animate-enter flex-col gap-[18px]">
+  <p
+    class="flex items-start gap-3 rounded-brand border border-info-line bg-info-bg px-4 py-[13px] text-[13px] leading-normal text-info"
+  >
+    <span
+      class="mt-px flex size-5 flex-none items-center justify-center rounded-full bg-info text-[12px] font-bold text-card"
+      aria-hidden="true"
+    >
+      i
+    </span>
+    <span>
+      Il n'existe que des entités. « Agence », « Service », « Département »… ne sont que des
+      libellés d'affichage. Les capacités cochées déterminent les menus des utilisateurs rattachés :
+      émettre → saisie, réceptionner → réception, traiter → traitement.
+    </span>
+  </p>
+
+  <section class="panel overflow-hidden" aria-labelledby="entites-title">
+    <header
+      class="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4"
+    >
+      <div class="flex min-w-0 flex-col gap-[3px]">
+        <h2 id="entites-title" class="text-[14.5px] font-semibold tracking-[-0.01em] text-ink">
+          Entités
+        </h2>
+        <span class="text-[12.5px] text-ink-muted">{{ summary() }}</span>
+      </div>
+      <button
+        type="button"
+        class="btn-primary gap-[7px] px-3.5 py-2 text-[13px] disabled:opacity-50"
+        [disabled]="!!draft"
+        [attr.title]="draft ? lockTip : 'Ajouter une entité'"
+        (click)="add()"
+      >
+        <app-icon name="plus" [size]="14" [strokeWidth]="2.4" />
+        Ajouter une entité
+      </button>
+    </header>
+
+    @if (draft && !draft.orig) {
+      <ng-container [ngTemplateOutlet]="form" [ngTemplateOutletContext]="{ $implicit: draft }" />
+    }
+
+    <div class="overflow-x-auto">
+      <table class="grid-table min-w-[760px] text-[13.5px]">
+        <thead>
+          <tr class="entites-grid grid-head py-2.5">
+            <th scope="col">Code</th>
+            <th scope="col">Nom</th>
+            <th scope="col">Nature</th>
+            <th scope="col">Capacités</th>
+            <th scope="col" class="text-end!">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows(); track row.entite.code) {
+            <tr
+              class="block border-b border-soft transition-[opacity,background-color] last:border-b-0"
+              [class]="row.editing ? 'bg-brand-tint' : row.locked ? 'opacity-55' : ''"
+            >
+              <td class="block p-0">
+                <div class="entites-grid grid items-center gap-x-4 gap-y-2 px-5 py-3">
+                  <span class="font-mono text-[12.5px] text-ink-secondary">
+                    {{ row.entite.code }}
+                  </span>
+                  <span class="flex min-w-0 flex-col gap-0.5">
+                    <span class="font-medium text-ink">{{ row.entite.nom }}</span>
+                    <span class="text-[12px] leading-[1.4] text-ink-muted">{{ row.usage }}</span>
+                  </span>
+                  <span class="text-ink-secondary">{{ row.entite.nature }}</span>
+                  <span class="flex flex-wrap gap-[5px]">
+                    @for (chip of row.chips; track chip) {
+                      <span
+                        class="inline-flex items-center rounded-full bg-brand-tint px-[9px] py-[3px] text-[12px] font-medium text-brand-ink"
+                      >
+                        {{ chip }}
+                      </span>
+                    }
+                  </span>
+                  <span class="flex justify-end">
+                    @if (!row.editing) {
+                      <button
+                        type="button"
+                        class="btn-outline gap-1.5 px-3 py-[7px] text-[12.5px] font-medium disabled:opacity-45"
+                        [disabled]="row.locked"
+                        [attr.title]="row.locked ? lockTip : 'Modifier ' + row.entite.nom"
+                        (click)="edit(row.entite)"
+                      >
+                        <app-icon name="pencil" class="text-info" [size]="13" [strokeWidth]="2" />
+                        Modifier
+                      </button>
+                    }
+                  </span>
+                </div>
+                @if (row.editing && draft) {
+                  <ng-container
+                    [ngTemplateOutlet]="form"
+                    [ngTemplateOutletContext]="{ $implicit: draft }"
+                  />
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<ng-template #form let-draft>
+  <div
+    class="flex animate-enter flex-col gap-3.5 border-b border-line bg-brand-tint px-5 py-4"
+    role="group"
+    [attr.aria-label]="draft.orig ? 'Modifier ' + draft.nom : 'Nouvelle entité'"
+  >
+    <div class="grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-3">
+      <label class="form-label gap-[5px]">
+        Code *
+        <input
+          type="text"
+          class="form-control font-mono read-only:bg-subtle read-only:text-ink-muted"
+          placeholder="AG-045"
+          maxlength="6"
+          title="Code au format AA-000"
+          [readOnly]="!!draft.orig"
+          [value]="draft.code"
+          (input)="setText('code', $event)"
+        />
+      </label>
+      <label class="form-label gap-[5px]">
+        Nom *
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Ex. Agence Treichville"
+          [value]="draft.nom"
+          (input)="setText('nom', $event)"
+        />
+      </label>
+      <label class="form-label gap-[5px]">
+        Libellé de nature
+        <select class="form-control" (change)="setText('nature', $event)">
+          @for (nature of natures; track nature) {
+            <option [value]="nature" [selected]="nature === draft.nature">{{ nature }}</option>
+          }
+        </select>
+      </label>
+    </div>
+    <fieldset class="flex flex-col gap-1.5">
+      <legend class="mb-1.5 text-[12px] font-medium text-ink-secondary">
+        Capacités * <span class="font-normal text-ink-muted">(au moins une)</span>
+      </legend>
+      <div class="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-2">
+        @for (capability of capabilities; track capability.key) {
+          <label
+            class="flex cursor-pointer items-center gap-[9px] rounded-control border border-line bg-card px-2.5 py-2 text-[13px] text-ink"
+          >
+            <input
+              type="checkbox"
+              class="size-4 flex-none accent-brand"
+              [checked]="draft[capability.key]"
+              (change)="toggle(capability.key)"
+            />
+            {{ capability.label }}
+          </label>
+        }
+      </div>
+    </fieldset>
+    @if (dirty() && errors().length) {
+      <div
+        role="alert"
+        class="flex flex-col gap-1 rounded-control border border-danger-line bg-danger-bg px-3 py-2.5 text-[12.5px] font-medium text-danger"
+      >
+        @for (error of errors(); track error) {
+          <span>⚠ {{ error }}</span>
+        }
+      </div>
+    }
+    <div class="flex flex-wrap justify-end gap-2">
+      <button
+        type="button"
+        class="rounded-control px-3.5 py-2 text-[13px] whitespace-nowrap text-ink-muted hover:bg-soft hover:text-ink"
+        (click)="cancel()"
+      >
+        Annuler
+      </button>
+      <button
+        type="button"
+        class="btn-primary px-4 py-2 text-[13px]"
+        [disabled]="!canSave()"
+        [attr.title]="saveTip()"
+        (click)="save()"
+      >
+        Enregistrer
+      </button>
+    </div>
+  </div>
+</ng-template>

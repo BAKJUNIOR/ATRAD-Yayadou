@@ -1,0 +1,136 @@
+@if (account(); as account) {
+  <div class="panel flex animate-enter flex-col gap-6 p-5 lg:p-6">
+    <section class="profile-card" aria-labelledby="profile-identity">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex min-w-0 items-center gap-5">
+          <span
+            class="flex size-[76px] flex-none items-center justify-center rounded-full bg-brand-tint text-[26px] font-bold text-brand-ink"
+            aria-hidden="true"
+          >
+            {{ initials() }}
+          </span>
+          <div class="flex min-w-0 flex-col gap-1.5">
+            <h2 id="profile-identity" class="truncate text-[18px] font-semibold text-ink">
+              {{ account.name }}
+            </h2>
+            <p class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13.5px] text-ink-muted">
+              <span>{{ jobTitle() }}</span>
+              <span class="h-3.5 w-px bg-line-strong" aria-hidden="true"></span>
+              <span>{{ account.entity }}</span>
+            </p>
+          </div>
+        </div>
+        <button type="button" class="profile-action" (click)="editContact()">
+          <app-icon name="pencil" class="text-info" [size]="15" [strokeWidth]="2" />
+          Modifier
+        </button>
+      </div>
+      <dl class="grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-x-6 gap-y-6">
+        @for (field of identity(); track field.label) {
+          <div class="flex min-w-0 flex-col gap-2">
+            <dt class="text-[12px] text-ink-muted">{{ field.label }}</dt>
+            <dd
+              class="text-[14px] break-words"
+              [class]="field.empty ? 'text-ink-faint' : 'font-semibold text-ink'"
+              [class.font-mono]="field.mono"
+            >
+              {{ field.value }}
+            </dd>
+          </div>
+        }
+      </dl>
+    </section>
+
+    <section class="profile-card" aria-labelledby="profile-attachment">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 id="profile-attachment" class="text-[16px] font-semibold text-ink">Rattachement</h2>
+        <span
+          class="rounded-full border border-line bg-subtle px-3 py-1 text-[12px] text-ink-muted"
+        >
+          Géré par l'administrateur
+        </span>
+      </div>
+      <dl class="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-x-6 gap-y-6">
+        @for (field of attachment(); track field.label) {
+          <div class="flex min-w-0 flex-col gap-2">
+            <dt class="text-[12px] text-ink-muted">{{ field.label }}</dt>
+            <dd
+              class="text-[14px] break-words"
+              [class]="field.empty ? 'text-ink-faint' : 'font-semibold text-ink'"
+              [class.font-mono]="field.mono"
+            >
+              {{ field.value }}
+            </dd>
+          </div>
+        }
+      </dl>
+    </section>
+
+    <section class="profile-card gap-0" aria-labelledby="profile-security">
+      <h2 id="profile-security" class="pb-2 text-[16px] font-semibold text-ink">Sécurité</h2>
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-line py-4">
+        <div class="flex min-w-0 flex-col gap-1">
+          <span class="text-[14px] font-semibold text-ink">Changer le mot de passe</span>
+          <span class="text-[13px] text-ink-muted">
+            Choisissez un mot de passe que vous n'utilisez nulle part ailleurs.
+          </span>
+        </div>
+        <button type="button" class="profile-action" (click)="changePassword()">
+          <app-icon name="pencil" class="text-info" [size]="15" [strokeWidth]="2" />
+          Changer le mot de passe
+        </button>
+      </div>
+      <div class="flex flex-wrap items-center justify-between gap-3 pt-4">
+        <div class="flex min-w-0 flex-col gap-1">
+          <span class="text-[14px] font-semibold text-ink">Session</span>
+          <span class="text-[13px] text-ink-muted">
+            Connecté avec l'identifiant
+            <span class="font-mono text-ink">{{ account.ident }}</span
+            >.
+          </span>
+        </div>
+        <button
+          type="button"
+          class="profile-action border-danger-line text-danger hover:border-danger-line hover:bg-danger-bg hover:text-danger"
+          (click)="signOut()"
+        >
+          <app-icon name="logout" [size]="15" [strokeWidth]="2" />
+          Se déconnecter
+        </button>
+      </div>
+    </section>
+
+    <section class="profile-card" aria-labelledby="profile-appearance">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex min-w-0 flex-col gap-1">
+          <h2 id="profile-appearance" class="text-[16px] font-semibold text-ink">Apparence</h2>
+          <span class="text-[13px] text-ink-muted">
+            Mode d'affichage de l'application sur ce poste.
+          </span>
+        </div>
+        <div
+          class="flex gap-1 rounded-control border border-line-strong bg-soft p-1"
+          role="group"
+          aria-label="Mode d'affichage"
+        >
+          @for (option of themes; track option.id) {
+            <button
+              type="button"
+              class="inline-flex items-center gap-2 rounded-[calc(var(--radius-brand)*0.6)] px-3.5 py-2 text-[13px] font-medium transition-colors"
+              [class]="
+                theme.theme() === option.id
+                  ? 'bg-card text-ink shadow-card'
+                  : 'text-ink-muted hover:text-ink'
+              "
+              [attr.aria-pressed]="theme.theme() === option.id"
+              (click)="theme.setTheme(option.id)"
+            >
+              <app-icon [name]="option.icon" [size]="15" [strokeWidth]="2" />
+              {{ option.label }}
+            </button>
+          }
+        </div>
+      </div>
+    </section>
+  </div>
+}

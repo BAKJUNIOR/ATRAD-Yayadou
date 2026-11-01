@@ -27,6 +27,7 @@ layer(base);
   --brand-background: #f4f8f9;
   --brand-text-color: #0b2942;
   --brand-border-radius: 10px;
+  --brand-font-family: 'Geist';
 
   --brand-mid: color-mix(in srgb, var(--brand-primary) 62%, var(--brand-accent));
   --brand-on-mid: color-mix(in srgb, var(--brand-secondary) 72%, #000000);
@@ -210,7 +211,7 @@ html.dark {
   sans variante `dark:`.
 */
 @theme inline {
-  --font-sans: 'Geist', system-ui, sans-serif;
+  --font-sans: var(--brand-font-family), system-ui, sans-serif;
   --font-mono: 'Geist Mono', ui-monospace, monospace;
 
   --breakpoint-2xsm: 375px;
@@ -477,9 +478,73 @@ html.dark {
   color: var(--text-main);
 }
 
+/*
+  Aperçu en direct de « Logo & Couleurs » : les couleurs du brouillon sont posées en style
+  sur le bloc. Les jetons dérivés sont redéclarés ici pour être recalculés à partir d'elles,
+  et le bloc porte son propre mode clair / sombre, indépendant de celui de l'application.
+*/
+.brand-preview {
+  --brand-mid: color-mix(in srgb, var(--brand-primary) 62%, var(--brand-accent));
+  --brand-on-mid: color-mix(in srgb, var(--brand-secondary) 72%, #000000);
+  --side-muted: color-mix(in srgb, #ffffff 70%, var(--brand-secondary));
+
+  --bg-page: var(--brand-background);
+  --bg-card: #ffffff;
+  --bg-muted: #f1f4f7;
+  --border: #e6e9ee;
+  --border-strong: #d5dbe2;
+  --text-main: #16232e;
+  --text-heading: var(--brand-text-color);
+  --text-muted: #5e7180;
+  --brand-primary-text: var(--brand-primary);
+  --brand-tint: var(--brand-accent-light);
+  --warning: #8a5a11;
+  --warning-bg: #fef4e3;
+  --warning-border: #f2ddb4;
+
+  font-family: var(--brand-font-family), system-ui, sans-serif;
+}
+
+.brand-preview-dark {
+  color-scheme: dark;
+
+  --bg-page: #0f172a;
+  --bg-card: #1e293b;
+  --bg-muted: #243247;
+  --border: #334155;
+  --border-strong: #475569;
+  --text-main: #e2e8f0;
+  --text-heading: #f1f5f9;
+  --text-muted: #9aa9bc;
+  --brand-primary-text: color-mix(in srgb, var(--brand-primary) 45%, #ffffff);
+  --brand-tint: color-mix(in srgb, var(--brand-primary) 28%, #1e293b);
+  --warning: #fcd34d;
+  --warning-bg: rgba(251, 191, 36, 0.12);
+  --warning-border: rgba(251, 191, 36, 0.36);
+}
+
 .app-dialog-backdrop {
-  background-color: rgba(14, 22, 34, 0.44);
-  backdrop-filter: blur(3px);
+  background-color: color-mix(in srgb, var(--text-faint) 46%, transparent);
+  backdrop-filter: blur(16px);
+}
+
+@layer components {
+  /* Carte des dialogues : en-tête centré (`<app-dialog-head>`), actions centrées. */
+  .dialog-card {
+    @apply relative flex max-h-[calc(100vh-2rem)] animate-enter flex-col gap-5 overflow-y-auto rounded-[calc(var(--radius-brand)*2.4)] bg-card px-6 pt-9 pb-8 shadow-[0_24px_64px_-16px_rgba(14,22,34,0.28)] sm:px-10 sm:pt-10 sm:pb-9;
+  }
+
+  .dialog-actions {
+    @apply flex flex-wrap justify-center gap-3 pt-2;
+  }
+
+  .dialog-cancel {
+    @apply rounded-control border border-line-strong bg-card px-[18px] py-3 text-[13.5px] font-medium text-ink-secondary transition-colors hover:border-brand hover:text-brand-ink active:translate-y-px;
+  }
+
+  .dialog-confirm {
+    @apply rounded-control px-[18px] py-3 text-[13.5px] font-semibold whitespace-nowrap text-white transition active:translate-y-px disabled:bg-ink-faint disabled:opacity-100;
+  }
 }
 
 /* Carte-filtre du suivi : sa couleur vient du modificateur `.status-<clé>` (ou `.status-all`). */
@@ -556,12 +621,40 @@ html.dark {
     @apply block w-full animate-enter text-[12px] leading-[1.4] font-medium text-danger;
   }
 
+  /* Page « Mon profil » : carte d'une rubrique et bouton d'action à droite de son titre. */
+  .profile-card {
+    @apply flex flex-col gap-6 rounded-panel border border-line p-5 lg:p-6;
+  }
+
+  .profile-action {
+    @apply inline-flex items-center gap-2 rounded-full border border-line-strong bg-card px-4 py-2.5 text-[13.5px] font-medium whitespace-nowrap text-ink shadow-card transition-colors hover:border-brand hover:text-brand-ink;
+  }
+
+  /* Champs de l'écran « Logo & Couleurs » : libellé au-dessus de la saisie. */
+  .brand-field {
+    @apply flex min-w-0 flex-col gap-1.5 text-[12.5px] font-medium text-ink-secondary;
+  }
+
+  .brand-input {
+    @apply min-w-0 rounded-control border border-line-strong bg-card px-[11px] py-2.5 text-[13.5px] font-normal text-ink outline-none focus:border-brand focus:ring-3 focus:ring-brand/16;
+  }
+
   .panel {
     @apply rounded-panel border border-line bg-card shadow-card;
   }
 
   .eyebrow {
     @apply text-[11px] font-semibold tracking-[0.08em] text-ink-muted uppercase;
+  }
+
+  /* Pastille d'une liste (types de dossier, entités) ; la couleur est donnée à l'usage. */
+  .chip {
+    @apply inline-flex items-center rounded-full px-[9px] py-[3px] text-[12px] font-medium whitespace-nowrap;
+  }
+
+  /* Pastille d'avertissement accolée à un libellé (« À vérifier », « À rattacher »). */
+  .tag-warning {
+    @apply rounded-full border border-warning-line bg-warning-bg px-2 py-px text-[11px] font-semibold whitespace-nowrap text-warning;
   }
 
   .icon-button {
@@ -759,4 +852,61 @@ html.dark {
 
 .agences-grid {
   grid-template-columns: minmax(190px, 1.4fr) 140px 150px 160px;
+}
+
+.audit-grid {
+  grid-template-columns: 128px minmax(110px, 0.8fr) 120px minmax(180px, 2fr) minmax(120px, 1fr);
+}
+
+.grid-table tr.audit-grid {
+  gap: 10px;
+}
+
+.pool-grid {
+  grid-template-columns: 92px minmax(120px, 1.3fr) minmax(96px, 1fr) 70px 92px 150px;
+}
+
+.grid-table tr.pool-grid {
+  gap: 8px;
+}
+
+@layer components {
+  .audit-control {
+    @apply rounded-control border border-line-strong bg-card px-2.5 py-2 text-[13px] font-normal text-ink outline-none placeholder:text-ink-faint focus:border-brand focus:ring-3 focus:ring-brand/16;
+  }
+}
+
+.entites-grid {
+  grid-template-columns: 84px minmax(0, 1.4fr) minmax(0, 0.7fr) minmax(0, 1.4fr) auto;
+}
+
+.grid-table tr.entites-grid {
+  gap: 0 16px;
+}
+
+.circuit-grid {
+  grid-template-columns: minmax(140px, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+}
+
+.grid-table tr.circuit-grid {
+  gap: 8px 16px;
+}
+
+.members-grid {
+  grid-template-columns: minmax(150px, 1.3fr) minmax(120px, 1fr) 84px;
+}
+
+.members-grid-disp {
+  grid-template-columns: minmax(150px, 1.3fr) 84px minmax(120px, 1fr) 84px;
+}
+
+.grid-table tr.members-grid,
+.grid-table tr.members-grid-disp {
+  gap: 10px;
+}
+
+/* Sur le <table>, ces modificateurs ne servent qu'à fixer la largeur minimale. */
+table.members-grid,
+table.members-grid-disp {
+  grid-template-columns: none;
 }

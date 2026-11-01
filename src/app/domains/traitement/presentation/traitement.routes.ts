@@ -1,13 +1,16 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router, Routes } from '@angular/router';
-import { unsavedChangesGuard } from '../../../core/guards/unsaved-changes.guard';
 import { MemberFunction } from '../../dossiers/domain/routing';
 import { TraitementContext } from './traitement-context.service';
 
-/** Réserve un écran aux membres ayant une fonction donnée dans leur entité. */
+/** Réserve un écran aux membres ayant une fonction donnée dans leur entité (droits lus dans l'API). */
 function functionGuard(required: MemberFunction): CanActivateFn {
-  return () =>
-    inject(TraitementContext).functions()[required] || inject(Router).createUrlTree(['/']);
+  return async () => {
+    const context = inject(TraitementContext);
+    const home = inject(Router).createUrlTree(['/']);
+    await context.ready();
+    return context.functions()[required] || home;
+  };
 }
 
 const list = () =>
@@ -42,20 +45,14 @@ export const TRAITEMENT_ROUTES: Routes = [
       import('./pages/affectation/affectation.component').then((m) => m.AffectationComponent),
   },
   {
-    // Aucune entité n'est en mode pool par défaut : l'écran sera construit avec le paramétrage
-    // du routage par l'administrateur.
     path: 'pool',
     title: 'Pool de dossiers',
     canActivate: [functionGuard('pool')],
-    loadComponent: () =>
-      import('../../../shared/ui/screen-placeholder/screen-placeholder.component').then(
-        (m) => m.ScreenPlaceholderComponent,
-      ),
+    loadComponent: () => import('./pages/pool/pool.component').then((m) => m.PoolComponent),
   },
   {
-    path: 'dossiers/:ref',
+    path: 'dossiers/:id',
     title: 'Détail du dossier',
-    canDeactivate: [unsavedChangesGuard],
     loadComponent: () =>
       import('./pages/dossier-detail/dossier-detail.component').then(
         (m) => m.DossierDetailComponent,
