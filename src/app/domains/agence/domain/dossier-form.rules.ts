@@ -34,12 +34,20 @@ export const BASE_FIELD_KEYS: readonly BaseFieldKey[] = ['client', 'prenom', 'no
 
 export const CLIENT_NUMBER_LENGTH = 12;
 
+/** Le n° de compte compte exactement 11 chiffres. */
+export const ACCOUNT_NUMBER_LENGTH = 11;
+
 /** Le n° client n'accepte que des chiffres (jeu neutre) : la saisie est filtrée. */
 export function filterClientInput(raw: string): string {
   const { clientRule, clientMax } = DOSSIER_FORM;
   return clientRule === 'digits12'
     ? raw.replace(/\D/g, '').slice(0, clientMax)
     : raw.slice(0, clientMax);
+}
+
+/** Le n° de compte n'accepte que des chiffres : la saisie est filtrée. */
+export function filterAccountInput(raw: string): string {
+  return raw.replace(/\D/g, '').slice(0, ACCOUNT_NUMBER_LENGTH);
 }
 
 export function emptyDossierForm(type: DossierType = DOSSIER_TYPES[0] ?? ''): DossierFormValue {
@@ -100,8 +108,8 @@ export function fieldError(key: string, raw: string, type: DossierType, todayIso
       : '';
   }
   if (key === 'compte') {
-    return value && !/^[A-Za-z0-9-]{4,20}$/.test(value)
-      ? 'Lettres, chiffres et tirets uniquement (4 à 20 caractères), ex. CPT-0000000.'
+    return value && !/^\d{11}$/.test(value)
+      ? `Exactement ${ACCOUNT_NUMBER_LENGTH} chiffres (${value.length}/${ACCOUNT_NUMBER_LENGTH}).`
       : '';
   }
 

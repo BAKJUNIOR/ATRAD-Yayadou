@@ -62,11 +62,11 @@ export const DOSSIER_FORM: DossierFormLabels = {
   prenom: 'Prénom du client',
   nom: 'Nom du client',
   compte: 'N° de compte',
-  comptePlaceholder: 'CPT-0000000',
+  comptePlaceholder: '11 chiffres, ex. 00012345678',
   showProduit: true,
   showPrenom: true,
   showCompte: true,
-  showPrio: true,
+  showPrio: false,
   identityRequired: false,
 };
 

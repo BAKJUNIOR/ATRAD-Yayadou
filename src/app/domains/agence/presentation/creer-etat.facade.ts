@@ -28,6 +28,7 @@ import {
   changedLabels,
   emptyDossierForm,
   fieldError,
+  filterAccountInput,
   filterClientInput,
   formSnapshot,
   formValueOf,
@@ -104,7 +105,30 @@ export class CreerEtatFacade {
   private editSnapshot = '';
 
   // --- État en cours et état venant d'être transmis
-  readonly draft = this.store.draft;
+  /**
+   * Dossiers de l'état en cours. En mode « choix », seuls ceux du type d'état choisi : les autres restent dans le
+   * brouillon (`waiting`) et reviennent quand l'agent rechoisit leur type d'état.
+   */
+  readonly draft = computed(() => {
+    this.referentiel.value();
+    const all = this.store.draft();
+    const etatTypeId = this.etatType()?.id;
+    return this.autoMode()
+      ? all
+      : all.filter((dossier) => etatTypeOfDossier(dossier.type)?.id === etatTypeId);
+  });
+  /** Dossiers saisis pour les autres types d'état, par type d'état : `Réclamations (2)`. */
+  readonly waiting = computed(() => {
+    const shown = new Set(this.draft().map((dossier) => dossier.id));
+    const counts = new Map<string, number>();
+    for (const dossier of this.store.draft()) {
+      if (!shown.has(dossier.id)) {
+        const nom = etatTypeOfDossier(dossier.type)?.nom ?? 'Sans type d’état';
+        counts.set(nom, (counts.get(nom) ?? 0) + 1);
+      }
+    }
+    return [...counts].map(([nom, count]) => `« ${nom} » (${count})`).join(', ');
+  });
   readonly draftRef = this.store.draftRef;
   readonly draftCreatedAt = this.store.draftCreatedAt;
   /** Un appel à l'API est en cours (ajout, modification, transmission) : les boutons attendent. */
@@ -191,7 +215,8 @@ export class CreerEtatFacade {
 
   /** Enregistre un champ texte et renvoie la valeur retenue (le n° client est filtré). */
   setText(key: TextFieldKey, raw: string): string {
-    const text = key === 'client' ? filterClientInput(raw) : raw;
+    const text =
+      key === 'client' ? filterClientInput(raw) : key === 'compte' ? filterAccountInput(raw) : raw;
     this.value.update((value) => ({ ...value, [key]: text }));
     this.formError.set('');
     this.revalidate(key, text);
@@ -219,8 +244,8 @@ export class CreerEtatFacade {
   }
 
   /**
-   * Change de type d'état. Si le brouillon contient des dossiers que le nouveau type n'accepte
-   * pas, il est vidé après confirmation.
+   * Change de type d'état. Les dossiers déjà saisis restent dans le brouillon : seuls ceux du type d'état choisi
+   * sont affichés et transmis. Une modification en cours est abandonnée.
    */
   async setEtatType(id: string): Promise<void> {
     const current = this.etatType();
@@ -228,23 +253,8 @@ export class CreerEtatFacade {
     if (!next || id === current?.id) {
       return;
     }
-    const draft = this.draft();
-    const refused = draft.filter((dossier) => !next.dossiers.includes(dossier.type));
-    if (draft.length && refused.length) {
-      const confirmed = await this.confirm.ask({
-        title: "Changer de type d'état ?",
-        text: `Le brouillon contient ${draft.length} dossier(s) du type d'état « ${current?.nom ?? ''} ». ${refused.length} ne sont pas acceptés par « ${next.nom} » : en continuant, le brouillon sera vidé. Annuler conserve le type d'état actuel.`,
-        okLabel: 'Changer et vider le brouillon',
-        danger: true,
-      });
-      if (!confirmed) {
-        return;
-      }
-      if (
-        !(await this.run(() => Promise.all(draft.map((dossier) => this.store.remove(dossier.id)))))
-      ) {
-        return;
-      }
+    if (this.editId()) {
+      this.clearForm(true);
     }
     this.etatTypeChoice.set(id);
     if (!this.allowed().includes(this.value().type)) {
@@ -471,7 +481,10 @@ export class CreerEtatFacade {
     }
 
     const etats = await this.run(() =>
-      this.store.transmit(this.autoMode() ? null : (etatType?.id ?? null)),
+      this.store.transmit(
+        this.autoMode() ? null : (etatType?.id ?? null),
+        draft.map((dossier) => dossier.id),
+      ),
     );
     if (!etats?.length) {
       return;

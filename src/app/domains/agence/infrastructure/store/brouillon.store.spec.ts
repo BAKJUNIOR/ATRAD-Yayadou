@@ -77,4 +77,29 @@ describe('BrouillonStore', () => {
 
     expect(store.draft().map((dossier) => dossier.ref)).toEqual(['DOS-00008']);
   });
+
+  it("ne transmet que les dossiers demandés et garde les autres dans le brouillon (MO-1)", async () => {
+    const reclamation = { ...CREATED, id: 'd-9', reference: 'DOS-00009' };
+    const etatApi = { emis: () => of([]), transmettre: vi.fn(() => of([])) };
+    TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: DossierApi,
+          useValue: {
+            brouillon: () => of([CREATED, reclamation]),
+            pieces: () => of([] as ApiPieceJointe[]),
+          },
+        },
+        { provide: EtatApi, useValue: etatApi },
+        { provide: SuiviAgenceApi, useValue: { dossiers: () => of({ dossiers: [], compteurs: [] }) } },
+      ],
+    });
+    const store = TestBed.inject(BrouillonStore);
+    await store.load();
+
+    await store.transmit('te-1', ['d-8']);
+
+    expect(etatApi.transmettre).toHaveBeenCalledWith('te-1', ['d-8']);
+    expect(store.draft().map((dossier) => dossier.ref)).toEqual(['DOS-00009']);
+  });
 });
