@@ -40,7 +40,7 @@ export class SignInComponent {
     const ident = this.credentials().ident.trim();
     const { password, remember } = this.credentials();
     if (!ident || !password) {
-      this.error.set('Saisissez votre identifiant et votre mot de passe.');
+      this.error.set('Saisissez votre matricule et votre mot de passe.');
       return;
     }
     this.error.set('');
