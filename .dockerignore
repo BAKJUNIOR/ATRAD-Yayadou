@@ -40,3 +40,7 @@ CLAUDE.md
 .idea
 .angular
 Caddyfile
+e2e
+playwright.config.ts
+playwright-report
+test-results

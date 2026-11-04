@@ -43,3 +43,9 @@ __screenshots__/
 .DS_Store
 Thumbs.db
 
+
+# Tests de bout en bout (Playwright)
+/playwright-report
+/test-results
+/blob-report
+/playwright/.cache

@@ -1,0 +1,84 @@
+name: tests atrad front
+# Tests de non-régression : à chaque pull request, et avant chaque déploiement (appelé par deployment.yml).
+on:
+  pull_request:
+  workflow_call:
+    secrets:
+      DOCKERHUB_TOKEN:
+        required: true
+
+env:
+  DOCKERHUB_USER: bakjunior58
+
+jobs:
+  unitaires:
+    name: tests unitaires et build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npx ng test --watch=false
+      - run: npx ng build
+
+  bout-en-bout:
+    name: tests de bout en bout
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: atrad_bd
+          POSTGRES_USER: atrad
+          POSTGRES_PASSWORD: atrad-ci
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U atrad -d atrad_bd"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: mot de passe des comptes de démo, tiré au hasard
+        run: echo "DEMO_PASSWORD=$(openssl rand -hex 12)" >> "$GITHUB_ENV"
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: démarrer l'API (dernière image du backend, données de démo)
+        run: |
+          docker run -d --name atrad-back --network host \
+            -e SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5433/atrad_bd \
+            -e POSTGRES_USER=atrad -e DB_PASSWORD=atrad-ci \
+            -e JWT_SECRET="$(openssl rand -base64 48 | tr -d '\n')" \
+            -e DEMO_PASSWORD -e LIQUIBASE_CONTEXTS=demo \
+            -e STOCKAGE_DOSSIER=/tmp/stockage \
+            ${{ env.DOCKERHUB_USER }}/atrad-back:0.0.1-SNAPSHOT
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: démarrer le front (ng serve relaie /api et /ws vers l'API)
+        run: |
+          nohup npx ng serve --port 4200 > ng-serve.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:8080/actuator/health > /dev/null && curl -sf http://localhost:4200 > /dev/null && exit 0
+            sleep 5
+          done
+          echo "API ou front indisponible"; docker logs atrad-back | tail -50; tail -50 ng-serve.log; exit 1
+      - name: lancer les tests
+        run: npx playwright test
+      - name: rapport des tests
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapport-playwright
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
