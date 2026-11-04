@@ -1,11 +1,12 @@
 import { applyVocabulary } from './vocabulary.util';
 
-const DEFAULT = { tiers: 'Tiers', dossier: 'Dossier' };
+const DEFAULT = { tiers: 'Client', dossier: 'Dossier' };
 
 describe('applyVocabulary', () => {
-  it('names the third party « Tiers » by default', () => {
-    expect(applyVocabulary('Numéro client', DEFAULT)).toBe('Numéro tiers');
-    expect(applyVocabulary('Clients servis', DEFAULT)).toBe('Tiers servis');
+  it('names the third party « Client » by default, « Tiers » included', () => {
+    expect(applyVocabulary('Numéro client', DEFAULT)).toBe('Numéro client');
+    expect(applyVocabulary('Nom ou prénom du tiers', DEFAULT)).toBe('Nom ou prénom du client');
+    expect(applyVocabulary('N° tiers', DEFAULT)).toBe('N° client');
   });
 
   it('applies the labels chosen by the administrator, in the plural too', () => {

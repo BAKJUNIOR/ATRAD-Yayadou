@@ -50,7 +50,7 @@ export function brandFromMarque(marque: Marque, url: (path: string) => string): 
     font: isBrandFont(c.police) ? c.police : BRAND_DEFAULT.font,
     radius: c.rayon,
     darkDefault: c.modeSombreParDefaut,
-    vocab: { tiers: c.vocabulaire?.tiers || 'Tiers', dossier: c.vocabulaire?.dossier || 'Dossier' },
+    vocab: { tiers: c.vocabulaire?.tiers || 'Client', dossier: c.vocabulaire?.dossier || 'Dossier' },
   };
 }
 
