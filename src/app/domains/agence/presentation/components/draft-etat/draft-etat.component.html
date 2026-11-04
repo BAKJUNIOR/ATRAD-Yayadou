@@ -84,8 +84,7 @@
                   <span class="truncate text-[13px] text-ink">{{ dossier.client }}</span>
                 </span>
                 <span class="truncate text-[11.5px] text-ink-muted">
-                  {{ dossier.type }} · {{ dossier.produit }} ·
-                  <span [class]="priorityText[dossier.prio]">{{ dossier.prio }}</span>
+                  {{ dossier.type }}{{ dossier.produit ? ' · ' + dossier.produit : '' }}
                 </span>
               </span>
             </button>
@@ -154,6 +153,14 @@
           ⚠ {{ facade.blockMessage() }}
         </p>
       }
+    }
+    @if (facade.waiting()) {
+      <p
+        class="rounded-control border border-info-line bg-info-bg px-3 py-[9px] text-[12.5px] leading-[1.45] text-info"
+      >
+        Également en attente dans votre brouillon : {{ facade.waiting() }}. Choisissez ce type
+        d'état pour les transmettre.
+      </p>
     }
     <button
       type="button"

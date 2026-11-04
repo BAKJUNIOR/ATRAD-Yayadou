@@ -95,11 +95,14 @@ export class BrouillonStore {
     this.dossiers.update((list) => list.filter((dossier) => dossier.id !== id));
   }
 
-  /** Transmet tout le brouillon ; `typeEtatId` vide en mode de saisie automatique. Rend les états produits. */
-  async transmit(typeEtatId: string | null): Promise<Etat[]> {
-    const ids = this.dossiers().map((dossier) => dossier.id);
+  /**
+   * Transmet les dossiers donnés ; `typeEtatId` vide en mode de saisie automatique. Les autres restent dans le
+   * brouillon. Rend les états produits.
+   */
+  async transmit(typeEtatId: string | null, ids: readonly string[]): Promise<Etat[]> {
     const etats = await firstValueFrom(this.etatApi.transmettre(typeEtatId || null, ids));
-    this.dossiers.set([]);
+    const sent = new Set(ids);
+    this.dossiers.update((list) => list.filter((dossier) => !sent.has(dossier.id)));
     return etats.map(etatFromApi);
   }
 

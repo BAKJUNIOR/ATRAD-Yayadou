@@ -47,6 +47,13 @@ describe('dossier form rules', () => {
     expect(fieldError('client', '000123456789', 'Réclamation', TODAY)).toBe('');
   });
 
+  it('requires an account number of exactly 11 digits when it is given', () => {
+    expect(fieldError('compte', '', 'Réclamation', TODAY)).toBe('');
+    expect(fieldError('compte', '1234567890', 'Réclamation', TODAY)).toContain('(10/11)');
+    expect(fieldError('compte', 'CPT-0042817', 'Réclamation', TODAY)).toContain('11 chiffres');
+    expect(fieldError('compte', '00042817123', 'Réclamation', TODAY)).toBe('');
+  });
+
   it('accepts a zero amount only where it is allowed', () => {
     expect(fieldError('montantPret', '0', 'Demande de prêt', TODAY)).toBe(
       'Nombre positif attendu.',
@@ -76,7 +83,7 @@ describe('dossier form rules', () => {
         client: '000123456789',
         prenom: ' Awa ',
         nom: 'Sylla',
-        compte: 'cpt-0042817',
+        compte: '00042817123',
         extra: { montantPret: '5000000', duree: '36', apport: '0' },
       },
       [],
@@ -85,7 +92,7 @@ describe('dossier form rules', () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.data.client).toBe('Awa Sylla');
-      expect(result.data.compte).toBe('CPT-0042817');
+      expect(result.data.compte).toBe('00042817123');
       expect(result.data.montant).toBe('5 000 000 FCFA');
       expect(result.data.extra).toEqual([
         { label: 'Montant demandé', value: '5 000 000 FCFA' },

@@ -50,7 +50,7 @@ export interface Vocabulary {
   dossier: string;
 }
 
-export const DEFAULT_VOCABULARY: Vocabulary = { tiers: 'Tiers', dossier: 'Dossier' };
+export const DEFAULT_VOCABULARY: Vocabulary = { tiers: 'Client', dossier: 'Dossier' };
 
 /**
  * Création d'un état par l'entité émettrice : choix du type d'état d'abord, ou génération

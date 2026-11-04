@@ -49,8 +49,8 @@ export const FONT_QUERY: Partial<Record<BrandFont, string>> = {
 };
 
 export const BRAND_DEFAULT: Brand = {
-  appName: 'YDXTrace — Démo',
-  shortName: 'YDXTrace',
+  appName: 'MOSAIC',
+  shortName: 'MOSAIC',
   org: '',
   logoFull: '',
   logoIcon: '',
@@ -66,7 +66,7 @@ export const BRAND_DEFAULT: Brand = {
   font: 'Geist',
   radius: 10,
   darkDefault: false,
-  vocab: { tiers: 'Tiers', dossier: 'Dossier' },
+  vocab: { tiers: 'Client', dossier: 'Dossier' },
 };
 
 export interface Palette {

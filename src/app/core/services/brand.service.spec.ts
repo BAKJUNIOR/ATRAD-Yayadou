@@ -46,8 +46,8 @@ describe('BrandService', () => {
 
   it('should apply the default brand when nothing is stored', () => {
     const service = TestBed.inject(BrandService);
-    expect(service.appName()).toBe('YDXTrace — Démo');
-    expect(service.initials()).toBe('Y');
+    expect(service.appName()).toBe('MOSAIC');
+    expect(service.initials()).toBe('M');
     expect(root.style.getPropertyValue('--brand-primary')).toBe(BRAND_DEFAULT.primary);
     expect(root.style.getPropertyValue('--brand-border-radius')).toBe('10px');
   });

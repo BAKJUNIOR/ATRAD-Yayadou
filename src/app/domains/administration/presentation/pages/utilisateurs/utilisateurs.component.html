@@ -52,7 +52,8 @@
           <tr
             class="border-b border-line text-start text-[11.5px] tracking-[0.06em] text-ink-muted uppercase"
           >
-            <th scope="col" class="px-5 py-2.5 text-start font-semibold">Utilisateur</th>
+            <th scope="col" class="px-5 py-2.5 text-start font-semibold">Matricule</th>
+            <th scope="col" class="px-3 py-2.5 text-start font-semibold">Utilisateur</th>
             <th scope="col" class="px-3 py-2.5 text-start font-semibold">Entité</th>
             <th scope="col" class="px-3 py-2.5 text-start font-semibold">Profils</th>
             <th scope="col" class="px-3 py-2.5 text-start font-semibold">Dernière connexion</th>
@@ -63,15 +64,9 @@
         <tbody>
           @for (utilisateur of rows(); track utilisateur.id) {
             <tr class="border-b border-soft last:border-b-0">
-              <td class="px-5 py-3">
-                <span class="flex flex-col">
-                  <span class="font-medium text-ink"
-                    >{{ utilisateur.prenom }} {{ utilisateur.nom }}</span
-                  >
-                  <span class="font-mono text-[11.5px] text-ink-muted">{{
-                    utilisateur.matricule
-                  }}</span>
-                </span>
+              <td class="px-5 py-3 font-mono text-ink">{{ utilisateur.matricule }}</td>
+              <td class="px-3 py-3 font-medium text-ink">
+                {{ utilisateur.prenom }} {{ utilisateur.nom }}
               </td>
               <td class="px-3 py-3 text-ink-secondary">
                 {{
@@ -131,7 +126,7 @@
             </tr>
           } @empty {
             <tr>
-              <td colspan="6" class="px-5 py-10 text-center text-ink-muted">
+              <td colspan="7" class="px-5 py-10 text-center text-ink-muted">
                 Aucun utilisateur ne correspond à ces critères.
               </td>
             </tr>
