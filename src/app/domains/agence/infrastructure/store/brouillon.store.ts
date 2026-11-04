@@ -59,12 +59,18 @@ export class BrouillonStore {
     this.loaded.set(true);
   }
 
-  /** Crée le dossier puis envoie ses pièces jointes. */
+  /**
+   * Crée le dossier puis envoie ses pièces jointes. Pendant l'envoi, le temps réel peut déjà avoir relu le
+   * brouillon (`load()`) avec ce dossier : il est remplacé, jamais ajouté une seconde fois.
+   */
   async add(data: DossierData): Promise<Dossier> {
     const created = await firstValueFrom(this.dossierApi.creer(brouillonOf(data)));
     await this.sendPieces(created.id, data.pieces);
     const dossier = await this.withPieces(created);
-    this.dossiers.update((list) => [...list, dossier]);
+    this.dossiers.update((list) => [
+      ...list.filter((candidate) => candidate.id !== dossier.id),
+      dossier,
+    ]);
     return dossier;
   }
 
