@@ -9,9 +9,14 @@ env:
   DOSSIER: /opt/application/atrad/atrad-front
   DOCKERHUB_USER: bakjunior58
 jobs:
+  tests: # tests de non-régression : s'ils échouent, rien n'est déployé
+    uses: ./.github/workflows/tests.yml
+    secrets: inherit
+
   create-folder:
     name: create folder
     runs-on: ubuntu-latest
+    needs: ['tests']
     steps:
       - name: execute commands
         uses: appleboy/ssh-action@v1.0.3
