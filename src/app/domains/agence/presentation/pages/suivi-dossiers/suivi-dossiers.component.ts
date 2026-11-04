@@ -35,6 +35,18 @@ const FILTER_ICONS: Partial<Record<Status, IconName>> = {
 };
 
 type TextCriterion = Exclude<keyof SuiviCriteria, 'type'>;
+type CriterionKey = keyof SuiviCriteria;
+
+/** Critères proposés ; seul le premier est affiché d'emblée, les autres s'ajoutent à la demande (MO-3). */
+const FILTERS: readonly { key: CriterionKey; label: string }[] = [
+  { key: 'nom', label: 'Nom ou prénom du client' },
+  { key: 'num', label: 'N° client' },
+  { key: 'compte', label: 'N° de compte' },
+  { key: 'ref', label: 'Référence du dossier' },
+  { key: 'type', label: 'Type de dossier' },
+  { key: 'etat', label: "N° de l'état" },
+];
+const DEFAULT_FILTERS: readonly CriterionKey[] = ['nom'];
 
 /** Parcours agence : retrouver un dossier transmis et suivre son avancement. */
 @Component({
@@ -58,6 +70,12 @@ export class SuiviDossiersComponent {
   private readonly applied = signal<SuiviCriteria>(EMPTY_CRITERIA);
   protected readonly statusFilter = signal<Status | null>(null);
   private readonly pickedEtat = signal('');
+
+  /** Critères affichés dans le formulaire de recherche, dans l'ordre où l'agent les a ajoutés. */
+  private readonly shownFilters = signal<readonly CriterionKey[]>(DEFAULT_FILTERS);
+  protected readonly hiddenFilters = computed(() =>
+    FILTERS.filter((filter) => !this.shownFilters().includes(filter.key)),
+  );
 
   private readonly realtime = inject(RealtimeService);
 
@@ -173,6 +191,27 @@ export class SuiviDossiersComponent {
     this.draft.set(EMPTY_CRITERIA);
     this.applied.set(EMPTY_CRITERIA);
     this.statusFilter.set(null);
+    this.shownFilters.set(DEFAULT_FILTERS);
+  }
+
+  protected isShown(key: CriterionKey): boolean {
+    return this.shownFilters().includes(key);
+  }
+
+  protected addFilter(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const key = select.value as CriterionKey;
+    select.value = '';
+    if (key && !this.isShown(key)) {
+      this.shownFilters.update((keys) => [...keys, key]);
+    }
+  }
+
+  /** Retire un critère du formulaire ; sa valeur est effacée, y compris dans la recherche appliquée. */
+  protected removeFilter(key: CriterionKey): void {
+    this.shownFilters.update((keys) => keys.filter((candidate) => candidate !== key));
+    this.draft.update((criteria) => ({ ...criteria, [key]: EMPTY_CRITERIA[key] }));
+    this.applied.update((criteria) => ({ ...criteria, [key]: EMPTY_CRITERIA[key] }));
   }
 
   protected pickStatus(status: Status | null): void {

@@ -84,7 +84,7 @@
                   <span class="truncate text-[13px] text-ink">{{ dossier.client }}</span>
                 </span>
                 <span class="truncate text-[11.5px] text-ink-muted">
-                  {{ dossier.type }} · {{ dossier.produit }}
+                  {{ dossier.type }}{{ dossier.produit ? ' · ' + dossier.produit : '' }}
                 </span>
               </span>
             </button>

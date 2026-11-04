@@ -99,62 +99,137 @@
       class="grid grid-cols-[repeat(auto-fill,minmax(min(100%,200px),1fr))] gap-x-3.5 gap-y-3 border-b border-line bg-subtle px-5 py-4"
       (submit)="search($event)"
     >
-      <label class="form-label gap-[5px]">
-        N° client
-        <input
-          class="form-control font-mono text-[13px]"
-          inputmode="numeric"
-          maxlength="12"
-          placeholder="12 chiffres"
-          [value]="criteria.num"
-          (input)="onCriterion('num', $event)"
-        />
-      </label>
-      <label class="form-label gap-[5px]">
-        Nom ou prénom du client
-        <input
-          class="form-control text-[13px]"
-          placeholder="Ex. Koffi"
-          [value]="criteria.nom"
-          (input)="onCriterion('nom', $event)"
-        />
-      </label>
-      <label class="form-label gap-[5px]">
-        N° de compte
-        <input
-          class="form-control text-[13px]"
-          placeholder="Ex. 00012345678"
-          [value]="criteria.compte"
-          (input)="onCriterion('compte', $event)"
-        />
-      </label>
-      <label class="form-label gap-[5px]">
-        Référence du dossier
-        <input
-          class="form-control font-mono text-[13px]"
-          placeholder="Ex. DOS-88201"
-          [value]="criteria.ref"
-          (input)="onCriterion('ref', $event)"
-        />
-      </label>
-      <label class="form-label gap-[5px]">
-        Type de dossier
-        <select class="form-control text-[13px]" (change)="onType($event)">
-          <option value="" [selected]="!criteria.type">Tous les types</option>
-          @for (type of types; track type) {
-            <option [value]="type" [selected]="type === criteria.type">{{ type }}</option>
-          }
-        </select>
-      </label>
-      <label class="form-label gap-[5px]">
-        N° de l'état
-        <input
-          class="form-control font-mono text-[13px]"
-          placeholder="Ex. ET-2026-0401"
-          [value]="criteria.etat"
-          (input)="onCriterion('etat', $event)"
-        />
-      </label>
+      @if (isShown('nom')) {
+        <label class="form-label gap-[5px]">
+          Nom ou prénom du client
+          <input
+            class="form-control text-[13px]"
+            placeholder="Ex. Koffi"
+            [value]="criteria.nom"
+            (input)="onCriterion('nom', $event)"
+          />
+        </label>
+      }
+      @if (isShown('num')) {
+        <div class="relative">
+          <label class="form-label gap-[5px]">
+            N° client
+            <input
+              class="form-control font-mono text-[13px]"
+              inputmode="numeric"
+              maxlength="12"
+              placeholder="12 chiffres"
+              [value]="criteria.num"
+              (input)="onCriterion('num', $event)"
+            />
+          </label>
+          <button
+            type="button"
+            class="absolute end-0 top-0 rounded p-0.5 text-ink-faint hover:text-ink"
+            aria-label="Retirer le filtre N° client"
+            (click)="removeFilter('num')"
+          >
+            <app-icon name="close" [size]="13" [strokeWidth]="2" />
+          </button>
+        </div>
+      }
+      @if (isShown('compte')) {
+        <div class="relative">
+          <label class="form-label gap-[5px]">
+            N° de compte
+            <input
+              class="form-control text-[13px]"
+              inputmode="numeric"
+              placeholder="Ex. 00012345678"
+              [value]="criteria.compte"
+              (input)="onCriterion('compte', $event)"
+            />
+          </label>
+          <button
+            type="button"
+            class="absolute end-0 top-0 rounded p-0.5 text-ink-faint hover:text-ink"
+            aria-label="Retirer le filtre N° de compte"
+            (click)="removeFilter('compte')"
+          >
+            <app-icon name="close" [size]="13" [strokeWidth]="2" />
+          </button>
+        </div>
+      }
+      @if (isShown('ref')) {
+        <div class="relative">
+          <label class="form-label gap-[5px]">
+            Référence du dossier
+            <input
+              class="form-control font-mono text-[13px]"
+              placeholder="Ex. DOS-88201"
+              [value]="criteria.ref"
+              (input)="onCriterion('ref', $event)"
+            />
+          </label>
+          <button
+            type="button"
+            class="absolute end-0 top-0 rounded p-0.5 text-ink-faint hover:text-ink"
+            aria-label="Retirer le filtre Référence du dossier"
+            (click)="removeFilter('ref')"
+          >
+            <app-icon name="close" [size]="13" [strokeWidth]="2" />
+          </button>
+        </div>
+      }
+      @if (isShown('type')) {
+        <div class="relative">
+          <label class="form-label gap-[5px]">
+            Type de dossier
+            <select class="form-control text-[13px]" (change)="onType($event)">
+              <option value="" [selected]="!criteria.type">Tous les types</option>
+              @for (type of types; track type) {
+                <option [value]="type" [selected]="type === criteria.type">{{ type }}</option>
+              }
+            </select>
+          </label>
+          <button
+            type="button"
+            class="absolute end-0 top-0 rounded p-0.5 text-ink-faint hover:text-ink"
+            aria-label="Retirer le filtre Type de dossier"
+            (click)="removeFilter('type')"
+          >
+            <app-icon name="close" [size]="13" [strokeWidth]="2" />
+          </button>
+        </div>
+      }
+      @if (isShown('etat')) {
+        <div class="relative">
+          <label class="form-label gap-[5px]">
+            N° de l'état
+            <input
+              class="form-control font-mono text-[13px]"
+              placeholder="Ex. ET-2026-0401"
+              [value]="criteria.etat"
+              (input)="onCriterion('etat', $event)"
+            />
+          </label>
+          <button
+            type="button"
+            class="absolute end-0 top-0 rounded p-0.5 text-ink-faint hover:text-ink"
+            aria-label="Retirer le filtre N° de l'état"
+            (click)="removeFilter('etat')"
+          >
+            <app-icon name="close" [size]="13" [strokeWidth]="2" />
+          </button>
+        </div>
+      }
+      @if (hiddenFilters().length) {
+        <label class="form-label gap-[5px]">
+          <span class="sr-only">Ajouter un filtre</span>
+          <span aria-hidden="true">&nbsp;</span>
+          <select class="form-control text-[13px] text-brand-ink" (change)="addFilter($event)">
+            <option value="" selected>+ Ajouter un filtre</option>
+            @for (filter of hiddenFilters(); track filter.key) {
+              <option [value]="filter.key">{{ filter.label }}</option>
+            }
+          </select>
+        </label>
+      }
       <div class="flex min-w-0 items-end gap-2">
         <button type="submit" class="btn-primary flex-1 px-4 py-2.5">
           <app-icon name="search" [size]="15" [strokeWidth]="2" />
