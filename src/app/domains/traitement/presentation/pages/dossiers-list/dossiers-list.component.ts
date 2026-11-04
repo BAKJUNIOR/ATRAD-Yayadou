@@ -196,6 +196,15 @@ export class DossiersListComponent {
     this.state.search();
   }
 
+  protected addFilter(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const key = select.value as keyof PortfolioCriteria;
+    select.value = '';
+    if (key) {
+      this.state.showFilter(key);
+    }
+  }
+
   protected open(id: string): void {
     void this.router.navigate(['/traitement/dossiers', id]);
   }
