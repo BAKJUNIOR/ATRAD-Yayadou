@@ -1,0 +1,222 @@
+@let draft = this.draft();
+
+<div class="flex animate-enter flex-col gap-[18px]">
+  <section class="panel flex flex-col gap-3 px-5 py-4" aria-labelledby="type-title">
+    <div class="flex flex-col gap-[3px]">
+      <h2 id="type-title" class="text-[14.5px] font-semibold tracking-[-0.01em] text-ink">
+        Formulaire de saisie d'un type de dossier
+      </h2>
+      <span class="text-[12.5px] text-ink-muted">
+        Les champs et les pièces attendues s'affichent à l'agence quand elle saisit ce type de
+        dossier. Le numéro client, le nom, le prénom et le n° de compte sont toujours demandés.
+      </span>
+    </div>
+    <label class="form-label max-w-[420px] gap-[5px]">
+      Type de dossier
+      <select class="form-control" (change)="pick($event)">
+        <option value="" [selected]="!selected()">— Choisir un type de dossier —</option>
+        @for (type of types(); track type.id) {
+          <option [value]="type.id" [selected]="type.id === selected()?.id">{{ type.nom }}</option>
+        }
+      </select>
+    </label>
+  </section>
+
+  @if (loading()) {
+    <p class="text-[13px] text-ink-muted" role="status">Chargement du formulaire…</p>
+  }
+
+  @if (draft && selected(); as type) {
+    <section class="panel flex flex-col gap-3 px-5 py-4" aria-labelledby="champs-title">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-col gap-[3px]">
+          <h2 id="champs-title" class="text-[14.5px] font-semibold text-ink">Champs propres</h2>
+          <span class="text-[12.5px] text-ink-muted">
+            {{ draft.champs.length }} champ(s), dans l'ordre d'affichage
+          </span>
+        </div>
+        <button
+          type="button"
+          class="btn-primary gap-[7px] px-3.5 py-2 text-[13px]"
+          (click)="addChamp()"
+        >
+          <app-icon name="plus" [size]="14" [strokeWidth]="2.4" />
+          Ajouter un champ
+        </button>
+      </div>
+
+      @if (!draft.champs.length) {
+        <p class="text-[13px] text-ink-muted">Aucun champ propre à ce type de dossier.</p>
+      }
+
+      <ol class="flex flex-col gap-2.5">
+        @for (
+          champ of draft.champs;
+          track champ.key;
+          let i = $index, first = $first, last = $last
+        ) {
+          <li class="flex flex-col gap-3 rounded-brand border border-line bg-card px-4 py-3">
+            <div class="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] items-end gap-3">
+              <label class="form-label gap-[5px]">
+                Libellé *
+                <input
+                  type="text"
+                  class="form-control"
+                  maxlength="150"
+                  placeholder="Ex. Montant demandé"
+                  [value]="champ.libelle"
+                  (input)="setLibelle(champ, $event)"
+                />
+              </label>
+              <label class="form-label gap-[5px]">
+                Type de donnée
+                <select class="form-control" (change)="setKind(champ, $event)">
+                  @for (kind of kinds; track kind.id) {
+                    <option [value]="kind.id" [selected]="kind.id === champ.kind">
+                      {{ kind.label }}
+                    </option>
+                  }
+                </select>
+              </label>
+              @if (champ.kind === 'NOMBRE') {
+                <label class="form-label gap-[5px]">
+                  Unité
+                  <select class="form-control" (change)="setUnite(champ, $event)">
+                    @for (unite of unites; track unite.id) {
+                      <option [value]="unite.id" [selected]="unite.id === champ.unite">
+                        {{ unite.label }}
+                      </option>
+                    }
+                  </select>
+                </label>
+              }
+              <label class="flex items-center gap-2 pb-2.5 text-[13px] text-ink">
+                <input
+                  type="checkbox"
+                  class="size-4 accent-brand"
+                  [checked]="champ.obligatoire"
+                  (change)="setObligatoire(champ, $event)"
+                />
+                Obligatoire
+              </label>
+            </div>
+            @if (champ.kind === 'LISTE') {
+              <label class="form-label gap-[5px]">
+                Valeurs proposées, une par ligne *
+                <textarea
+                  class="form-control min-h-[88px]"
+                  [value]="champ.valeurs"
+                  (input)="setValeurs(champ, $event)"
+                ></textarea>
+              </label>
+            }
+            <div class="flex flex-wrap justify-end gap-1">
+              <button
+                type="button"
+                class="rounded-control p-2 text-ink-muted hover:bg-soft hover:text-ink disabled:opacity-40"
+                [disabled]="first"
+                [attr.aria-label]="'Monter le champ ' + (champ.libelle || i + 1)"
+                (click)="move(i, -1)"
+              >
+                <app-icon name="chevron-down" [size]="15" class="rotate-180" />
+              </button>
+              <button
+                type="button"
+                class="rounded-control p-2 text-ink-muted hover:bg-soft hover:text-ink disabled:opacity-40"
+                [disabled]="last"
+                [attr.aria-label]="'Descendre le champ ' + (champ.libelle || i + 1)"
+                (click)="move(i, 1)"
+              >
+                <app-icon name="chevron-down" [size]="15" />
+              </button>
+              <button
+                type="button"
+                class="rounded-control p-2 text-danger hover:bg-danger-bg"
+                [attr.aria-label]="'Retirer le champ ' + (champ.libelle || i + 1)"
+                (click)="removeChamp(champ)"
+              >
+                <app-icon name="trash" [size]="15" />
+              </button>
+            </div>
+          </li>
+        }
+      </ol>
+    </section>
+
+    <section class="panel flex flex-col gap-3 px-5 py-4" aria-labelledby="pieces-title">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-col gap-[3px]">
+          <h2 id="pieces-title" class="text-[14.5px] font-semibold text-ink">Pièces attendues</h2>
+          <span class="text-[12.5px] text-ink-muted">
+            Proposées à l'agence et au service traitant (demande de documents)
+          </span>
+        </div>
+        <button
+          type="button"
+          class="btn-primary gap-[7px] px-3.5 py-2 text-[13px]"
+          (click)="addPiece()"
+        >
+          <app-icon name="plus" [size]="14" [strokeWidth]="2.4" />
+          Ajouter une pièce
+        </button>
+      </div>
+      @if (!draft.pieces.length) {
+        <p class="text-[13px] text-ink-muted">Aucune pièce attendue.</p>
+      }
+      <ul class="flex flex-col gap-2">
+        @for (piece of draft.pieces; track $index; let i = $index) {
+          <li class="flex items-center gap-2">
+            <input
+              type="text"
+              class="form-control flex-1"
+              maxlength="200"
+              placeholder="Ex. Pièce d'identité"
+              [attr.aria-label]="'Pièce attendue n° ' + (i + 1)"
+              [value]="piece"
+              (input)="setPiece(i, $event)"
+            />
+            <button
+              type="button"
+              class="rounded-control p-2 text-danger hover:bg-danger-bg"
+              [attr.aria-label]="'Retirer la pièce ' + (piece || i + 1)"
+              (click)="removePiece(i)"
+            >
+              <app-icon name="trash" [size]="15" />
+            </button>
+          </li>
+        }
+      </ul>
+    </section>
+
+    @if (dirty() && errors().length) {
+      <div
+        role="alert"
+        class="flex flex-col gap-1 rounded-control border border-danger-line bg-danger-bg px-3 py-2.5 text-[12.5px] font-medium text-danger"
+      >
+        @for (error of errors(); track error) {
+          <span>⚠ {{ error }}</span>
+        }
+      </div>
+    }
+
+    <div class="flex flex-wrap justify-end gap-2">
+      <button
+        type="button"
+        class="rounded-control px-3.5 py-2 text-[13px] whitespace-nowrap text-ink-muted hover:bg-soft hover:text-ink disabled:opacity-50"
+        [disabled]="!dirty()"
+        (click)="cancel()"
+      >
+        Annuler les modifications
+      </button>
+      <button
+        type="button"
+        class="btn-primary px-4 py-2 text-[13px]"
+        [disabled]="!canSave()"
+        [attr.title]="!dirty() ? 'Aucune modification' : (errors()[0] ?? 'Enregistrer ' + type.nom)"
+        (click)="save()"
+      >
+        Enregistrer
+      </button>
+    </div>
+  }
+</div>

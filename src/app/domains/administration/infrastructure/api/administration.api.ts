@@ -4,9 +4,11 @@ import { environment } from '../../../../../environments/environment';
 import { BaseService } from '../../../../core/services/base.service';
 import {
   ApiEntite,
+  ApiFormulaire,
   ApiTypeDossier,
   ApiTypeEtat,
 } from '../../../dossiers/domain/entities/referentiel.entity';
+import { FormulaireRequest } from '../../domain/formulaire';
 import {
   ApiModeRepartition,
   ApiRepartition,
@@ -93,6 +95,20 @@ export class AdministrationApi {
       typeEtatId,
       entiteTraitementId,
     });
+  }
+
+  formulaire(typeDossierId: string): Observable<ApiFormulaire> {
+    return this.baseService.getOne<ApiFormulaire>(this.url.typesDossier.formulaire(typeDossierId));
+  }
+
+  modifierFormulaire(
+    typeDossierId: string,
+    formulaire: FormulaireRequest,
+  ): Observable<ApiFormulaire> {
+    return this.baseService.update<ApiFormulaire>(
+      this.url.typesDossier.formulaire(typeDossierId),
+      formulaire,
+    );
   }
 
   supprimerTypeDossier(id: string): Observable<void> {

@@ -148,6 +148,12 @@ export const NAVIGATION: Record<Role, NavMenu> = {
             icon: '▦',
             path: '/administration/types-etat',
           },
+          {
+            id: 'formulaires',
+            label: 'Formulaires des dossiers',
+            icon: '☰',
+            path: '/administration/formulaires',
+          },
         ],
       },
       {
