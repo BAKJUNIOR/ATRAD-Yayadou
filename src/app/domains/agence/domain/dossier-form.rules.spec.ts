@@ -47,7 +47,7 @@ describe('dossier form rules', () => {
   });
 
   it('requires an account number of exactly 11 digits when it is given', () => {
-    expect(fieldError('compte', '', 'Réclamation', TODAY)).toBe('');
+    expect(fieldError('compte', '', 'Réclamation', TODAY)).toBe('Champ obligatoire.');
     expect(fieldError('compte', '1234567890', 'Réclamation', TODAY)).toContain('(10/11)');
     expect(fieldError('compte', 'CPT-0042817', 'Réclamation', TODAY)).toContain('11 chiffres');
     expect(fieldError('compte', '00042817123', 'Réclamation', TODAY)).toBe('');
@@ -69,8 +69,8 @@ describe('dossier form rules', () => {
     const result = buildDossierData(emptyDossierForm(), [], TODAY);
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      // N° client + les deux champs obligatoires d'une ouverture de compte.
-      expect(result.error).toContain('3 champ(s)');
+      // N° client, n° de compte et les deux champs obligatoires d'une ouverture de compte.
+      expect(result.error).toContain('4 champ(s)');
     }
   });
 
@@ -109,6 +109,7 @@ describe('dossier form rules', () => {
           type: 'Demande de prêt',
           client: '000123456789',
           nom,
+          compte: '00042817123',
           extra: { montantPret: '100', duree, apport: '0' },
         },
         [],

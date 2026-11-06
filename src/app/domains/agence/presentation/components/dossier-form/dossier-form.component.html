@@ -136,10 +136,7 @@
       </app-form-field>
 
       @if (labels.showCompte) {
-        <app-form-field
-          [label]="labels.compte + (labels.identityRequired ? ' *' : '')"
-          [error]="errors['compte'] ?? ''"
-        >
+        <app-form-field [label]="labels.compte + ' *'" [error]="errors['compte'] ?? ''">
           <input
             type="text"
             autocomplete="off"

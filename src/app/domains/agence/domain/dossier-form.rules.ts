@@ -102,9 +102,12 @@ export function fieldError(key: string, raw: string, type: DossierType, todayIso
       : '';
   }
   if (key === 'compte') {
-    return value && !/^\d{11}$/.test(value)
-      ? `Exactement ${ACCOUNT_NUMBER_LENGTH} chiffres (${value.length}/${ACCOUNT_NUMBER_LENGTH}).`
-      : '';
+    if (!value) {
+      return 'Champ obligatoire.';
+    }
+    return /^\d{11}$/.test(value)
+      ? ''
+      : `Exactement ${ACCOUNT_NUMBER_LENGTH} chiffres (${value.length}/${ACCOUNT_NUMBER_LENGTH}).`;
   }
 
   const field = fieldsOf(type).find((candidate) => candidate.key === key);
