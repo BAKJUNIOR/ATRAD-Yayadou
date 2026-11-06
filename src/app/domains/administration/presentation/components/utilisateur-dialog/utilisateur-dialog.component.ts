@@ -12,7 +12,6 @@ import {
 } from '../../../infrastructure/api/utilisateur.api';
 
 export interface UtilisateurDialogData {
-  /** Utilisateur à modifier ; absent pour une création. */
   utilisateur?: Utilisateur;
   profils: ApiProfil[];
   fonctions: ApiFonction[];
@@ -30,10 +29,6 @@ interface Saisie {
   profils: string[];
 }
 
-/**
- * Création ou modification d'un utilisateur, enregistrée par l'API ; se ferme sur l'utilisateur à jour. Les refus
- * du serveur (matricule déjà pris, mot de passe trop faible...) s'affichent dans le dialogue.
- */
 @Component({
   selector: 'app-utilisateur-dialog',
   imports: [DialogHeadComponent],

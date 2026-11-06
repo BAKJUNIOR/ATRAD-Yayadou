@@ -3,7 +3,6 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../../../environments/environment';
 import { BaseService } from '../../../../core/services/base.service';
 
-/** Filtres facultatifs ; la période (`AAAA-MM-JJ`) porte sur la date de réception des dossiers. */
 export interface FiltrePilotage {
   agenceId?: string;
   typeDossierId?: string;
@@ -11,7 +10,6 @@ export interface FiltrePilotage {
   dateFin?: string;
 }
 
-/** Barre de répartition (par statut ou par type) : `pourcentage` du périmètre. */
 export interface ApiIndicateur {
   code: string;
   libelle: string;
@@ -19,7 +17,6 @@ export interface ApiIndicateur {
   pourcentage: number;
 }
 
-/** Indicateurs d'une agence émettrice ; `respectDelais` vide quand aucun dossier n'est terminé. */
 export interface ApiAgenceIndicateurs {
   agenceId: string;
   code: string;
@@ -32,7 +29,6 @@ export interface ApiAgenceIndicateurs {
   delaiMoyenJours: number | null;
 }
 
-/** Écran « Tableau de bord » ; `termines` : validés, traités ou clôturés. */
 export interface ApiTableauDeBord {
   total: number;
   termines: number;
@@ -59,7 +55,6 @@ export interface ApiDossierEnRetard {
   joursDeRetard: number;
 }
 
-/** Écran « Respect des délais » : retards du plus critique au moins critique, agences de la moins bonne à la meilleure. */
 export interface ApiRespectDelais {
   respectDelais: number | null;
   enRetard: number;
@@ -70,7 +65,6 @@ export interface ApiRespectDelais {
   classementAgences: ApiAgenceIndicateurs[];
 }
 
-/** Indicateurs du profil Pilotage, calculés par l'API. */
 @Service()
 export class PilotageApi {
   private readonly baseService = inject(BaseService);

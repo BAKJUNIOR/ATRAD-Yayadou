@@ -16,7 +16,6 @@ const PRIORITY_TEXT: Record<Priorite, string> = {
   Urgente: 'text-danger',
 };
 
-/** Parcours traitement (répartiteur) : attribuer les dossiers du bac aux membres de l'entité. */
 @Component({
   selector: 'app-affectation',
   imports: [RouterLink, StatCardComponent],
@@ -31,10 +30,8 @@ export class AffectationComponent {
   protected readonly notAssigned = NOT_ASSIGNED;
   protected readonly priorityText = PRIORITY_TEXT;
 
-  /** Gestionnaire choisi pour chaque dossier du bac, avant confirmation. */
   private readonly picks = signal<Record<string, string>>({});
 
-  /** Bac du répartiteur : dossiers reçus sans gestionnaire, lus dans l'API. */
   protected readonly rows = this.context.bacDossiers;
   private readonly active = computed(() =>
     this.context.entityDossiers().filter((dossier) => dossier.gest && dossier.status !== 'Clôturé'),
@@ -57,7 +54,6 @@ export class AffectationComponent {
     return counts.map((entry) => ({
       ...entry,
       width: `${Math.round((entry.n / max) * 100)}%`,
-      // Le gestionnaire le plus chargé ressort en couleur de titre.
       barClass: entry.n > 0 && entry.n >= max ? 'bg-heading' : 'bg-brand-mid',
       hint: entry.n ? `${entry.n} dossier(s) en cours` : 'Aucun dossier en cours',
     }));

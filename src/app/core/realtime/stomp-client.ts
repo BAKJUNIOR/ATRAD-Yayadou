@@ -1,24 +1,16 @@
-/** Message STOMP reçu sur un abonnement. */
 export interface StompMessage {
   headers: Record<string, string>;
   body: string;
 }
 
-/** Réglages et rappels d'un client STOMP. */
 export interface StompOptions {
   url: string;
-  /** En-têtes de la trame CONNECT, relus à chaque (re)connexion (jeton à jour). */
   connectHeaders: () => Record<string, string>;
-  /** Files abonnées après la connexion ; `headers.destination` dit d'où vient chaque message. */
   destinations: readonly string[];
   onMessage: (message: StompMessage) => void;
-  /** Connexion établie et abonnement fait : l'appelant peut rattraper ce qui a été manqué. */
   onConnected?: () => void;
-  /** Connexion perdue, ou refusée par le serveur. */
   onDisconnected?: (refused: boolean) => void;
-  /** Tentatives de reconnexion avant d'abandonner (10 par défaut). */
   maxAttempts?: number;
-  /** Premier délai de reconnexion, doublé à chaque échec jusqu'à 30 s (2 s par défaut). */
   retryMs?: number;
 }
 

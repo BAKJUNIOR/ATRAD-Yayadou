@@ -3,11 +3,9 @@ import { authGuard, guestGuard } from './core/guards/auth.guard';
 import { roleGuard } from './core/guards/role.guard';
 import { receptionGuard } from './domains/accueil/presentation/reception.guard';
 
-// `title` ne porte que le nom de l'écran : PageTitleStrategy ajoute le nom de l'application.
 export const routes: Routes = [
   {
     path: '',
-    // Chargée à la demande : la page de connexion n'a pas besoin de la coquille applicative.
     loadComponent: () =>
       import('./layout/app-layout/app-layout.component').then((m) => m.AppLayoutComponent),
     canActivate: [authGuard],

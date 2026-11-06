@@ -6,7 +6,6 @@ import { ApiDossier, ApiDossierDetail } from '../../../dossiers/domain/entities/
 
 export type ApiModeRepartition = 'AUTOMATIQUE' | 'POOL' | 'REPARTITEUR';
 
-/** Membre de l'équipe d'une entité de traitement ; `droits` : Traiter, S'attribuer, Affecter, Rechercher. */
 export interface ApiMembre {
   utilisateurId: string;
   matricule: string;
@@ -17,7 +16,6 @@ export interface ApiMembre {
   droits: string[];
 }
 
-/** Répartition interne d'une entité de traitement : mode d'attribution et équipe. */
 export interface ApiRepartition {
   entiteId: string;
   entiteCode: string;
@@ -25,7 +23,6 @@ export interface ApiRepartition {
   membres: ApiMembre[];
 }
 
-/** Parcours traitement : portefeuilles, fiche d'un dossier et actions de l'équipe. */
 @Service()
 export class TraitementApi {
   private readonly baseService = inject(BaseService);
@@ -48,12 +45,10 @@ export class TraitementApi {
     return this.baseService.getOne<ApiDossier[]>(this.url.bac);
   }
 
-  /** Tous les dossiers de l'entité (droit « Rechercher »). */
   recherche(): Observable<ApiDossier[]> {
     return this.baseService.getOne<ApiDossier[]>(this.url.recherche);
   }
 
-  /** Fiche : actions possibles (pour le gestionnaire en charge), documents attendus, retour, pièces, historique. */
   dossier(id: string): Observable<ApiDossierDetail> {
     return this.baseService.getOne<ApiDossierDetail>(this.url.dossier(id));
   }
@@ -62,7 +57,6 @@ export class TraitementApi {
     return this.baseService.create<ApiDossier>(this.url.prendre(id));
   }
 
-  /** Attribution depuis le bac ou réaffectation, par un répartiteur. */
   affecter(id: string, gestionnaireId: string, commentaire?: string): Observable<ApiDossier> {
     return this.baseService.create<ApiDossier>(this.url.affecter(id), {
       gestionnaireId,
@@ -70,7 +64,6 @@ export class TraitementApi {
     });
   }
 
-  /** Passage du circuit par son code (VALIDER, CLOTURER...) ; `commentaire` sert de motif s'il est exigé. */
   agir(id: string, actionCode: string, commentaire?: string): Observable<ApiDossier> {
     return this.baseService.create<ApiDossier>(this.url.actions(id), { actionCode, commentaire });
   }

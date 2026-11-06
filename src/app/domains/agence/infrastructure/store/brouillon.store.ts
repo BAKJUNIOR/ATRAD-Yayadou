@@ -16,11 +16,6 @@ import { DossierApi } from '../../../dossiers/infrastructure/api/dossier.api';
 import { EtatApi } from '../../../dossiers/infrastructure/api/etat.api';
 import { SuiviAgenceApi } from '../api/suivi-agence.api';
 
-/**
- * Brouillon de l'entité émettrice, tenu par l'API : les dossiers Temporaire en attente de transmission, avec
- * leurs pièces jointes. Chaque méthode appelle l'API puis met la liste à jour ; une erreur est déjà signalée par
- * l'intercepteur et remonte à l'appelant.
- */
 @Service()
 export class BrouillonStore {
   private readonly dossierApi = inject(DossierApi);
@@ -32,17 +27,14 @@ export class BrouillonStore {
 
   readonly draft = this.dossiers.asReadonly();
   readonly isLoaded = this.loaded.asReadonly();
-  /** États émis par l'agence (sans leurs dossiers) et nombre de ses dossiers clôturés, pour l'accueil. */
   readonly etatsEmis = signal<Etat[]>([]);
   readonly clotures = signal(0);
-  /** Création du plus ancien dossier du brouillon. */
   readonly draftCreatedAt = computed(() =>
     this.dossiers().reduce(
       (oldest, dossier) => (!oldest || dossier.createdAt < oldest ? dossier.createdAt : oldest),
       '',
     ),
   );
-  /** L'API attribue la référence de l'état à sa transmission. */
   readonly draftRef = computed(() => 'Nouvel état');
 
   async load(): Promise<void> {
@@ -74,7 +66,6 @@ export class BrouillonStore {
     return dossier;
   }
 
-  /** Enregistre le dossier, envoie les nouvelles pièces et supprime celles retirées. */
   async update(previous: Dossier, data: DossierData): Promise<Dossier> {
     const saved = await firstValueFrom(this.dossierApi.modifier(previous.id, brouillonOf(data)));
     const kept = new Set(data.pieces.map((piece) => piece.id));

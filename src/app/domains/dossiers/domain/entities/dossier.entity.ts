@@ -4,20 +4,16 @@ import { DossierType, Priorite, Produit } from '../dossier-catalog';
 
 export interface PieceJointe {
   id: string;
-  /** Dossier de l'API qui porte la pièce ; absent tant qu'elle n'est pas envoyée. */
   dossierId?: string;
-  /** Fichier choisi, gardé en mémoire jusqu'à son envoi à l'API. */
   file?: File;
   name: string;
   size: number;
   mime: string;
-  /** Extension en majuscules, affichée en pastille (PDF, JPG, ...). */
   ext: string;
   at: string;
   by: string;
 }
 
-/** Information propre au type de dossier, déjà mise en forme pour l'affichage. */
 export interface DossierExtra {
   label: string;
   value: string;
@@ -28,18 +24,14 @@ export interface DossierLog {
   who: string;
   label: string;
   tone: TimelineTone;
-  /** Événement antérieur à la transmission (modification en agence). */
   pre?: boolean;
 }
 
-/** Contenu saisi par l'agence. */
 export interface DossierData {
-  /** Numéro client, 12 chiffres. */
   num: string;
   prenom: string;
   nom: string;
   compte: string;
-  /** Nom complet affiché dans les listes. */
   client: string;
   type: DossierType;
   produit: Produit;
@@ -47,58 +39,41 @@ export interface DossierData {
   note: string;
   pieces: PieceJointe[];
   extra: DossierExtra[];
-  /** Valeurs brutes des champs spécifiques, pour rouvrir le formulaire à l'identique. */
   xraw: Record<string, string>;
   montant?: string;
 }
 
-/** Dossier d'un état en cours de constitution (statut Temporaire). */
 export interface Dossier extends DossierData {
-  /** Identifiant (UUID) du dossier dans l'API. */
   id: string;
   ref: string;
   createdAt: string;
   log: DossierLog[];
 }
 
-/** Pointage d'un dossier par l'Accueil. */
 export interface ReceptionMark {
   at: string;
   by: string;
 }
 
-/** Dossier d'un état transmis. */
 export interface EtatDossier extends Dossier {
   status: Status;
   transmisAt: string;
   rec?: ReceptionMark;
   nonRec?: ReceptionMark;
-  /** Entité de traitement réelle, renseignée au routage. */
   entite?: string;
 }
 
-/**
- * Dossier réceptionné par l'entité réceptrice et dispatché vers son entité de traitement.
- * Il vit désormais indépendamment de l'état qui l'a transmis.
- */
 export interface RoutedDossier extends Dossier {
   status: Status;
-  /** Agence émettrice avec son code : `Agence Plateau (AG-014)`. */
   agence: string;
-  /** Référence de l'état d'origine. */
   etat: string;
   entite: string;
-  /** Date du routage vers l'entité. */
   affecte: string;
   affectedBy: string;
-  /** Traité par l'entité réceptrice elle-même : pas d'étape de dispatch. */
   direct?: boolean;
-  /** Échéance de traitement (`yyyy-MM-dd`), déduite de la priorité. */
   echeanceIso: string;
   delai: string;
-  /** Gestionnaire en charge ; vide tant que le dossier n'est pas pris en charge. */
   gest: string;
-  /** Identifiant (UUID) du gestionnaire en charge dans l'API. */
   gestId?: string;
   gestAt: string;
   comments?: DossierComment[];
@@ -106,17 +81,13 @@ export interface RoutedDossier extends Dossier {
   validatedBy?: string;
   closedAt?: string;
   closedBy?: string;
-  // Demande de documents complémentaires à l'agence.
   docsMissing?: string[];
   docsReqAt?: string;
-  /** Date limite de fourniture (`yyyy-MM-dd`). */
   docsDeadlineIso?: string;
   docsNote?: string;
-  // Retour vers l'agence, renseigné par l'entité de traitement puis par l'Accueil.
   rejectedAt?: string;
   rejectedBy?: string;
   rejectReason?: string;
-  /** Le retour est motivé par des documents manquants (et non par une non-éligibilité). */
   docsRetAt?: string;
   complements?: string;
   renvoyeAt?: string;

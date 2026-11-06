@@ -10,13 +10,8 @@ const TONES: Record<DialogTone, { icon: IconName; classes: string }> = {
   info: { icon: 'info', classes: 'text-info' },
 };
 
-/** Angles (en degrés) des lobes de la pastille festonnée. */
 const LOBES = [0, 45, 90, 135, 180, 225, 270, 315];
 
-/**
- * En-tête commun des dialogues : bouton de fermeture, pastille colorée selon le ton,
- * titre centré et texte d'explication (contenu projeté).
- */
 @Component({
   selector: 'app-dialog-head',
   imports: [IconComponent],

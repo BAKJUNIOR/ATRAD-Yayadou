@@ -17,7 +17,6 @@ import { BackdropComponent } from '../backdrop/backdrop.component';
 
 const HOME_TITLE = 'Accueil';
 
-/** Coquille des écrans connectés : barre latérale, en-tête, titre de l'écran et zone de contenu. */
 @Component({
   selector: 'app-layout',
   imports: [RouterLink, RouterOutlet, AppHeaderComponent, AppSidebarComponent, BackdropComponent],
@@ -76,7 +75,6 @@ export class AppLayoutComponent {
     const role = this.session.role();
     return role ? NAVIGATION[role].title : '';
   });
-  /** Sur l'accueil, le fil d'Ariane s'arrête au parcours. */
   protected readonly showPageCrumb = computed(() => this.pageTitle() !== HOME_TITLE);
 
   private readonly brouillon = inject(BrouillonStore);
@@ -84,8 +82,6 @@ export class AppLayoutComponent {
   private readonly traitement = inject(TraitementContext);
 
   constructor() {
-    // Données du profil connecté, lues dans l'API à l'ouverture de la session (pastilles du menu, accueil), puis
-    // relues à chaque modification signalée en temps réel.
     effect(() => {
       const account = this.session.account();
       untracked(() => this.loadProfileData(account?.role));

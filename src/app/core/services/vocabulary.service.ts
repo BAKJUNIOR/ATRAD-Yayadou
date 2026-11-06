@@ -3,15 +3,9 @@ import { Service, effect, inject } from '@angular/core';
 import { BrandService } from './brand.service';
 import { VocabularyLabels, applyVocabulary } from '../utils/vocabulary.util';
 
-/** Éléments dont le texte n'est jamais réécrit. */
 const SKIPPED = /^(SCRIPT|STYLE|TEXTAREA|INPUT|CODE|PRE)$/;
 const ATTRIBUTES = ['placeholder', 'title', 'aria-label'];
 
-/**
- * Applique le vocabulaire de l'administrateur à tout le texte affiché (textes, `placeholder`,
- * `title`, `aria-label`), y compris celui que les écrans produisent ensuite. Une zone marquée
- * `data-novocab` (saisie du vocabulaire) est laissée telle quelle.
- */
 @Service()
 export class VocabularyService {
   private readonly document = inject(DOCUMENT);
@@ -33,7 +27,6 @@ export class VocabularyService {
     });
   }
 
-  /** Démarre l'observation du document (appelé une fois, au démarrage). */
   install(): void {
     if (this.observer || typeof MutationObserver === 'undefined') {
       return;

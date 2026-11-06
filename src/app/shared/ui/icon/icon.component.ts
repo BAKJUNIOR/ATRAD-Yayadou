@@ -1,6 +1,5 @@
 import { Component, computed, input } from '@angular/core';
 
-/** Tracés au trait sur une grille 24×24 ; la couleur suit `currentColor`. */
 const ICON_PATHS = {
   more: 'M5 12h.01M12 12h.01M19 12h.01',
   'user-plus':
@@ -65,7 +64,6 @@ const ICON_PATHS = {
 
 export type IconName = keyof typeof ICON_PATHS;
 
-/** Icône décorative : le libellé accessible est porté par l'élément parent. */
 @Component({
   selector: 'app-icon',
   host: { class: 'inline-flex shrink-0', 'aria-hidden': 'true' },

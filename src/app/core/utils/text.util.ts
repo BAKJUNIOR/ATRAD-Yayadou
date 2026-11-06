@@ -1,4 +1,3 @@
-/** Initiales d'un nom complet : `Aminata Diallo` → `AD`. */
 export function initialsOf(name: string): string {
   return name
     .split(' ')
@@ -8,7 +7,6 @@ export function initialsOf(name: string): string {
     .toUpperCase();
 }
 
-/** Code entre parenthèses d'une entité : `Agence Plateau (AG-014)` → `AG-014`. */
 export function entityCode(entity: string): string {
   return entity.match(/\(([^)]+)\)/)?.[1] ?? '';
 }

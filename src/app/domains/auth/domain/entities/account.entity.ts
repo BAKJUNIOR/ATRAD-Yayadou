@@ -1,22 +1,17 @@
 import { Utilisateur } from './utilisateur.entity';
 
-/** Profils métier de l'application : chacun a son propre parcours et son propre menu. */
 export const ROLES = ['agence', 'accueil', 'traitement', 'manager', 'admin'] as const;
 
 export type Role = (typeof ROLES)[number];
 
 export interface Account {
-  /** Identifiant (UUID) de l'utilisateur dans l'API. */
   id: string;
   /** Profil affiché : le premier des profils de l'utilisateur, dans l'ordre de `ROLES`. */
   role: Role;
-  /** Tous les profils de l'utilisateur. */
   roles: Role[];
-  /** Identifiant de connexion (matricule, ex. `a.diallo`). */
   ident: string;
   name: string;
   roleLabel: string;
-  /** Entité de rattachement, au format `Nom (CODE)` ; vide si l'utilisateur n'est rattaché à aucune. */
   entity: string;
   entityId: string | null;
 }
@@ -33,10 +28,6 @@ const ROLE_OF_PROFIL: Record<string, Role> = {
   ADMIN: 'admin',
 };
 
-/**
- * Compte de session à partir de l'utilisateur renvoyé par l'API ; `null` s'il n'a aucun profil connu du front.
- * Le profil affiché est le premier de ses profils dans l'ordre de `ROLES`.
- */
 export function accountFromUtilisateur(utilisateur: Utilisateur): Account | null {
   const roles = ROLES.filter((role) =>
     utilisateur.profils.some((profil) => ROLE_OF_PROFIL[profil.toUpperCase()] === role),

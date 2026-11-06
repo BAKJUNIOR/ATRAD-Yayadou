@@ -4,14 +4,12 @@ const ACCEPTED_FILE = /\.(pdf|jpe?g|png|docx?)$/i;
 export const MAX_PIECE_SIZE = 5 * 1024 * 1024;
 export const MAX_PIECES = 10;
 
-/** `1,2 Mo`, `340 Ko` */
 export function fileSizeLabel(bytes: number): string {
   return bytes >= 1024 * 1024
     ? `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} Mo`
     : `${Math.max(1, Math.round(bytes / 1024))} Ko`;
 }
 
-/** Répartit les fichiers proposés entre ceux à joindre et les refus motivés. */
 export function screenPieces(
   files: readonly File[],
   current: readonly PieceJointe[],

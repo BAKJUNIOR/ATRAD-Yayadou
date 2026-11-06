@@ -6,14 +6,12 @@ import { SLA_TARGET, agenceRankingFromApi, lateDossiersFromApi } from '../../../
 import { PilotageApi } from '../../../infrastructure/api/pilotage.api';
 import { TONE_BAR, TONE_TEXT } from '../../tone';
 
-/** Pilotage : respect des délais de traitement et dossiers en dépassement. */
 @Component({
   selector: 'app-delais',
   imports: [KpiCardComponent],
   templateUrl: './delais.component.html',
 })
 export class DelaisComponent {
-  /** Respect des délais calculé par l'API. */
   private readonly delais = toSignal(
     inject(RealtimeService).live(() => inject(PilotageApi).delais()),
     {
@@ -26,7 +24,6 @@ export class DelaisComponent {
   protected readonly toneText = TONE_TEXT;
 
   protected readonly total = computed(() => this.delais()?.total ?? 0);
-  /** Dossiers terminés et terminés dans les délais : seuls leurs nombres sont affichés. */
   protected readonly sla = computed(() => {
     const delais = this.delais();
     return {

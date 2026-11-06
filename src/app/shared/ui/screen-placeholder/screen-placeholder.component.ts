@@ -2,10 +2,6 @@ import { Component, inject } from '@angular/core';
 import { PageTitleStrategy } from '../../../core/services/page-title.strategy';
 import { IconComponent } from '../icon/icon.component';
 
-/**
- * Occupe la route d'un écran pas encore construit, pour que la navigation et les droits
- * d'accès soient testables de bout en bout. À remplacer par la page du domaine concerné.
- */
 @Component({
   selector: 'app-screen-placeholder',
   imports: [IconComponent],

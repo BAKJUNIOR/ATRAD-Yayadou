@@ -4,7 +4,6 @@ import { IconComponent } from '../../../../../shared/ui/icon/icon.component';
 import { DossierDetailsComponent } from '../../../../dossiers/presentation/components/dossier-details/dossier-details.component';
 import { CreerEtatFacade } from '../../creer-etat.facade';
 
-/** État en cours de constitution : en-tête, dossiers ajoutés et transmission. */
 @Component({
   selector: 'app-draft-etat',
   imports: [IconComponent, DossierDetailsComponent],

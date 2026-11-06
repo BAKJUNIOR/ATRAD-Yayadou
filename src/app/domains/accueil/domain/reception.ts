@@ -4,7 +4,6 @@ import { RoutedDossier } from '../../dossiers/domain/entities/dossier.entity';
 import { Etat } from '../../dossiers/domain/entities/etat.entity';
 import { ENTITES, entityOf } from '../../dossiers/domain/routing';
 
-/** Critères de recherche d'un état ; une chaîne vide signifie « tous ». */
 export interface EtatCriteria {
   ref: string;
   num: string;
@@ -34,7 +33,6 @@ export const ETAT_STATUS_OPTIONS: readonly Status[] = [
   'Clôturé',
 ];
 
-/** Nombre de critères avancés renseignés (tout sauf la référence). */
 export function advancedCount(criteria: EtatCriteria): number {
   const { ref: _ref, ...advanced } = criteria;
   return Object.values(advanced).filter((value) => value.trim()).length;
@@ -44,7 +42,6 @@ export function isSearchActive(criteria: EtatCriteria): boolean {
   return !!criteria.ref.trim() || advancedCount(criteria) > 0;
 }
 
-/** États correspondant aux critères, du plus récemment transmis au plus ancien. */
 export function searchEtats(etats: readonly Etat[], criteria: EtatCriteria): Etat[] {
   const ref = criteria.ref.trim().toLowerCase();
   const num = criteria.num.trim().toLowerCase();
@@ -77,27 +74,22 @@ export function searchEtats(etats: readonly Etat[], criteria: EtatCriteria): Eta
     .sort((a, b) => b.sentAt.localeCompare(a.sentAt));
 }
 
-/** Dossiers d'un état que l'entité réceptrice n'a pas encore pointés comme reçus. */
 export function remainingCount(etat: Etat): number {
   return etat.dossiers.filter((dossier) => !dossier.rec).length;
 }
 
-/** États dont au moins un dossier reste à réceptionner. */
 export function pendingEtats(etats: readonly Etat[]): Etat[] {
   return etats.filter((etat) => remainingCount(etat) > 0);
 }
 
-/** Dossiers retournés par une entité, que l'Accueil doit encore renvoyer à leur agence. */
 export function pendingReturns(dossiers: readonly RoutedDossier[]): RoutedDossier[] {
   return dossiers.filter((dossier) => dossier.status === 'Dossier retourné' && !dossier.renvoyeAt);
 }
 
-/** Dossiers routés qu'aucun gestionnaire n'a encore pris en charge. */
 export function isUnassigned(dossier: RoutedDossier): boolean {
   return dossier.status === 'Reçu' && !dossier.gest;
 }
 
-/** Dossiers suivis par l'Accueil : routés, hors retours. */
 export function trackedDossiers(dossiers: readonly RoutedDossier[]): RoutedDossier[] {
   return dossiers.filter(
     (dossier) => dossier.status !== 'Dossier retourné' && dossier.status !== 'Rejeté',
@@ -162,10 +154,8 @@ export function trackingKpis(
 
 export interface TrackingGroup {
   entite: string;
-  /** Types de dossier rattachés à l'entité par la règle de routage. */
   types: string;
   rows: RoutedDossier[];
-  /** Dossiers de l'entité non pris en charge, avant filtrage. */
   pending: number;
 }
 
@@ -175,7 +165,6 @@ export interface TrackingFilter {
   pendingOnly: boolean;
 }
 
-/** Dossiers routés, regroupés par entité de traitement. */
 export function trackingGroups(
   dossiers: readonly RoutedDossier[],
   filter: TrackingFilter,
@@ -204,7 +193,6 @@ export function trackingGroups(
     .filter((group) => group.rows.length > 0 || group.types);
 }
 
-/** Règle de routage affichée pour information : type de dossier → entité. */
 export function routingRules(): { type: DossierType; entite: string }[] {
   return DOSSIER_TYPES.map((type) => ({ type, entite: entityOf(type) || '—' }));
 }

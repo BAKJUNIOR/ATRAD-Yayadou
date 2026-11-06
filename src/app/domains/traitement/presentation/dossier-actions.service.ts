@@ -19,13 +19,11 @@ import {
 } from './components/action-dialog/action-dialog.component';
 import { TraitementStore } from '../infrastructure/store/traitement.store';
 
-/** Transition proposée dans un menu d'actions. */
 export interface TransitionOption {
   target: Status;
   kind: DossierActionKind;
   label: string;
   icon: IconName;
-  /** Couleur de l'icône, selon la nature du statut visé. */
   iconClass: string;
   danger: boolean;
 }
@@ -50,14 +48,12 @@ const TRANSITION_ICON_CLASSES: Partial<Record<Status, string>> = {
   Traité: 'text-success',
 };
 
-/** Ouvre la confirmation d'une action de traitement puis l'applique au dossier. */
 @Service()
 export class DossierActionsService {
   private readonly dialog = inject(Dialog);
   private readonly store = inject(TraitementStore);
   private readonly toast = inject(ToastService);
 
-  /** Transitions autorisées par le circuit du dossier, prêtes à afficher. */
   transitions(dossier: RoutedDossier): TransitionOption[] {
     const waitingDocs = dossier.status === ATTENTE_DOCS;
     return nextStatuses(dossier).flatMap((target) => {
@@ -84,7 +80,6 @@ export class DossierActionsService {
     });
   }
 
-  /** Ouvre la confirmation puis applique l'action par l'API ; rend `true` si elle a été appliquée. */
   async run(dossier: RoutedDossier, kind: DossierActionKind, target?: Status): Promise<boolean> {
     // Un dossier en attente de documents se retourne faute de documents, pas pour non-éligibilité.
     const effective: DossierActionKind =

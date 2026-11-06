@@ -5,7 +5,6 @@ export type TimelineTone = 'neutral' | 'brand' | 'info' | 'success' | 'warning' 
 export interface TimelineEntry {
   label: string;
   who: string;
-  /** Date déjà mise en forme. */
   at: string;
   tone: TimelineTone;
 }
@@ -19,7 +18,6 @@ const DOT_CLASSES: Record<TimelineTone, string> = {
   danger: 'bg-danger',
 };
 
-/** Historique, du plus ancien au plus récent. */
 @Component({
   selector: 'app-timeline',
   template: `

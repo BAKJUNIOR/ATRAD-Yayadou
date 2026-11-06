@@ -13,7 +13,6 @@ import {
 
 const DAY_MS = 86_400_000;
 
-/** Objectif de respect des délais, en pourcentage. */
 export const SLA_TARGET = 90;
 
 export function isTreated(dossier: RoutedDossier): boolean {
@@ -28,14 +27,12 @@ function percent(part: number, total: number): number {
   return total ? Math.round((part * 100) / total) : 0;
 }
 
-/** Jours écoulés entre le routage et la fin de traitement (ou aujourd'hui). */
 function daysToTreat(dossier: RoutedDossier, todayIso: string): number {
   const end = (dossier.closedAt || dossier.validatedAt || '').slice(0, 10) || todayIso;
   const start = toIsoDate(new Date(dossier.affecte));
   return Math.max(0, Math.round((Date.parse(end) - Date.parse(start)) / DAY_MS));
 }
 
-/** `2,4 j`, ou `—` si aucun dossier n'est traité. */
 function averageDelay(treated: readonly RoutedDossier[], todayIso: string): string {
   if (!treated.length) {
     return '—';
@@ -44,14 +41,12 @@ function averageDelay(treated: readonly RoutedDossier[], todayIso: string): stri
   return `${(total / treated.length).toFixed(1).replace('.', ',')} j`;
 }
 
-/** Part des dossiers traités qui l'ont été dans les délais. */
 export function sla(dossiers: readonly RoutedDossier[], todayIso: string) {
   const treated = dossiers.filter(isTreated);
   const onTime = treated.filter((dossier) => daysLeft(dossier, todayIso) >= 0);
   return { treated, onTime, rate: percent(onTime.length, treated.length) };
 }
 
-/** Couleur d'un taux de respect des délais. */
 export function slaTone(rate: number): 'success' | 'warning' | 'danger' {
   if (rate >= SLA_TARGET) {
     return 'success';
@@ -64,12 +59,10 @@ export type PeriodId = 'week' | 'previous-week' | 'month' | 'all';
 export interface Period {
   id: PeriodId;
   label: string;
-  /** Bornes incluses (`yyyy-MM-dd`) ; absentes pour « tout l'historique ». */
   from?: string;
   to?: string;
 }
 
-/** Périodes proposées dans le tableau de bord, relatives à la date du jour. */
 export function periods(todayIso: string): Period[] {
   const today = new Date(`${todayIso}T00:00:00`);
   const shift = (date: Date, days: number): Date => {
@@ -112,7 +105,6 @@ export interface DashboardScope {
   period: Period;
 }
 
-/** Dossiers routés compris dans le périmètre du tableau de bord. */
 export function inScope(
   dossiers: readonly RoutedDossier[],
   scope: DashboardScope,
@@ -197,7 +189,6 @@ export function kpiCards(
 
 const BREAKDOWN_STATUSES: readonly Status[] = ['Reçu', 'En cours', 'Validé', 'Clôturé', 'Rejeté'];
 
-/** Répartition des dossiers par statut, statuts vides exclus. */
 export function byStatus(scoped: readonly RoutedDossier[]) {
   return BREAKDOWN_STATUSES.map((status) => {
     const count = scoped.filter((dossier) => dossier.status === status).length;
@@ -210,7 +201,6 @@ export function byStatus(scoped: readonly RoutedDossier[]) {
   }).filter((entry) => entry.count > 0);
 }
 
-/** Volume par type de dossier, rapporté au type le plus fréquent. */
 export function byType(scoped: readonly RoutedDossier[]) {
   const counts = DOSSIER_TYPES.map((type) => ({
     label: type,
@@ -235,12 +225,10 @@ export interface AgencePerformance {
   total: number;
   ongoing: number;
   late: number;
-  /** Taux de respect des délais ; `null` si aucun dossier n'est encore traité. */
   rate: number | null;
   tone: 'success' | 'warning' | 'danger';
 }
 
-/** Performance de chaque agence d'origine sur un ensemble de dossiers. */
 export function agencePerformance(
   dossiers: readonly RoutedDossier[],
   todayIso: string,
@@ -259,7 +247,6 @@ export function agencePerformance(
   });
 }
 
-/** Dossiers en retard, du plus critique au moins critique. */
 export function lateDossiers(dossiers: readonly RoutedDossier[], todayIso: string) {
   return dossiers
     .filter((dossier) => isLate(dossier, todayIso))
@@ -267,10 +254,6 @@ export function lateDossiers(dossiers: readonly RoutedDossier[], todayIso: strin
     .sort((a, b) => b.days - a.days);
 }
 
-/**
- * Classement des agences, de la moins respectueuse des délais à la plus respectueuse.
- * Une agence sans dossier traité est créditée de 100 %.
- */
 export function agenceRanking(dossiers: readonly RoutedDossier[], todayIso: string) {
   return agencePerformance(dossiers, todayIso)
     .map((entry) => ({ ...entry, rate: entry.rate ?? 100, tone: slaTone(entry.rate ?? 100) }))
@@ -278,7 +261,6 @@ export function agenceRanking(dossiers: readonly RoutedDossier[], todayIso: stri
     .map((entry, index) => ({ ...entry, rank: index + 1 }));
 }
 
-/** Comparatif des agences, par taux de dossiers en retard décroissant. */
 export function agenceComparison(dossiers: readonly RoutedDossier[], todayIso: string) {
   return agencesOf(dossiers)
     .map((agence) => {
@@ -299,14 +281,10 @@ export function agenceComparison(dossiers: readonly RoutedDossier[], todayIso: s
     .sort((a, b) => b.lateRate - a.lateRate);
 }
 
-// ------------------------------------------------------------------ Indicateurs calculés par l'API
-
-/** `2,4 j`, ou `—` sans dossier terminé. */
 export function delayLabel(days: number | null | undefined): string {
   return days === null || days === undefined ? '—' : `${days.toFixed(1).replace('.', ',')} j`;
 }
 
-/** Cartes du tableau de bord à partir de `pilotage.tableauDeBord`. */
 export function kpiCardsFromApi(tableau: ApiTableauDeBord): KpiCard[] {
   const rate = tableau.respectDelais ?? 100;
   return [
@@ -360,7 +338,6 @@ export function byStatusFromApi(tableau: ApiTableauDeBord) {
   });
 }
 
-/** Volume par type, rapporté au type le plus fréquent. */
 export function byTypeFromApi(tableau: ApiTableauDeBord) {
   const max = Math.max(1, ...tableau.parType.map((indicateur) => indicateur.nombre));
   return tableau.parType.map((indicateur) => ({
@@ -383,7 +360,6 @@ export function agencePerformanceFromApi(
   }));
 }
 
-/** Dossiers en retard, du plus critique au moins critique (ordre de l'API). */
 export function lateDossiersFromApi(delais: ApiRespectDelais) {
   return delais.retards.map((retard) => ({
     dossier: {
@@ -397,7 +373,6 @@ export function lateDossiersFromApi(delais: ApiRespectDelais) {
   }));
 }
 
-/** Agences de la moins respectueuse des délais à la plus respectueuse ; sans dossier terminé : 100 %. */
 export function agenceRankingFromApi(delais: ApiRespectDelais) {
   return agencePerformanceFromApi(delais.classementAgences).map((entry, index) => ({
     ...entry,
@@ -406,7 +381,6 @@ export function agenceRankingFromApi(delais: ApiRespectDelais) {
   }));
 }
 
-/** Comparatif des agences, par taux de dossiers en retard décroissant (ordre de l'API). */
 export function agenceComparisonFromApi(agences: readonly ApiAgenceIndicateurs[]) {
   return agences.map((agence) => ({
     agence: `${agence.nom} (${agence.code})`,

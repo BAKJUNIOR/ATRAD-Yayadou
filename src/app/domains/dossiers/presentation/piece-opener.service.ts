@@ -4,7 +4,6 @@ import { ToastService } from '../../../core/services/toast.service';
 import { PieceJointe } from '../domain/entities/dossier.entity';
 import { DossierApi } from '../infrastructure/api/dossier.api';
 
-/** Ouvre une pièce jointe dans un nouvel onglet (ou la télécharge si l'onglet est bloqué). */
 @Service()
 export class PieceOpener {
   private readonly api = inject(DossierApi);

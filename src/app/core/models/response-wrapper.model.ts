@@ -1,4 +1,3 @@
-/** Enveloppe de toutes les réponses JSON de l'API. */
 export interface ResponseWrapper<T> {
   success: boolean;
   message: string;
@@ -8,7 +7,6 @@ export interface ResponseWrapper<T> {
   timestamp: string;
 }
 
-/** Erreur de validation sur un champ, dans `data` d'une réponse 400. */
 export interface FieldError {
   champ: string;
   message: string;

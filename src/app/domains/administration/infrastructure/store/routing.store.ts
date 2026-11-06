@@ -23,22 +23,15 @@ const API_MODE: Record<AssignmentMode, ApiModeRepartition> = {
   disp: 'REPARTITEUR',
 };
 
-/**
- * Répartition interne des entités de traitement, tenue par l'API : mode d'attribution, équipe, répartiteurs et
- * droit de recherche. Les membres sont désignés par leur prénom et nom ; les candidats sont les utilisateurs du
- * profil Traitement.
- */
 @Service()
 export class RoutingStore {
   private readonly api = inject(AdministrationApi);
   private readonly utilisateurs = inject(UtilisateurApi);
 
   private readonly current = signal<RoutingConfig>({ ent: {} });
-  /** Prénom et nom → identifiant de l'utilisateur dans l'API. */
   private readonly ids = new Map<string, string>();
 
   readonly config = this.current.asReadonly();
-  /** Gestionnaires pouvant faire partie d'une équipe. */
   readonly gestionnaires = signal<string[]>([]);
 
   async load(): Promise<void> {
@@ -70,7 +63,6 @@ export class RoutingStore {
     this.gestionnaires.set([...this.ids.keys()].sort((a, b) => a.localeCompare(b)));
   }
 
-  /** Enregistre la répartition d'une entité (par son code) puis relit celles de toutes les entités. */
   async save(code: string, settings: EntitySettings): Promise<void> {
     const entiteId = entiteByCode(code)?.id;
     if (!entiteId) {

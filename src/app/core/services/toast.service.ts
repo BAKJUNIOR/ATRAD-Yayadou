@@ -39,7 +39,6 @@ export class ToastService {
 
   private push(variant: ToastVariant, message: string): void {
     const id = this.nextId++;
-    // Un seul message à la fois : le dernier remplace le précédent.
     this.messages.set([{ id, variant, message }]);
     setTimeout(() => this.dismiss(id), TOAST_DURATION_MS);
   }

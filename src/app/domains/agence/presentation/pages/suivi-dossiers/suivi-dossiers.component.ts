@@ -23,7 +23,6 @@ import {
 } from '../../../domain/suivi';
 import { SuiviAgenceApi } from '../../../infrastructure/api/suivi-agence.api';
 
-// Mêmes pictogrammes que le prototype : « À compléter » reprend l'horloge, « Retourné en agence » la liste.
 const FILTER_ICONS: Partial<Record<Status, IconName>> = {
   Transmis: 'send',
   'En cours': 'clock',
@@ -37,7 +36,6 @@ const FILTER_ICONS: Partial<Record<Status, IconName>> = {
 type TextCriterion = Exclude<keyof SuiviCriteria, 'type'>;
 type CriterionKey = keyof SuiviCriteria;
 
-/** Critères proposés ; seul le premier est affiché d'emblée, les autres s'ajoutent à la demande (MO-3). */
 const FILTERS: readonly { key: CriterionKey; label: string }[] = [
   { key: 'nom', label: 'Nom ou prénom du client' },
   { key: 'num', label: 'N° client' },
@@ -48,7 +46,6 @@ const FILTERS: readonly { key: CriterionKey; label: string }[] = [
 ];
 const DEFAULT_FILTERS: readonly CriterionKey[] = ['nom'];
 
-/** Parcours agence : retrouver un dossier transmis et suivre son avancement. */
 @Component({
   selector: 'app-suivi-dossiers',
   imports: [RouterLink, IconComponent, StatusBadgeComponent],
@@ -65,13 +62,11 @@ export class SuiviDossiersComponent {
   protected readonly formatDate = formatDate;
   protected readonly formatTime = formatTime;
 
-  /** Critères en cours de saisie ; ils ne s'appliquent qu'au clic sur « Rechercher ». */
   protected readonly draft = signal<SuiviCriteria>(EMPTY_CRITERIA);
   private readonly applied = signal<SuiviCriteria>(EMPTY_CRITERIA);
   protected readonly statusFilter = signal<Status | null>(null);
   private readonly pickedEtat = signal('');
 
-  /** Critères affichés dans le formulaire de recherche, dans l'ordre où l'agent les a ajoutés. */
   private readonly shownFilters = signal<readonly CriterionKey[]>(DEFAULT_FILTERS);
   protected readonly hiddenFilters = computed(() =>
     FILTERS.filter((filter) => !this.shownFilters().includes(filter.key)),
@@ -79,14 +74,12 @@ export class SuiviDossiersComponent {
 
   private readonly realtime = inject(RealtimeService);
 
-  /** Dossiers de l'agence lus dans l'API, du plus récemment saisi au plus ancien. */
   private readonly all = toSignal(
     this.realtime
       .live(() => this.suiviApi.dossiers())
       .pipe(map((suivi) => suivi.dossiers.map(suiviRowFromApi))),
     { initialValue: [] },
   );
-  /** États émis par l'agence, pour l'impression de leur bordereau. */
   private readonly etats = toSignal(
     this.realtime.live(() => this.etatApi.emis()).pipe(map((etats) => etats.map(etatFromApi))),
     {
@@ -150,14 +143,12 @@ export class SuiviDossiersComponent {
       : 'Aucun dossier pour le moment.',
   );
 
-  // --- Impression du bordereau d'un état
   protected readonly printableEtats = computed(() =>
     this.etats()
       .filter((etat) => canPrintEtat(etat))
       .sort((a, b) => b.sentAt.localeCompare(a.sentAt)),
   );
 
-  /** État proposé à l'impression : celui choisi, sinon le seul affiché, sinon le plus récent. */
   protected readonly selectedEtat = computed(() => {
     const printable = this.printableEtats();
     if (printable.some((etat) => etat.ref === this.pickedEtat())) {
@@ -207,7 +198,6 @@ export class SuiviDossiersComponent {
     }
   }
 
-  /** Retire un critère du formulaire ; sa valeur est effacée, y compris dans la recherche appliquée. */
   protected removeFilter(key: CriterionKey): void {
     this.shownFilters.update((keys) => keys.filter((candidate) => candidate !== key));
     this.draft.update((criteria) => ({ ...criteria, [key]: EMPTY_CRITERIA[key] }));

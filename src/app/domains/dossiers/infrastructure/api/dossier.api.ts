@@ -8,7 +8,6 @@ import {
   ApiPieceJointe,
 } from '../../domain/entities/dossier-api.entity';
 
-/** Brouillon de l'entité émettrice (dossiers au statut Temporaire) et pièces jointes des dossiers. */
 @Service()
 export class DossierApi {
   private readonly baseService = inject(BaseService);
@@ -43,7 +42,6 @@ export class DossierApi {
     return this.baseService.delete<void>(this.piecesUrl.byId(dossierId, pieceId));
   }
 
-  /** Contenu d'une pièce jointe (lecture réservée aux entités du circuit du dossier). */
   fichier(dossierId: string, pieceId: string): Observable<Blob> {
     return this.baseService.getBlob(this.piecesUrl.byId(dossierId, pieceId));
   }

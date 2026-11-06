@@ -10,7 +10,6 @@ import { emptyReferentiel, setReferentiel } from '../../dossiers/domain/referent
 
 const TODAY = '2026-10-12';
 
-/** Champs des types de dossier, tels que l'API les décrit. */
 const TYPE_FIELDS: Record<string, TypeField[]> = {
   'Ouverture de compte': [
     {

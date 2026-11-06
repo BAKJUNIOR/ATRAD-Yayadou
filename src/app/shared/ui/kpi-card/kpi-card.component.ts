@@ -10,7 +10,6 @@ const TONE_BG: Record<KpiTone, string> = {
   heading: 'bg-heading',
 };
 
-/** Indicateur de pilotage : grande valeur, et jauge facultative. */
 @Component({
   selector: 'app-kpi-card',
   host: {
@@ -42,7 +41,6 @@ export class KpiCardComponent {
   readonly value = input.required<string>();
   readonly hint = input('');
   readonly tone = input<KpiTone>('heading');
-  /** Remplissage de la jauge, en pourcentage ; `null` pour ne pas l'afficher. */
   readonly bar = input<number | null>(null);
 
   protected readonly toneClass = computed(() => TONE_BG[this.tone()]);

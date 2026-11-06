@@ -31,7 +31,6 @@ type Tab = 'map' | 'rep';
 
 const LOCK_TIP = "Terminez d'abord la modification en cours (Enregistrer ou Annuler).";
 
-/** Circuit en cours de saisie : type d'état et entité de traitement (codes). */
 interface CircuitDraft {
   et: string;
   trait: string;
@@ -41,14 +40,12 @@ function modeLabel(mode: AssignmentMode): string {
   return MODES.find((candidate) => candidate.id === mode)?.label ?? mode;
 }
 
-/** Erreur de paramétrage d'une entité en mode répartiteur sans répartiteur désigné. */
 function dispatcherError(settings: EntitySettings): string {
   return settings.mode === 'disp' && !settings.dispatchers.length
     ? 'Mode « Via un répartiteur » : désignez au moins une personne dans « Qui répartit ? ».'
     : '';
 }
 
-/** Garde les listes dérivées de l'équipe cohérentes avec elle, dans l'ordre du référentiel. */
 function normalise(settings: EntitySettings, all: readonly string[]): EntitySettings {
   const team = all.filter((member) => settings.team.includes(member));
   return {
@@ -59,10 +56,6 @@ function normalise(settings: EntitySettings, all: readonly string[]): EntitySett
   };
 }
 
-/**
- * Administration : circuit de chaque type de dossier (type d'état et entité de traitement), et
- * répartition interne de chaque entité.
- */
 @Component({
   selector: 'app-routage',
   imports: [IconComponent],
@@ -81,12 +74,9 @@ export class RoutageComponent {
 
   protected readonly lockTip = LOCK_TIP;
   protected readonly tab = signal<Tab>('map');
-  /** Circuit en cours de modification. */
   protected readonly mapEdit = signal<({ type: DossierType } & CircuitDraft) | null>(null);
-  /** Type de dossier en cours d'ajout. */
   protected readonly newType = signal<({ nom: string } & CircuitDraft) | null>(null);
   private readonly selectedEntite = signal(ENTITES[0]?.name ?? '');
-  /** Réglages modifiés de l'entité affichée, tant qu'ils ne sont pas enregistrés. */
   private readonly entDraft = signal<EntitySettings | null>(null);
 
   private readonly saved = this.routing.config;
@@ -96,9 +86,6 @@ export class RoutageComponent {
     void this.routing.load().catch(() => undefined);
   }
 
-  // ------------------------------------------------ Circuit des types de dossier
-
-  /** Options : types d'état (avec leur réceptrice) et entités de traitement. */
   protected readonly etatTypeOptions = computed(() => [
     { value: '', label: '— Aucun (à rattacher) —' },
     ...this.referentiel.value().etatTypes.map((etatType) => ({
@@ -122,7 +109,6 @@ export class RoutageComponent {
     return circuitsMissing();
   });
 
-  /** Une saisie est en cours : les autres lignes et l'ajout sont verrouillés. */
   protected readonly busy = computed(() => !!this.mapEdit() || !!this.newType());
 
   protected readonly typeRows = computed(() => {
@@ -237,8 +223,6 @@ export class RoutageComponent {
     this.toast.success(`Circuit de « ${edit.type} » enregistré.`);
   }
 
-  // --- Ajout et suppression d'un type de dossier
-
   protected readonly newTypeError = computed(() => {
     const draft = this.newType();
     return draft ? newDossierTypeError(draft.nom, draft.trait) : '';
@@ -319,8 +303,6 @@ export class RoutageComponent {
     this.toast.success(`Type de dossier « ${type} » supprimé.`);
   }
 
-  // ------------------------------------------- Répartition interne par entité
-
   protected readonly entite = this.selectedEntite.asReadonly();
   private readonly settings = computed(
     () => this.entDraft() ?? this.savedSettings(this.selectedEntite()),
@@ -332,13 +314,11 @@ export class RoutageComponent {
     );
   });
 
-  /** Réglages enregistrés d'une entité (libellé complet). */
   private savedSettings(name: string): EntitySettings {
     this.saved();
     return entitySettings(name) ?? { mode: 'auto', team: [], dispatchers: [], searchers: [] };
   }
 
-  /** Types de dossier dont le circuit aboutit à l'entité. */
   private typesOf(name: string): DossierType[] {
     this.referentiel.value();
     return DOSSIER_TYPES.filter((type) => circuit(type).trait === entityCode(name));
@@ -491,8 +471,6 @@ export class RoutageComponent {
     this.toast.success(`Répartition de ${shortEntity(name)} enregistrée.`);
   }
 
-  // ----------------------------------------------------- Onglets et sortie
-
   protected async pickTab(tab: Tab): Promise<void> {
     if (tab !== this.tab() && (await this.confirmDiscard())) {
       this.tab.set(tab);
@@ -502,7 +480,6 @@ export class RoutageComponent {
     }
   }
 
-  /** Appelé par le garde de sortie de la route. */
   canLeave(): Promise<boolean> {
     return this.confirmDiscard();
   }

@@ -4,17 +4,12 @@ import { DialogHeadComponent } from '../../../../../shared/ui/dialog-head/dialog
 
 export interface ReceptionDialogData {
   etatRef: string;
-  /** `2 dossiers reçus, 1 dossier non reçu` */
   summary: string;
-  /** Intitulé des dossiers pointés : dispatchés, ou pris en charge directement. */
   receivedTitle: string;
-  /** Dossiers pointés, avec leur entité de destination. */
   received: string;
-  /** Dossiers non pointés ; vide si tout est reçu. */
   missing: string;
 }
 
-/** Confirmation du pointage de réception d'un état. */
 @Component({
   selector: 'app-reception-dialog',
   imports: [DialogHeadComponent],

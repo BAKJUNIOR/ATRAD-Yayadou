@@ -2,7 +2,6 @@ import { Component, inject } from '@angular/core';
 import { ToastService } from '../../../../../core/services/toast.service';
 import { REPORTS } from '../../../domain/indicators';
 
-/** Pilotage : rapports exportables. L'export réel viendra avec l'API. */
 @Component({
   selector: 'app-rapports',
   template: `

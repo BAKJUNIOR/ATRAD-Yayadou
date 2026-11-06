@@ -1,10 +1,8 @@
-/** Libellés choisis par l'administrateur pour le tiers concerné et pour le dossier. */
 export interface VocabularyLabels {
   tiers: string;
   dossier: string;
 }
 
-/** Reprend la casse de la première lettre du mot remplacé. */
 function matchCase(word: string, reference: string): string {
   const first = reference.charAt(0);
   const head =

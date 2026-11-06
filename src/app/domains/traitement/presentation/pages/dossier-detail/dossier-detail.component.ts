@@ -45,7 +45,6 @@ const PRIORITY_TEXT: Record<Priorite, string> = {
   Urgente: 'text-danger',
 };
 
-/** Parcours traitement : instruire un dossier, l'affecter et lui appliquer une action. */
 @Component({
   selector: 'app-dossier-detail',
   imports: [RouterLink, StatusBadgeComponent],
@@ -59,7 +58,6 @@ export class DossierDetailComponent {
   protected readonly actions = inject(DossierActionsService);
   protected readonly pieceOpener = inject(PieceOpener);
 
-  /** Identifiant du dossier, lu dans l'URL (`/traitement/dossiers/:id`). */
   readonly id = input.required<string>();
 
   protected readonly notAssigned = NOT_ASSIGNED;
@@ -68,10 +66,8 @@ export class DossierDetailComponent {
   protected readonly formatStamp = formatStamp;
   protected readonly initialsOf = initialsOf;
 
-  /** Gestionnaire choisi dans la liste d'affectation ; `null` tant que rien n'est choisi. */
   private readonly pickedGest = signal<string | null>(null);
 
-  /** Fiche lue dans l'API, avec les passages du circuit que l'utilisateur peut faire. */
   private readonly fiche = signal<DossierFiche | null>(null);
   protected readonly loaded = signal(false);
   protected readonly dossier = computed(() => this.fiche()?.dossier ?? null);
@@ -93,7 +89,6 @@ export class DossierDetailComponent {
     }
   }
 
-  /** Applique une action du circuit puis relit la fiche. */
   protected async run(
     dossier: RoutedDossier,
     kind: DossierActionKind,

@@ -1,10 +1,6 @@
 import { Role } from '../../auth/domain/entities/account.entity';
 import { Dashboard } from './entities/dashboard.entity';
 
-/**
- * Textes de la page d'accueil de chaque profil. Les chiffres et la liste sont calculés à partir de l'API par
- * l'écran ; la salutation reprend le prénom du compte connecté.
- */
 export const DASHBOARD_TEXTS: Record<Role, Dashboard> = {
   agence: {
     greeting: 'Bonjour',

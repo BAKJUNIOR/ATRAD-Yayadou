@@ -6,7 +6,6 @@ import { referentiel } from './referentiel';
 
 export const ATTENTE_DOCS: Status = 'En attente de document(s) complémentaire(s)';
 
-/** Statuts après lesquels un dossier n'est plus modifiable par l'entité. */
 export const LOCKED_STATUSES: readonly Status[] = [
   'Clôturé',
   'Dossier retourné',
@@ -15,7 +14,6 @@ export const LOCKED_STATUSES: readonly Status[] = [
   'Retourné en agence',
 ];
 
-/** Statuts finaux d'un circuit. */
 export const FINAL_STATUSES: readonly Status[] = [
   'Traité',
   'Clôturé',
@@ -39,7 +37,6 @@ const RECLAMATION_CIRCUIT: Circuit = {
   [ATTENTE_DOCS]: ['En cours', 'Dossier retourné'],
 };
 
-/** Passages de l'API autorisés depuis le statut courant du dossier, selon le circuit de son type. */
 function apiTransitions(dossier: { type: DossierType; status: Status }): ApiTransition[] | null {
   const { typeCircuits, workflows } = referentiel();
   const transitions = workflows[typeCircuits[dossier.type] ?? ''];
@@ -50,10 +47,6 @@ function apiTransitions(dossier: { type: DossierType; status: Status }): ApiTran
   return transitions.filter((transition) => transition.source === source);
 }
 
-/**
- * Statuts autorisés à la suite du statut courant, selon le circuit du type de dossier lu dans l'API (à défaut,
- * les circuits standard et réclamation du prototype).
- */
 export function nextStatuses(dossier: { type: DossierType; status: Status }): readonly Status[] {
   const transitions = apiTransitions(dossier);
   if (transitions) {
@@ -63,7 +56,6 @@ export function nextStatuses(dossier: { type: DossierType; status: Status }): re
   return circuit[dossier.status] ?? [];
 }
 
-/** Code d'action de l'API qui mène le dossier au statut visé (ex. `VALIDER`), vide s'il n'y en a pas. */
 export function actionCodeTo(
   dossier: { type: DossierType; status: Status },
   target: Status,
@@ -78,7 +70,6 @@ export function isLocked(dossier: { status: Status }): boolean {
   return LOCKED_STATUSES.includes(dossier.status);
 }
 
-/** Actions de traitement qu'une entité peut appliquer à un dossier. */
 export type DossierAction =
   | { kind: 'statut'; target: Status }
   | { kind: 'valider' }
@@ -89,7 +80,6 @@ export type DossierAction =
 
 export type DossierActionKind = DossierAction['kind'];
 
-/** Action qui mène à un statut donné, et son libellé dans les menus. */
 export const STATUS_ACTIONS: Partial<Record<Status, { kind: DossierActionKind; label: string }>> = {
   'En cours': { kind: 'statut', label: 'Reprendre le traitement (En cours)' },
   Projeté: { kind: 'statut', label: 'Passer en « Projeté »' },
@@ -100,7 +90,6 @@ export const STATUS_ACTIONS: Partial<Record<Status, { kind: DossierActionKind; l
   'Dossier retourné': { kind: 'retour_noneligible', label: 'Retourner (non-éligibilité)' },
 };
 
-/** Statut visé par une action. */
 export function targetOf(action: DossierAction): Status {
   switch (action.kind) {
     case 'statut':
@@ -116,10 +105,8 @@ export function targetOf(action: DossierAction): Status {
   }
 }
 
-/** Délai, en jours, accordé à l'agence pour fournir des documents complémentaires. */
 export const DOC_DELAI_JOURS = 7;
 
-/** Pourquoi un dossier ne peut plus recevoir d'action. */
 export function lockReason(dossier: Pick<RoutedDossier, 'status'>): string {
   switch (dossier.status) {
     case 'Traité':

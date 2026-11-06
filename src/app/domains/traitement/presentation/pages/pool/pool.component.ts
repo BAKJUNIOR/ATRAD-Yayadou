@@ -14,7 +14,6 @@ const PRIORITY_TEXT: Record<Priorite, string> = {
   Urgente: 'text-danger',
 };
 
-/** Parcours traitement (mode pool) : liste commune où chaque membre s'attribue des dossiers. */
 @Component({
   selector: 'app-pool',
   imports: [RouterLink],
@@ -28,7 +27,6 @@ export class PoolComponent {
   protected readonly priorityText = PRIORITY_TEXT;
   protected readonly isoDateToFr = isoDateToFr;
 
-  /** Dossiers sans gestionnaire, les plus prioritaires puis les plus anciens d'abord. */
   protected readonly rows = computed(() =>
     [...this.context.poolDossiers()].sort(
       (a, b) =>

@@ -19,7 +19,6 @@ import {
 import { FiltrePilotage, PilotageApi } from '../../../infrastructure/api/pilotage.api';
 import { TONE_BAR, TONE_TEXT } from '../../tone';
 
-/** Pilotage : indicateurs du réseau sur un périmètre (agence, période, type de dossier). */
 @Component({
   selector: 'app-tableau-de-bord',
   imports: [KpiCardComponent],
@@ -39,14 +38,12 @@ export class TableauDeBordComponent {
   protected readonly periodId = signal<PeriodId>('all');
 
   protected readonly periodOptions = computed(() => periods(this.clock.today()));
-  /** Entités émettrices proposées dans le filtre, au format `Nom (CODE)`. */
   protected readonly agences = computed(() =>
     entites()
       .filter((entite) => entite.emet)
       .map((entite) => labelOf(entite)),
   );
 
-  /** Filtres de l'écran, traduits en paramètres de l'API. */
   private readonly filtre = computed<FiltrePilotage>(() => {
     const period =
       this.periodOptions().find((candidate) => candidate.id === this.periodId()) ??
@@ -81,7 +78,6 @@ export class TableauDeBordComponent {
   protected readonly performance = computed(() =>
     agencePerformanceFromApi(this.tableau()?.parAgence ?? []),
   );
-  /** Nombre de dossiers du périmètre. */
   protected readonly scoped = computed(() => ({ length: this.tableau()?.total ?? 0 }));
 
   protected onAgence(event: Event): void {

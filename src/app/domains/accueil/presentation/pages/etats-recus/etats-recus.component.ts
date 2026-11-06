@@ -11,7 +11,6 @@ import { EtatSearchState } from '../../etat-search.state';
 
 type TextCriterion = 'ref' | 'num' | 'prenom' | 'compte';
 
-/** Parcours accueil : retrouver un état transmis pour en pointer la réception. */
 @Component({
   selector: 'app-etats-recus',
   imports: [IconComponent, StatusBadgeComponent],
@@ -55,7 +54,6 @@ export class EtatsRecusComponent {
   protected submit(event: Event): void {
     event.preventDefault();
     const results = this.search.submit();
-    // Un seul état trouvé : il est ouvert directement.
     if (results.length === 1) {
       this.open(results[0].ref);
     }

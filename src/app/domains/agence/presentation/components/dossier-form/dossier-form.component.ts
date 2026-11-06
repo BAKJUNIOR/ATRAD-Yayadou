@@ -15,7 +15,6 @@ import { entityLabel } from '../../../../dossiers/domain/referentiel';
 import { BaseFieldKey } from '../../../domain/dossier-form.rules';
 import { CreerEtatFacade } from '../../creer-etat.facade';
 
-/** Saisie ou modification d'un dossier de l'état en cours de constitution. */
 @Component({
   selector: 'app-dossier-form',
   imports: [FormFieldComponent, IconComponent],
@@ -25,14 +24,12 @@ export class DossierFormComponent {
   protected readonly facade = inject(CreerEtatFacade);
   protected readonly pieceOpener = inject(PieceOpener);
 
-  /** Produits du type de dossier choisi. */
   protected readonly produits = computed(() => produitsOf(this.facade.value().type));
   protected readonly priorites = PRIORITES;
   protected readonly sizeLabel = fileSizeLabel;
 
   protected readonly dragging = signal(false);
 
-  /** Entité réceptrice du type d'état choisi. */
   protected readonly recepLine = computed(() => {
     const etatType = this.facade.etatType();
     return etatType ? entityLabel(etatType.recep) : '—';
@@ -73,13 +70,11 @@ export class DossierFormComponent {
     this.facade.setExtra(field.key, (event.target as HTMLInputElement | HTMLSelectElement).value);
   }
 
-  /** Libellé d'un champ propre au type : unité, puis marque d'obligation. */
   protected extraLabel(field: TypeField): string {
     const unit = field.unit ? ` (${field.unit === 'mois' ? 'en mois' : field.unit})` : '';
     return `${field.label}${unit}${field.optional ? ' (facultatif)' : ' *'}`;
   }
 
-  /** Erreur affichée, ou champ obligatoire resté vide après une tentative d'envoi. */
   protected extraInvalid(field: TypeField): boolean {
     const value = (this.facade.value().extra[field.key] ?? '').trim();
     return (

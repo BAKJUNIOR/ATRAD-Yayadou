@@ -4,7 +4,6 @@ import { Referentiel, emptyReferentiel, setReferentiel } from '../../domain/refe
 import { syncEntites } from '../../domain/routing';
 import { ReferentielApi } from '../api/referentiel.api';
 
-/** Anciennes copies locales (paramétrage, routage, jeux de démonstration), effacées au démarrage. */
 const LEGACY_KEYS = [
   'atrad_referentiel_v1',
   'atrad_routing_v1',
@@ -12,11 +11,6 @@ const LEGACY_KEYS = [
   'atrad_live_data_v1',
 ];
 
-/**
- * Paramétrage de l'administrateur : entités, types d'état, circuits des types de dossier (avec leurs champs, pièces
- * et produits), mode de saisie et motifs. Lu dans l'API après la connexion (`refresh()`), gardé en mémoire
- * seulement : vide tant que l'API n'a pas répondu.
- */
 @Service()
 export class ReferentielStore {
   private readonly api = inject(ReferentielApi);
@@ -34,10 +28,6 @@ export class ReferentielStore {
     this.publish(this.current());
   }
 
-  /**
-   * Remplace le paramétrage par celui de l'API. En cas d'échec, le paramétrage en place est gardé et l'erreur a déjà
-   * été signalée par l'intercepteur.
-   */
   async refresh(): Promise<void> {
     try {
       const fromApi = await firstValueFrom(this.api.referentiel());

@@ -17,17 +17,10 @@ import { AppConfigService } from '../services/app-config.service';
 import { SessionService } from '../services/session.service';
 import { StompClient } from './stomp-client';
 
-/** État de la connexion temps réel. */
 export type RealtimeState = 'off' | 'connecting' | 'live' | 'refused';
 
 const QUEUES = environment.endpoints.tempsReel;
 
-/**
- * Connexion temps réel de la session (WebSocket STOMP), ouverte à la connexion et fermée à la déconnexion. Elle
- * reçoit les notifications et le signal `donnees:maj` : des dossiers ou des états vus par l'utilisateur ont changé.
- * Les écrans relisent alors leurs données (`changes$`, `live()`), sans rechargement de la page. Une reconnexion
- * compte aussi comme un changement : ce qui a été manqué pendant la coupure est rattrapé.
- */
 @Service()
 export class RealtimeService {
   private readonly session = inject(SessionService);
@@ -40,10 +33,8 @@ export class RealtimeService {
 
   readonly connection = this.state.asReadonly();
 
-  /** Reconnexion après une coupure (pas la première connexion). */
   readonly reconnected$ = this.reconnections.asObservable();
 
-  /** Messages des notifications (corps JSON). */
   readonly notifications$ = this.on(QUEUES.notifications);
 
   /** Données modifiées sur le serveur ou reconnexion ; regroupées pour ne relire qu'une fois par rafale. */
@@ -108,7 +99,6 @@ export class RealtimeService {
     this.state.set('off');
   }
 
-  /** `ws(s)://` sur l'adresse de l'API, ou sur l'origine du front quand elle est vide (proxy). */
   private socketUrl(): string {
     const base = this.config.apiBaseUrl || window.location.origin;
     return `${base.replace(/^http/, 'ws')}/${QUEUES.socket}`;

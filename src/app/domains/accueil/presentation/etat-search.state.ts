@@ -8,15 +8,10 @@ import {
   searchEtats,
 } from '../domain/reception';
 
-/**
- * Recherche d'états en cours à l'Accueil. Conservée hors de la page pour que « Retour aux
- * résultats », depuis le détail d'un état, retrouve la liste telle qu'elle était.
- */
 @Service()
 export class EtatSearchState {
   private readonly reception = inject(ReceptionContext);
 
-  /** Critères en cours de saisie ; ils ne s'appliquent qu'à la validation du formulaire. */
   readonly draft = signal<EtatCriteria>(EMPTY_ETAT_CRITERIA);
   readonly applied = signal<EtatCriteria>(EMPTY_ETAT_CRITERIA);
   readonly advancedOpen = signal(false);
@@ -32,7 +27,6 @@ export class EtatSearchState {
     this.draft.update((criteria) => ({ ...criteria, ...change }));
   }
 
-  /** Applique les critères saisis et renvoie les états trouvés. */
   submit(): readonly { ref: string }[] {
     const criteria = this.draft();
     const trimmed: EtatCriteria = {
@@ -47,7 +41,6 @@ export class EtatSearchState {
     return this.results();
   }
 
-  /** Efface la référence si elle est renseignée, sinon tous les critères avancés. */
   clearNoResult(): void {
     if (this.applied().ref) {
       this.draft.update((criteria) => ({ ...criteria, ref: '' }));

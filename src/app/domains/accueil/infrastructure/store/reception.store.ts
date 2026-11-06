@@ -5,10 +5,6 @@ import { Etat } from '../../../dossiers/domain/entities/etat.entity';
 import { EtatApi } from '../../../dossiers/infrastructure/api/etat.api';
 import { AccueilApi } from '../api/accueil.api';
 
-/**
- * États destinés à l'entité réceptrice de l'utilisateur, avec leurs dossiers (recherche et pointage), tenus par
- * l'API. Chaque état est relu en détail : la recherche porte aussi sur ses dossiers.
- */
 @Service()
 export class ReceptionStore {
   private readonly etatApi = inject(EtatApi);
@@ -19,7 +15,6 @@ export class ReceptionStore {
 
   readonly etats = this.list.asReadonly();
   readonly isLoaded = this.loaded.asReadonly();
-  /** Dossiers reçus encore sans gestionnaire, et retours à renvoyer aux agences (pastilles du menu). */
   readonly nonPrisEnCharge = signal(0);
   readonly retoursARenvoyer = signal(0);
   readonly dossiersReceptionnes = signal(0);
@@ -39,7 +34,6 @@ export class ReceptionStore {
     this.loaded.set(true);
   }
 
-  /** Pointe les dossiers reçus ; les autres dossiers en attente passent « non reçus ». Rend l'état à jour. */
   async receive(etatId: string, dossierIds: readonly string[]): Promise<Etat> {
     const etat = etatFromApi(await firstValueFrom(this.etatApi.receptionner(etatId, dossierIds)));
     this.list.update((list) =>

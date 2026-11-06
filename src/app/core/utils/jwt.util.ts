@@ -1,4 +1,3 @@
-/** Date d'expiration d'un JWT (champ `exp`, en secondes), sans en vérifier la signature : le serveur s'en charge. */
 export function jwtExpiresAt(token: string): number | null {
   try {
     const payload = token.split('.')[1] ?? '';
@@ -10,7 +9,6 @@ export function jwtExpiresAt(token: string): number | null {
   }
 }
 
-/** Jeton illisible ou expiré à l'instant `now` (millisecondes). */
 export function isJwtExpired(token: string, now: number): boolean {
   const expiresAt = jwtExpiresAt(token);
   return expiresAt === null || expiresAt <= now;

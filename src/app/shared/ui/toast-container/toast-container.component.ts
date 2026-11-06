@@ -1,7 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { ToastService } from '../../../core/services/toast.service';
 
-/** Message bref en bas de l'écran, remplacé par le suivant. */
 @Component({
   selector: 'app-toast-container',
   host: {

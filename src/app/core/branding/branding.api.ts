@@ -8,14 +8,12 @@ import { ConfigurationMarque, Marque, brandFromMarque } from './marque.entity';
 /** Délai au-delà duquel l'application démarre avec la marque gardée en mémoire. */
 const STARTUP_TIMEOUT_MS = 4000;
 
-/** Type de logo de l'API pour chaque logo du front. */
 const LOGO_TYPE: Record<BrandLogoKey, string> = {
   logoFull: 'LOGO_COMPLET',
   logoIcon: 'LOGO_ICONE',
   favicon: 'FAVICON',
 };
 
-/** Marque blanche servie par l'API : lecture sans être connecté, modification par l'administrateur. */
 @Service()
 export class BrandingApi {
   private readonly baseService = inject(BaseService);
@@ -34,7 +32,6 @@ export class BrandingApi {
     return this.baseService.update<Marque>(this.url.base, configuration);
   }
 
-  /** Retour à la marque par défaut : configuration et logos effacés. */
   reinitialiser(): Observable<Marque> {
     return this.baseService.delete<Marque>(this.url.base);
   }

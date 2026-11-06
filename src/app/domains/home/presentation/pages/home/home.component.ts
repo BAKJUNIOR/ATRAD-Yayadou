@@ -47,7 +47,6 @@ const PRIMARY_ICON: Record<Role, IconName> = {
   admin: 'users',
 };
 
-/** Accueil commun à tous les profils : son contenu dépend du rôle connecté. */
 @Component({
   selector: 'app-home',
   imports: [IconComponent, StatCardComponent, StatusBadgeComponent],
@@ -70,12 +69,10 @@ export class HomeComponent {
     if (!account) {
       return null;
     }
-    // Textes de l'écran propres au profil ; la salutation reprend le prénom du compte connecté.
     const base = {
       ...DASHBOARD_TEXTS[account.role],
       greeting: `Bonjour ${account.name.split(' ')[0]}`,
     };
-    // Les profils dont le parcours est construit affichent les données réelles.
     if (account.role === 'agence') {
       return { ...base, ...this.agenceDashboard(account) };
     }
@@ -103,7 +100,6 @@ export class HomeComponent {
     return role ? PRIMARY_ICON[role] : 'plus';
   });
 
-  /** Écran principal du profil, refusé si l'entité n'a pas la capacité correspondante. */
   protected openPrimary(): void {
     const account = this.session.account();
     const capability = account ? ROLE_CAPABILITY[account.role] : undefined;
@@ -254,7 +250,6 @@ export class HomeComponent {
     };
   }
 
-  /** Indicateurs du réseau calculés par l'API (tableau de bord et retards). */
   private readonly pilotage = toSignal(
     this.session.role() === 'manager'
       ? inject(RealtimeService).live(() =>
@@ -267,7 +262,6 @@ export class HomeComponent {
     { initialValue: null },
   );
 
-  /** Comptes des utilisateurs (administrateur), pour les chiffres et les dernières connexions. */
   private readonly utilisateurs = toSignal(
     this.session.role() === 'admin'
       ? this.utilisateurApi.rechercher({ taille: 500 }).pipe(catchError(() => of(null)))
@@ -358,7 +352,6 @@ export class HomeComponent {
           tone: rate >= SLA_TARGET ? 'success' : 'warning',
         },
       ],
-      // Points d'attention : les dossiers en retard, du plus critique au moins critique.
       rows: delais.retards.slice(0, 5).map((retard) => ({
         ref: retard.reference,
         label: `${retard.client} — ${retard.typeDossier}`,

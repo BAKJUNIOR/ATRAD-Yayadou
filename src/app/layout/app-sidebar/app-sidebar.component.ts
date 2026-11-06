@@ -48,7 +48,6 @@ export class AppSidebarComponent {
     if (role !== 'traitement') {
       return menu;
     }
-    // L'agent ne voit que les écrans correspondant à ses fonctions dans l'entité.
     const functions = this.traitement.functions();
     const items = menu.items.filter((item) => !item.requires || functions[item.requires]);
     if (!this.reception.canReceive()) {
@@ -75,8 +74,6 @@ export class AppSidebarComponent {
 
   protected readonly initials = computed(() => initialsOf(this.account()?.name ?? ''));
 
-  // Les groupes sont repliés par défaut : un clic les déplie. Seul le groupe de l'écran
-  // affiché au chargement est ouvert d'emblée, pour que l'entrée active reste visible.
   private readonly openGroups = signal<ReadonlySet<string>>(this.groupsOfCurrentUrl());
 
   // Le repli ne concerne que les écrans larges : en tiroir mobile, les libellés restent visibles.

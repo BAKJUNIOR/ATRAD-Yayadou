@@ -3,7 +3,6 @@ import { CanActivateFn, Router, Routes } from '@angular/router';
 import { MemberFunction } from '../../dossiers/domain/routing';
 import { TraitementContext } from './traitement-context.service';
 
-/** Réserve un écran aux membres ayant une fonction donnée dans leur entité (droits lus dans l'API). */
 function functionGuard(required: MemberFunction): CanActivateFn {
   return async () => {
     const context = inject(TraitementContext);

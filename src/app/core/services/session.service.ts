@@ -6,7 +6,6 @@ import { ConfirmService } from './confirm.service';
 import { ToastService } from './toast.service';
 
 const SESSION_KEY = 'atrad_session_v2';
-/** Ancienne session simulée (compte sans jeton), effacée au démarrage. */
 const LEGACY_KEY = 'atrad_session_v1';
 
 interface StoredSession {
@@ -14,11 +13,6 @@ interface StoredSession {
   account: Account;
 }
 
-/**
- * Utilisateur connecté et son jeton d'accès. Par défaut dans le sessionStorage : la session s'arrête à la fermeture
- * de l'onglet. Avec « Se souvenir de moi », dans le localStorage : elle dure jusqu'à l'expiration du jeton. Un jeton
- * expiré n'est jamais repris.
- */
 @Service()
 export class SessionService {
   private readonly router = inject(Router);
@@ -42,7 +36,6 @@ export class SessionService {
     this.store(null);
   }
 
-  /** Jeton refusé par l'API (expiré ou révoqué) : retour à la connexion. */
   expire(): void {
     if (!this.current()) {
       return;
@@ -52,7 +45,6 @@ export class SessionService {
     void this.router.navigate(['/signin']);
   }
 
-  /** Vrai pendant la sortie vers la page de connexion (voir `guestGuard`). */
   private leaving = false;
 
   isLeaving(): boolean {

@@ -1,10 +1,6 @@
 import { Component, inject, input } from '@angular/core';
 import { BrandService } from '../../../core/services/brand.service';
 
-/**
- * Identité de l'application sur fond sombre. Sans logo : pastille aux initiales, nom et
- * organisation ; le logo complet les remplace, le logo icône remplace les initiales.
- */
 @Component({
   selector: 'app-brand-mark',
   host: { class: 'flex min-w-0 items-center gap-3' },
@@ -45,7 +41,6 @@ import { BrandService } from '../../../core/services/brand.service';
   `,
 })
 export class BrandMarkComponent {
-  /** Pastille seule (barre latérale repliée). */
   readonly compact = input(false);
 
   protected readonly service = inject(BrandService);

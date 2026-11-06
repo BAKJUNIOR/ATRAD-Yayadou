@@ -31,13 +31,11 @@ export class ThemeService {
     this.apply(theme);
   }
 
-  /** Oublie le choix de l'utilisateur et revient au mode par défaut de la marque. */
   clearChoice(): void {
     this.storage.remove(THEME_KEY);
     this.followBrandDefault();
   }
 
-  /** Applique le mode par défaut de la marque tant que l'utilisateur n'a pas choisi lui-même. */
   followBrandDefault(): void {
     if (this.storedTheme()) {
       return;

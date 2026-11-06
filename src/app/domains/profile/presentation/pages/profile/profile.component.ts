@@ -18,7 +18,6 @@ import { PasswordDialogComponent } from '../../components/password-dialog/passwo
 interface Field {
   label: string;
   value: string;
-  /** Valeur absente : affichée en retrait. */
   empty?: boolean;
   mono?: boolean;
 }
@@ -32,7 +31,6 @@ function field(label: string, value: string, mono = false): Field {
   return value ? { label, value, mono } : { label, value: 'Non renseigné', empty: true };
 }
 
-/** Profil de l'utilisateur connecté : identité, rattachement, sécurité et apparence. */
 @Component({
   selector: 'app-profile',
   imports: [IconComponent],
@@ -52,7 +50,6 @@ export class ProfileComponent {
 
   protected readonly initials = computed(() => initialsOf(this.account()?.name ?? ''));
   protected readonly jobTitle = computed(() => jobTitle(this.account()?.roleLabel ?? ''));
-  /** Compte lu dans l'API (`/moi`). */
   private readonly utilisateur = signal<Utilisateur | null>(null);
   private readonly contact = computed<Contact>(() => ({
     email: this.utilisateur()?.email ?? '',
@@ -94,7 +91,6 @@ export class ProfileComponent {
       field('Code', entityCode(account.entity), true),
       field('Parcours', NAVIGATION[account.role].title),
     ];
-    // Profil traitement : mode de répartition de l'entité et droits de l'agent, lus dans l'API.
     if (account.role === 'traitement') {
       const functions = this.traitement.functions();
       const rights = [
