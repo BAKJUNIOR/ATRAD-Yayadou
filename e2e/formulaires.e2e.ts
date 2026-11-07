@@ -14,11 +14,12 @@ test("l'administrateur ajoute un champ à un type de dossier, l'agence le saisit
 }) => {
   const admin = await signIn(browser, 'admin');
   await openReclamation(admin);
+  const champs = admin.locator('li').filter({ has: admin.getByPlaceholder('Ex. Montant demandé') });
+  const avant = await champs.count();
   await admin.getByRole('button', { name: 'Ajouter un champ' }).click();
-  const champ = admin
-    .locator('li')
-    .filter({ has: admin.getByPlaceholder('Ex. Montant demandé') })
-    .last();
+  // Le nouveau champ doit être affiché avant d'être rempli (sinon la saisie irait dans le précédent).
+  await expect(champs).toHaveCount(avant + 1);
+  const champ = champs.nth(avant);
   await champ.getByLabel('Libellé *').fill('Canal de contact');
   await champ.getByLabel('Type de donnée').selectOption('LISTE');
   await champ.getByLabel(/Valeurs proposées/).fill('Agence\nTéléphone');
