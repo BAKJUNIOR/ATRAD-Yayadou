@@ -1,7 +1,9 @@
-import { Service, computed, inject, signal } from '@angular/core';
+import { Injector, Service, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { environment } from '../../../environments/environment';
 import { Account, isRole } from '../../domains/auth/domain/entities/account.entity';
 import { isJwtExpired } from '../utils/jwt.util';
+import { BaseService } from './base.service';
 import { ConfirmService } from './confirm.service';
 import { ToastService } from './toast.service';
 
@@ -18,6 +20,7 @@ export class SessionService {
   private readonly router = inject(Router);
   private readonly confirm = inject(ConfirmService);
   private readonly toast = inject(ToastService);
+  private readonly injector = inject(Injector);
 
   private remember = rememberedSession();
   private readonly current = signal<StoredSession | null>(readStoredSession());
@@ -69,7 +72,19 @@ export class SessionService {
     const left = await this.router.navigate(['/signin']);
     this.leaving = false;
     if (left) {
-      this.signOut();
+      this.revokeAndSignOut();
+    }
+  }
+
+  revokeAndSignOut(): void {
+    const token = this.token();
+    this.signOut();
+    if (token) {
+      // BaseService est lu ici : l'injecter dans le constructeur créerait une dépendance circulaire (intercepteur).
+      this.injector
+        .get(BaseService)
+        .create(environment.endpoints.auth.logout, null, { token, silentErrors: true })
+        .subscribe({ error: () => undefined });
     }
   }
 

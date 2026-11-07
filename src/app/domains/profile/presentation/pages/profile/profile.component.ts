@@ -1,5 +1,6 @@
 import { Dialog } from '@angular/cdk/dialog';
 import { Component, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { NAVIGATION } from '../../../../../core/navigation/navigation';
 import { BrandService } from '../../../../../core/services/brand.service';
@@ -43,6 +44,7 @@ export class ProfileComponent {
   private readonly traitement = inject(TraitementContext);
   private readonly dialog = inject(Dialog);
   private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
   protected readonly theme = inject(ThemeService);
 
   protected readonly themes = THEMES;
@@ -130,7 +132,10 @@ export class ProfileComponent {
       backdropClass: 'app-dialog-backdrop',
     });
     if (await firstValueFrom(ref.closed)) {
-      this.toast.success('Mot de passe changé.');
+      // Le serveur a fermé toutes les sessions de l'utilisateur : il se reconnecte avec le nouveau mot de passe.
+      this.session.signOut();
+      await this.router.navigate(['/signin']);
+      this.toast.success('Mot de passe changé : reconnectez-vous avec le nouveau.');
     }
   }
 
