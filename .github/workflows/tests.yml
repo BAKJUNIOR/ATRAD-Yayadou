@@ -48,6 +48,8 @@ jobs:
         with:
           username: ${{ env.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      # Pas de serveur d'e-mails ici : sans MANAGEMENT_HEALTH_MAIL_ENABLED=false, /actuator/health répondrait
+      # DOWN (503) et l'attente ci-dessous échouerait alors que l'API fonctionne.
       - name: démarrer l'API (dernière image du backend, données de démo)
         run: |
           docker run -d --name atrad-back --network host \
@@ -55,6 +57,7 @@ jobs:
             -e POSTGRES_USER=atrad -e DB_PASSWORD=atrad-ci \
             -e JWT_SECRET="$(openssl rand -base64 48 | tr -d '\n')" \
             -e DEMO_PASSWORD -e LIQUIBASE_CONTEXTS=demo \
+            -e MANAGEMENT_HEALTH_MAIL_ENABLED=false \
             -e STOCKAGE_DOSSIER=/tmp/stockage \
             ${{ env.DOCKERHUB_USER }}/atrad-back:0.0.1-SNAPSHOT
       - uses: actions/setup-node@v4
