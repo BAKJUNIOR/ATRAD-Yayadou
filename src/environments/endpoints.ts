@@ -1,6 +1,7 @@
 export const endpoints = {
   auth: {
     login: 'api/v1/auth/login',
+    logout: 'api/v1/auth/logout',
   },
   moi: {
     base: 'api/v1/moi',
