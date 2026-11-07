@@ -5,33 +5,26 @@ import { MemberFunction } from '../../domains/dossiers/domain/routing';
 export interface NavItem {
   id: string;
   label: string;
-  /** Glyphe du prototype affiché devant le libellé. */
   icon: string;
-  /** Absent pour un groupe : l'entrée ne fait que replier / déplier ses `children`. */
   path?: string;
   children?: NavItem[];
-  /** Fonction que l'agent doit avoir dans son entité pour voir l'entrée (profil traitement). */
   requires?: MemberFunction;
 }
 
 export interface NavMenu {
-  /** Intitulé du parcours, repris dans la barre latérale et le fil d'Ariane. */
   title: string;
-  /** Écran principal du profil, cible du bouton d'action de l'accueil. */
   primaryPath: string;
   items: NavItem[];
 }
 
 export const HOME: NavItem = { id: 'accueil', label: 'Accueil', icon: '◱', path: '/' };
 
-/** Capacité que l'entité du profil doit avoir pour en ouvrir les écrans. */
 export const ROLE_CAPABILITY: Partial<Record<Role, EntityCapability>> = {
   agence: 'emet',
   accueil: 'recep',
   traitement: 'trait',
 };
 
-/** Menu de chaque profil. Les chemins doivent correspondre aux routes des domaines. */
 export const NAVIGATION: Record<Role, NavMenu> = {
   agence: {
     title: 'Parcours agence',
@@ -154,6 +147,12 @@ export const NAVIGATION: Record<Role, NavMenu> = {
             label: "Types d'état",
             icon: '▦',
             path: '/administration/types-etat',
+          },
+          {
+            id: 'formulaires',
+            label: 'Formulaires des dossiers',
+            icon: '☰',
+            path: '/administration/formulaires',
           },
         ],
       },

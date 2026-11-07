@@ -14,7 +14,6 @@ import {
 } from '../../dossiers/domain/dossier-catalog';
 import { Dossier, DossierData, PieceJointe } from '../../dossiers/domain/entities/dossier.entity';
 
-/** Valeurs saisies dans le formulaire de dossier, avant contrôle. */
 export interface DossierFormValue {
   type: DossierType;
   client: string;
@@ -24,7 +23,6 @@ export interface DossierFormValue {
   produit: Produit;
   prio: Priorite;
   note: string;
-  /** Valeurs des champs propres au type, par clé de champ. */
   extra: Record<string, string>;
 }
 
@@ -34,10 +32,8 @@ export const BASE_FIELD_KEYS: readonly BaseFieldKey[] = ['client', 'prenom', 'no
 
 export const CLIENT_NUMBER_LENGTH = 12;
 
-/** Le n° de compte compte exactement 11 chiffres. */
 export const ACCOUNT_NUMBER_LENGTH = 11;
 
-/** Le n° client n'accepte que des chiffres (jeu neutre) : la saisie est filtrée. */
 export function filterClientInput(raw: string): string {
   const { clientRule, clientMax } = DOSSIER_FORM;
   return clientRule === 'digits12'
@@ -45,7 +41,6 @@ export function filterClientInput(raw: string): string {
     : raw.slice(0, clientMax);
 }
 
-/** Le n° de compte n'accepte que des chiffres : la saisie est filtrée. */
 export function filterAccountInput(raw: string): string {
   return raw.replace(/\D/g, '').slice(0, ACCOUNT_NUMBER_LENGTH);
 }
@@ -64,7 +59,6 @@ export function emptyDossierForm(type: DossierType = DOSSIER_TYPES[0] ?? ''): Do
   };
 }
 
-/** Message d'erreur d'un champ, ou chaîne vide s'il est valide. */
 export function fieldError(key: string, raw: string, type: DossierType, todayIso: string): string {
   const value = (raw ?? '').trim();
   const form = DOSSIER_FORM;
@@ -108,9 +102,12 @@ export function fieldError(key: string, raw: string, type: DossierType, todayIso
       : '';
   }
   if (key === 'compte') {
-    return value && !/^\d{11}$/.test(value)
-      ? `Exactement ${ACCOUNT_NUMBER_LENGTH} chiffres (${value.length}/${ACCOUNT_NUMBER_LENGTH}).`
-      : '';
+    if (!value) {
+      return 'Champ obligatoire.';
+    }
+    return /^\d{11}$/.test(value)
+      ? ''
+      : `Exactement ${ACCOUNT_NUMBER_LENGTH} chiffres (${value.length}/${ACCOUNT_NUMBER_LENGTH}).`;
   }
 
   const field = fieldsOf(type).find((candidate) => candidate.key === key);
@@ -146,7 +143,6 @@ export function allFieldErrors(value: DossierFormValue, todayIso: string): Recor
 export type BuildResult =
   { ok: true; data: DossierData } | { ok: false; error: string; errors: Record<string, string> };
 
-/** Contrôle le formulaire et construit le dossier (mêmes règles en création et en modification). */
 export function buildDossierData(
   value: DossierFormValue,
   pieces: readonly PieceJointe[],
@@ -192,7 +188,6 @@ export function buildDossierData(
   };
 }
 
-/** Recharge un dossier dans le formulaire pour le modifier. */
 export function formValueOf(dossier: Dossier): DossierFormValue {
   return {
     type: dossier.type,
@@ -207,7 +202,6 @@ export function formValueOf(dossier: Dossier): DossierFormValue {
   };
 }
 
-/** Libellés des informations modifiées entre deux versions d'un dossier. */
 export function changedLabels(previous: DossierData, next: DossierData): string[] {
   const changes: string[] = [];
   const compare = (label: string, before: string, after: string): void => {
@@ -235,7 +229,6 @@ export function changedLabels(previous: DossierData, next: DossierData): string[
   return changes;
 }
 
-/** Empreinte du formulaire, pour savoir si une modification en cours a réellement changé. */
 export function formSnapshot(value: DossierFormValue, pieces: readonly PieceJointe[]): string {
   const extra = Object.fromEntries(
     fieldsOf(value.type).map((field) => [field.key, value.extra[field.key] ?? '']),
@@ -243,7 +236,6 @@ export function formSnapshot(value: DossierFormValue, pieces: readonly PieceJoin
   return JSON.stringify([{ ...value, extra }, pieces.map((piece) => piece.id)]);
 }
 
-/** Une saisie a commencé (hors listes déroulantes, qui ont toujours une valeur). */
 export function hasTypedContent(value: DossierFormValue): boolean {
   return [
     value.client,

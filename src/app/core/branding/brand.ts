@@ -1,15 +1,12 @@
 import { deepColor, mixColors } from '../utils/color.util';
 
-/** Identité visuelle de l'application (marque blanche), réglée dans « Logo & Couleurs ». */
 export interface Brand {
   appName: string;
   shortName: string;
   org: string;
-  /** Logos enregistrés en `data:` URL ; vide = pastille aux initiales. */
   logoFull: string;
   logoIcon: string;
   favicon: string;
-  /** Identifiant de la palette prédéfinie, ou `custom` dès qu'une couleur est modifiée. */
   palette: string;
   primary: string;
   primaryDark: string;
@@ -20,9 +17,7 @@ export interface Brand {
   text: string;
   font: BrandFont;
   radius: number;
-  /** Mode sombre pour les utilisateurs qui n'ont pas encore choisi eux-mêmes. */
   darkDefault: boolean;
-  /** Mots qui remplacent « Tiers » et « Dossier » dans toute l'application. */
   vocab: { tiers: string; dossier: string };
 }
 
@@ -135,7 +130,6 @@ export const PALETTES: Palette[] = [
   },
 ];
 
-/** Couleurs complètes d'une palette : les teintes absentes sont dérivées de la principale. */
 export function paletteColors(palette: Palette): Partial<Brand> {
   const secondary = palette.secondary ?? deepColor(palette.primary);
   return {
@@ -150,7 +144,6 @@ export function paletteColors(palette: Palette): Partial<Brand> {
   };
 }
 
-/** Modification d'une couleur : la principale entraîne ses teintes dérivées. */
 export function colorChange(key: BrandColorKey, value: string): Partial<Brand> {
   const change: Partial<Brand> = { [key]: value.toUpperCase(), palette: 'custom' };
   if (key === 'primary') {
@@ -160,7 +153,6 @@ export function colorChange(key: BrandColorKey, value: string): Partial<Brand> {
   return change;
 }
 
-/** Variables CSS de la marque, lues par les jetons de `styles.css`. */
 export function brandVars(brand: Brand): Record<string, string> {
   return {
     '--brand-primary': brand.primary,

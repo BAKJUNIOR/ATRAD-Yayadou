@@ -14,14 +14,12 @@ const PRIORITY_TEXT: Record<Priorite, string> = {
   Urgente: 'text-danger',
 };
 
-/** Dossier routé, tel qu'affiché dans le groupe de son entité de traitement. */
 interface TrackingRow {
   ref: string;
   client: string;
   type: string;
   etat: string;
   agence: string;
-  /** Date de réception (routage). */
   affecte: string;
   prio: Priorite;
   status: Status;
@@ -35,7 +33,6 @@ interface TrackingGroup {
   pending: number;
 }
 
-/** Parcours accueil : où déposer chaque dossier réceptionné (lecture seule), calculé par l'API. */
 @Component({
   selector: 'app-suivi-statistiques',
   templateUrl: './suivi-statistiques.component.html',
@@ -58,7 +55,6 @@ export class SuiviStatistiquesComponent {
   protected readonly query = signal('');
   protected readonly pendingOnly = signal(false);
 
-  /** Entités de traitement proposées dans le filtre. */
   protected readonly entites = computed(() =>
     (this.suivi()?.entites ?? []).map((entite) => ({ name: `${entite.nom} (${entite.code})` })),
   );
@@ -145,7 +141,6 @@ export class SuiviStatistiquesComponent {
     this.query.set((event.target as HTMLInputElement).value);
   }
 
-  /** Libellé et couleur de la prise en charge d'un dossier par son entité. */
   protected takeover(dossier: TrackingRow): { label: string; classes: string } {
     if (dossier.gest) {
       return { label: `Pris en charge · ${dossier.gest}`, classes: 'bg-success-bg text-success' };
@@ -156,7 +151,6 @@ export class SuiviStatistiquesComponent {
   }
 }
 
-/** Reçu et sans gestionnaire : à déposer dans l'entité. */
 function isUnassigned(row: TrackingRow): boolean {
   return row.status === 'Reçu' && !row.gest;
 }

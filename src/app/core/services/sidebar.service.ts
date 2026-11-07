@@ -10,9 +10,7 @@ export class SidebarService {
   private readonly collapsedState = signal(this.storage.get<boolean>(SIDEBAR_KEY) === true);
   private readonly mobileOpenState = signal(false);
 
-  /** Barre repliée en icônes (écrans larges). */
   readonly isCollapsed = this.collapsedState.asReadonly();
-  /** Tiroir ouvert (écrans étroits). */
   readonly isMobileOpen = this.mobileOpenState.asReadonly();
 
   toggleCollapsed(): void {

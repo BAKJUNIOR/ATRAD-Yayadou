@@ -16,7 +16,6 @@ export interface AppNotification {
   id: string;
   label: string;
   meta: string;
-  /** Écran ouvert au clic. */
   path: string;
   tone: NotificationTone;
   read: boolean;
@@ -28,12 +27,6 @@ const TONE: Record<ApiNotification['niveau'], NotificationTone> = {
   DANGER: 'danger',
 };
 
-/**
- * Notifications de l'utilisateur connecté, tenues par l'API : la liste et le nombre de non-lues sont lus à
- * l'ouverture de la session, puis tenus à jour en temps réel (`RealtimeService`, file `/user/queue/notifications`).
- * Le serveur signale les nouvelles notifications, les lectures et « tout lu », avec le nombre de non-lues : tous
- * les onglets de l'utilisateur restent alignés. À chaque reconnexion, liste et compteur sont relus.
- */
 @Service()
 export class NotificationsService {
   private readonly session = inject(SessionService);
@@ -131,7 +124,6 @@ export class NotificationsService {
   }
 }
 
-/** Écran ouvert au clic, selon l'objet de la notification et le profil. */
 function pathOf(notification: ApiNotification, role: Role | null): string {
   const id = notification.objetId ?? '';
   if (notification.objetType === 'DOSSIER' && id) {

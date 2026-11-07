@@ -1,5 +1,3 @@
-/** Outils sur les couleurs hexadécimales `#RRGGBB` (marque blanche). */
-
 type Rgb = [number, number, number];
 
 export function isHexColor(value: string): boolean {
@@ -20,14 +18,12 @@ function toHex(rgb: number[]): string {
   return `#${channels.join('')}`.toUpperCase();
 }
 
-/** Mélange linéaire : `ratio` = 0 rend `from`, 1 rend `to`. */
 export function mixColors(from: string, to: string, ratio: number): string {
   const start = toRgb(from);
   const end = toRgb(to);
   return toHex(start.map((channel, index) => channel + (end[index] - channel) * ratio));
 }
 
-/** Version très foncée d'une couleur : même teinte, luminosité de 15 %. */
 export function deepColor(hex: string): string {
   const [red, green, blue] = toRgb(hex).map((channel) => channel / 255);
   const max = Math.max(red, green, blue);
@@ -77,7 +73,6 @@ function luminance(hex: string): number {
     .reduce((total, value, index) => total + value * weights[index], 0);
 }
 
-/** Rapport de contraste WCAG entre deux couleurs (de 1 à 21). */
 export function contrastRatio(first: string, second: string): number {
   const a = luminance(first);
   const b = luminance(second);

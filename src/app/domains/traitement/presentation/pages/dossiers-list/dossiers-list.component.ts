@@ -30,7 +30,6 @@ import { DossierActionsService } from '../../dossier-actions.service';
 import { PortfolioFilterState } from '../../portfolio-filter.state';
 import { TraitementContext } from '../../traitement-context.service';
 
-/** Portée de la liste : mes dossiers, tous ceux de l'entité, ou les retards et clôtures. */
 export type ListMode = 'mine' | 'all' | 'late';
 
 const FILTER_ICONS: Record<string, IconName> = {
@@ -59,7 +58,6 @@ const PRIORITY_TEXT: Record<Priorite, string> = {
 
 type TextCriterion = Exclude<keyof PortfolioCriteria, 'type'>;
 
-/** Parcours traitement : portefeuille de dossiers, filtrable et actionnable ligne par ligne. */
 @Component({
   selector: 'app-dossiers-list',
   imports: [RouterLink, CdkMenu, CdkMenuItem, CdkMenuTrigger, IconComponent, StatusBadgeComponent],
@@ -72,9 +70,7 @@ export class DossiersListComponent {
   protected readonly state = inject(PortfolioFilterState);
   protected readonly actions = inject(DossierActionsService);
 
-  /** Fourni par les données de la route. */
   readonly mode = input<ListMode>('mine');
-  /** Onglet de l'écran « En retard & clôturés ». */
   readonly tab = input<string>();
   // Un paramètre d'URL absent arrive `undefined` : l'onglet par défaut est « En retard ».
   protected readonly currentTab = computed(() => (this.tab() === 'clos' ? 'clos' : 'retard'));
@@ -91,7 +87,6 @@ export class DossiersListComponent {
       : `Mes dossiers — ${this.context.user()}`,
   );
 
-  /** Sur « En retard & clôturés », le filtre est imposé par l'onglet. */
   protected readonly activeFilter = computed<PortfolioFilter>(() => {
     if (this.mode() !== 'late') {
       return this.state.filter();

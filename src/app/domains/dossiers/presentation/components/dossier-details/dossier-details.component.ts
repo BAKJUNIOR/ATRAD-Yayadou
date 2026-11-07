@@ -11,7 +11,6 @@ interface DetailField {
   mono?: boolean;
 }
 
-/** Fiche complète d'un dossier : identité, informations propres au type, pièces et observation. */
 @Component({
   selector: 'app-dossier-details',
   host: { class: 'flex flex-col gap-3.5' },
@@ -21,7 +20,6 @@ export class DossierDetailsComponent {
   protected readonly pieceOpener = inject(PieceOpener);
 
   readonly dossier = input.required<Dossier & { entite?: string }>();
-  /** État du pointage par l'Accueil, affiché quand le dossier appartient à un état transmis. */
   readonly reception = input('');
 
   protected readonly sizeLabel = fileSizeLabel;

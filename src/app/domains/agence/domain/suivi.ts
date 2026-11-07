@@ -17,10 +17,8 @@ import {
 import { Etat } from '../../dossiers/domain/entities/etat.entity';
 import { etatInfo } from '../../dossiers/domain/referentiel';
 
-/** Dossier transmis, vu depuis l'agence : rattaché à son état, avec le statut qu'elle peut voir. */
 export interface SuiviDossier extends EtatDossier {
   etat: Etat;
-  /** Suite donnée au dossier une fois réceptionné et routé ; absente tant qu'il ne l'est pas. */
   routed?: RoutedDossier;
 }
 
@@ -58,7 +56,6 @@ function statusForAgency(etat: Etat, dossier: EtatDossier, routed?: RoutedDossie
   return visibleStatus(etat.status === 'Reçu partiellement' ? 'Transmis' : etat.status, false);
 }
 
-/** Dossiers des états d'une agence, du plus récemment saisi au plus ancien. */
 export function suiviDossiers(
   etats: readonly Etat[],
   routedDossiers: readonly RoutedDossier[],
@@ -82,7 +79,6 @@ export function suiviDossiers(
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.ref.localeCompare(a.ref));
 }
 
-/** Ligne de la liste « Suivi des dossiers », lue dans l'API (statut déjà vu depuis l'agence). */
 export interface SuiviRow {
   id: string;
   ref: string;
@@ -111,10 +107,6 @@ export function suiviRowFromApi(row: ApiDossierSuivi): SuiviRow {
   };
 }
 
-/**
- * Fiche d'un dossier transmis à partir de l'API : son détail et, s'il est connu, son état d'origine (pointage de
- * réception). Le statut est celui que voit l'agence.
- */
 export function suiviDossierOf(detail: ApiDossierDetail, etat: Etat | null): SuiviDossier {
   const ligne = etat?.dossiers.find((dossier) => dossier.id === detail.dossier.id);
   const routed = routedFromApi(detail, etat?.ref ?? '');
@@ -146,7 +138,6 @@ const EMPTY_ETAT: Etat = {
   prints: [],
 };
 
-/** Historique en frise, du plus ancien au plus récent. */
 export function timelineOf(logs: readonly DossierLog[]): TimelineEntry[] {
   return [...logs]
     .sort((a, b) => a.at.localeCompare(b.at))
@@ -188,7 +179,6 @@ export function matchesCriteria(dossier: SuiviRow, criteria: SuiviCriteria): boo
   );
 }
 
-/** Filtres rapides par statut proposés au-dessus de la liste. */
 export const SUIVI_STATUS_FILTERS: readonly { status: Status; label: string }[] = [
   { status: 'Transmis', label: 'Transmis' },
   { status: 'En cours', label: 'En cours' },
@@ -199,7 +189,6 @@ export const SUIVI_STATUS_FILTERS: readonly { status: Status; label: string }[] 
   { status: 'Clôturé', label: 'Clôturé' },
 ];
 
-/** Libellé court d'un statut dans une liste. */
 export function shortStatusLabel(status: Status): string {
   return status === 'En attente de document(s) complémentaire(s)' ? 'À compléter' : status;
 }
@@ -209,7 +198,6 @@ export interface ReceptionLabel {
   tone: 'brand' | 'danger' | 'warning';
 }
 
-/** État du pointage d'un dossier par l'entité réceptrice. */
 export function receptionLabel(etat: Etat, dossier: EtatDossier): ReceptionLabel {
   if (dossier.rec) {
     return { label: `Reçu le ${formatStamp(dossier.rec.at)}`, tone: 'brand' };
@@ -220,7 +208,6 @@ export function receptionLabel(etat: Etat, dossier: EtatDossier): ReceptionLabel
   return { label: etat.sentAt ? 'En attente de réception' : '—', tone: 'warning' };
 }
 
-/** Historique d'un dossier tel que l'agence peut le consulter, du plus ancien au plus récent. */
 export function dossierHistory(dossier: SuiviDossier): TimelineEntry[] {
   const { etat } = dossier;
   const events: { at: string; label: string; who: string; tone: TimelineTone }[] = [];
@@ -277,11 +264,9 @@ export function dossierHistory(dossier: SuiviDossier): TimelineEntry[] {
     }));
 }
 
-/** Encart expliquant à l'agence pourquoi un dossier lui revient ou ce qu'on attend d'elle. */
 export interface ReturnNotice {
   title: string;
   text: string;
-  /** Compléments demandés, quand ils ne figurent pas déjà dans `text`. */
   complements: string;
 }
 
@@ -290,7 +275,6 @@ const MOTIF_TITLES: Partial<Record<Status, string>> = {
   Rejeté: 'Motif du rejet (absence de complément)',
 };
 
-/** Motif du retour ou documents attendus d'un dossier ; `null` s'il n'y a rien à signaler. */
 export function returnNotice(dossier: SuiviDossier, todayIso: string): ReturnNotice | null {
   const routed = dossier.routed;
   if (!routed) {

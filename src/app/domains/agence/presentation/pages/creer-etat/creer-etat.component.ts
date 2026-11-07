@@ -4,7 +4,6 @@ import { DraftEtatComponent } from '../../components/draft-etat/draft-etat.compo
 import { EtatTransmisComponent } from '../../components/etat-transmis/etat-transmis.component';
 import { CreerEtatFacade } from '../../creer-etat.facade';
 
-/** Parcours agence : saisir des dossiers, constituer un état puis le transmettre à son entité réceptrice. */
 @Component({
   selector: 'app-creer-etat',
   imports: [DossierFormComponent, DraftEtatComponent, EtatTransmisComponent],
@@ -29,7 +28,6 @@ import { CreerEtatFacade } from '../../creer-etat.facade';
 export class CreerEtatComponent {
   protected readonly facade = inject(CreerEtatFacade);
 
-  /** Appelé par le garde de sortie de la route. */
   canLeave(): Promise<boolean> {
     return this.facade.confirmLeave();
   }

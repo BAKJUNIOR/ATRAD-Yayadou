@@ -4,7 +4,6 @@ import { environment } from '../../../../../environments/environment';
 import { PaginationResponse } from '../../../../core/models/pagination.model';
 import { BaseService } from '../../../../core/services/base.service';
 
-/** Notification de l'utilisateur ; `objetType` / `objetId` : ce qu'elle ouvre au clic (DOSSIER ou ETAT). */
 export interface ApiNotification {
   id: string;
   utilisateurId: string;
@@ -19,17 +18,12 @@ export interface ApiNotification {
   creeLe: string;
 }
 
-/**
- * Message temps réel de la file `/user/queue/notifications` : nouvelle notification, notification lue, ou tout lu
- * (`notification` absente), avec le nombre de non-lues calculé par le serveur.
- */
 export interface EvenementNotification {
   type: 'notification:new' | 'notification:read' | 'notification:read-all';
   notification: ApiNotification | null;
   nonLues: number;
 }
 
-/** Cloche des notifications de l'utilisateur connecté. */
 @Service()
 export class NotificationApi {
   private readonly baseService = inject(BaseService);

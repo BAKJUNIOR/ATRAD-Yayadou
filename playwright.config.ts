@@ -1,10 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
 
-/**
- * Tests de bout en bout (`npm run e2e`) : le front servi par `ng serve` (relais /api et /ws) contre une API
- * démarrée à part avec les données de démonstration. Comptes de démo, mot de passe dans `DEMO_PASSWORD`.
- * Les parcours modifient la base : ils s'exécutent un par un.
- */
 export default defineConfig({
   testDir: './e2e',
   testMatch: '**/*.e2e.ts',

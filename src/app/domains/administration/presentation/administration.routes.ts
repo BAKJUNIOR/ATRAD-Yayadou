@@ -32,6 +32,13 @@ export const ADMINISTRATION_ROUTES: Routes = [
       import('./pages/types-etat/types-etat.component').then((m) => m.TypesEtatComponent),
   },
   {
+    path: 'formulaires',
+    title: 'Formulaires des dossiers',
+    canDeactivate: [unsavedChangesGuard],
+    loadComponent: () =>
+      import('./pages/formulaires/formulaires.component').then((m) => m.FormulairesComponent),
+  },
+  {
     path: 'utilisateurs',
     title: 'Utilisateurs',
     loadComponent: () =>

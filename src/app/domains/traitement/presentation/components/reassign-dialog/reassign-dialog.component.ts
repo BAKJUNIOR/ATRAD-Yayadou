@@ -5,7 +5,6 @@ import { DialogHeadComponent } from '../../../../../shared/ui/dialog-head/dialog
 export interface ReassignDialogData {
   ref: string;
   current: string;
-  /** Autres membres de l'équipe. */
   options: readonly string[];
 }
 
@@ -14,7 +13,6 @@ export interface ReassignChoice {
   motif: string;
 }
 
-/** Transfert d'un dossier en cours à un autre gestionnaire. */
 @Component({
   selector: 'app-reassign-dialog',
   imports: [DialogHeadComponent],

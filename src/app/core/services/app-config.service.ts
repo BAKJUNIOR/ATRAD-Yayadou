@@ -5,10 +5,6 @@ interface AppConfig {
   apiBaseUrl?: string;
 }
 
-/**
- * Adresse de l'API. Ordre de priorité : `config/app-config.json` (réécrit au déploiement, sans reconstruire le
- * front), puis `environment.baseUrl`. Vide : même origine que le front (proxy en local).
- */
 @Service()
 export class AppConfigService {
   private baseUrl = environment.baseUrl;

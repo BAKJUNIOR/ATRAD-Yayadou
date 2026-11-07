@@ -4,15 +4,16 @@ import { environment } from '../../../../../environments/environment';
 import { BaseService } from '../../../../core/services/base.service';
 import {
   ApiEntite,
+  ApiFormulaire,
   ApiTypeDossier,
   ApiTypeEtat,
 } from '../../../dossiers/domain/entities/referentiel.entity';
+import { FormulaireRequest } from '../../domain/formulaire';
 import {
   ApiModeRepartition,
   ApiRepartition,
 } from '../../../traitement/infrastructure/api/traitement.api';
 
-/** Corps de création ou de modification d'une entité ; le code ne change plus après la création. */
 export interface ApiEntiteRequest {
   code: string;
   nom: string;
@@ -31,20 +32,17 @@ export interface ApiEntiteRequest {
   actif: boolean | null;
 }
 
-/** Type d'état : une entité réceptrice et les entités émettrices autorisées. */
 export interface ApiTypeEtatRequest {
   nom: string;
   entiteReceptriceId: string;
   emettriceIds: string[];
 }
 
-/** Répartition interne d'une entité : mode et équipe, avec le rôle de répartiteur et le droit de recherche. */
 export interface ApiRepartitionRequest {
   mode: ApiModeRepartition;
   membres: { utilisateurId: string; repartiteur: boolean; droitRecherche: boolean }[];
 }
 
-/** Paramétrage de l'administrateur : entités, types d'état, types de dossier et répartition interne. */
 @Service()
 export class AdministrationApi {
   private readonly baseService = inject(BaseService);
@@ -76,7 +74,6 @@ export class AdministrationApi {
     });
   }
 
-  /** Nouveau type de dossier rattaché à un type d'état ; sans entité de traitement, la réceptrice le traite. */
   creerTypeDossier(
     nom: string,
     typeEtatId: string,
@@ -98,6 +95,20 @@ export class AdministrationApi {
       typeEtatId,
       entiteTraitementId,
     });
+  }
+
+  formulaire(typeDossierId: string): Observable<ApiFormulaire> {
+    return this.baseService.getOne<ApiFormulaire>(this.url.typesDossier.formulaire(typeDossierId));
+  }
+
+  modifierFormulaire(
+    typeDossierId: string,
+    formulaire: FormulaireRequest,
+  ): Observable<ApiFormulaire> {
+    return this.baseService.update<ApiFormulaire>(
+      this.url.typesDossier.formulaire(typeDossierId),
+      formulaire,
+    );
   }
 
   supprimerTypeDossier(id: string): Observable<void> {

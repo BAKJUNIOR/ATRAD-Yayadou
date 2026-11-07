@@ -19,7 +19,6 @@ const SIZES: Record<ButtonSize, string> = {
   md: 'px-4 py-2.5 text-[13.5px]',
 };
 
-/** S'applique sur un élément natif : `<button appButton>` ou `<a appButton routerLink="…">`. */
 @Component({
   selector: 'button[appButton], a[appButton]',
   host: { '[class]': 'classes()' },

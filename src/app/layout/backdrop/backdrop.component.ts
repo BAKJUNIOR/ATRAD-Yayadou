@@ -1,7 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { SidebarService } from '../../core/services/sidebar.service';
 
-/** Voile cliquable derrière le tiroir de navigation (écrans étroits). */
 @Component({
   selector: 'app-backdrop',
   template: `

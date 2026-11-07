@@ -12,7 +12,6 @@ import {
 import { IconComponent, IconName } from '../../shared/ui/icon/icon.component';
 import { ThemeToggleComponent } from '../../shared/ui/theme-toggle/theme-toggle.component';
 
-/** Largeur à partir de laquelle la barre latérale est fixe (point de rupture `lg`). */
 const DESKTOP_QUERY = '(min-width: 1024px)';
 
 const UNREAD_DOT: Record<NotificationTone, string> = {
@@ -21,7 +20,6 @@ const UNREAD_DOT: Record<NotificationTone, string> = {
   danger: 'bg-danger-solid',
 };
 
-/** Entrées du menu du profil : toutes mènent à la page « Mon profil ». */
 const PROFILE_ENTRIES: { label: string; icon: IconName }[] = [
   { label: 'Modifier le profil', icon: 'user-circle' },
   { label: 'Paramètres du compte', icon: 'gear' },
@@ -62,7 +60,6 @@ export class AppHeaderComponent {
     return unread ? `Notifications, ${unread} non lue(s)` : 'Notifications';
   });
 
-  /** `Lundi 12 octobre 2026` */
   protected readonly today = computed(() => {
     const text = new Intl.DateTimeFormat('fr-FR', {
       weekday: 'long',
@@ -73,7 +70,6 @@ export class AppHeaderComponent {
     return text.charAt(0).toUpperCase() + text.slice(1);
   });
 
-  /** Replie la barre latérale sur grand écran, ouvre le tiroir sur petit écran. */
   protected toggleSidebar(): void {
     this.closeMenus();
     if (window.matchMedia(DESKTOP_QUERY).matches) {
@@ -83,7 +79,6 @@ export class AppHeaderComponent {
     }
   }
 
-  /** Ctrl + K (ou ⌘ + K) place le curseur dans la recherche. */
   protected onShortcut(event: KeyboardEvent): void {
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
       event.preventDefault();

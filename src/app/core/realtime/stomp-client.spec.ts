@@ -1,6 +1,5 @@
 import { StompClient, StompMessage, StompOptions } from './stomp-client';
 
-/** Faux WebSocket : garde les trames envoyées et laisse le test simuler celles du serveur. */
 class FakeSocket {
   static last: FakeSocket;
   static count = 0;

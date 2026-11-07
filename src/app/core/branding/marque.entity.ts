@@ -1,6 +1,5 @@
 import { BRAND_DEFAULT, BRAND_FONTS, Brand, BrandFont } from './brand';
 
-/** Configuration de la marque telle que l'API la stocke (« Logo & Couleurs »), vocabulaire compris. */
 export interface ConfigurationMarque {
   nomApplication: string;
   nomCourt: string;
@@ -19,7 +18,6 @@ export interface ConfigurationMarque {
   vocabulaire: { tiers: string; dossier: string };
 }
 
-/** Marque renvoyée par l'API (`branding.base`) ; les logos sont des chemins d'API, vides sans logo. */
 export interface Marque {
   configuration: ConfigurationMarque;
   logoComplet: string | null;
@@ -28,7 +26,6 @@ export interface Marque {
   modifieLe: string | null;
 }
 
-/** Marque appliquée par le front ; `url` complète les chemins des logos avec l'adresse du serveur. */
 export function brandFromMarque(marque: Marque, url: (path: string) => string): Brand {
   const c = marque.configuration;
   const logo = (path: string | null): string => (path ? url(path) : '');
@@ -54,7 +51,6 @@ export function brandFromMarque(marque: Marque, url: (path: string) => string): 
   };
 }
 
-/** Configuration envoyée à l'API pour une marque saisie dans « Logo & Couleurs » (logos envoyés à part). */
 export function configurationOf(brand: Brand): ConfigurationMarque {
   return {
     nomApplication: brand.appName.trim(),

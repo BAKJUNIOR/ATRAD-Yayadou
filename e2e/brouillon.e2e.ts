@@ -33,6 +33,7 @@ test.describe("Saisie d'un état de transmission", () => {
     await page.getByLabel('Type de dossier *').selectOption('Demande de prêt');
     await page.getByLabel('Numéro client').fill(client);
     await page.getByLabel('Nom du client', { exact: true }).fill(nom);
+    await page.getByLabel('N° de compte').fill('00012345678');
     await page.getByLabel(/Montant demandé/).fill('5000000');
     await page.getByLabel(/Durée souhaitée/).fill('36');
     await page.getByLabel(/Apport personnel/).fill('0');

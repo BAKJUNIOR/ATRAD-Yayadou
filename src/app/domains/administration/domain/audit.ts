@@ -7,12 +7,10 @@ export interface AuditEvent {
   at: string;
   who: string;
   label: string;
-  /** État ou dossier concerné. */
   target: string;
   category: string;
 }
 
-/** Catégories d'action, reconnues d'après le libellé de l'événement (la première qui correspond). */
 const CATEGORIES: readonly [string, RegExp][] = [
   ['Changement de statut', /changement de statut/i],
   ['Création', /créé/i],
@@ -32,7 +30,6 @@ export const AUDIT_CATEGORIES: readonly string[] = [
   OTHER,
 ];
 
-/** Classe de couleur d'une catégorie d'action. */
 export const CATEGORY_TEXT: Record<string, string> = {
   Création: 'text-ink-muted',
   Transmission: 'text-info',
@@ -48,7 +45,6 @@ function categoryOf(label: string): string {
   return CATEGORIES.find(([, pattern]) => pattern.test(label))?.[0] ?? OTHER;
 }
 
-/** Piste d'audit reconstituée à partir des états et des dossiers, du plus récent au plus ancien. */
 export function auditEvents(
   etats: readonly Etat[],
   dossiers: readonly RoutedDossier[],
@@ -104,7 +100,6 @@ export function auditEvents(
 export interface AuditFilter {
   user: string;
   category: string;
-  /** Bornes de date incluses (`yyyy-MM-dd`). */
   from: string;
   to: string;
   query: string;

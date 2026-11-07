@@ -21,10 +21,6 @@ const LOCK_TIP = "Terminez d'abord la modification en cours (Enregistrer ou Annu
 
 const EDITABLE: readonly (keyof Entite)[] = ['nom', 'nature', 'emet', 'recep', 'trait'];
 
-/**
- * Administration : entités et leurs capacités (émettre, réceptionner, traiter). La nature
- * (« Agence », « Service »…) n'est qu'un libellé d'affichage.
- */
 @Component({
   selector: 'app-entites',
   imports: [NgTemplateOutlet, IconComponent],
@@ -40,7 +36,6 @@ export class EntitesComponent {
   protected readonly capabilities = CAPABILITIES;
   protected readonly lockTip = LOCK_TIP;
 
-  /** Fiche en cours de saisie ; `orig` vaut `null` pour une nouvelle entité. */
   protected readonly draft = signal<EntiteDraft | null>(null);
 
   private readonly entites = computed(() => this.referentiel.value().entites);
@@ -134,10 +129,6 @@ export class EntitesComponent {
 
   protected readonly saving = signal(false);
 
-  /**
-   * Enregistre l'entité dans l'API puis relit le référentiel. En modification, les réglages que l'écran ne montre
-   * pas (entité parente, responsables, e-mail, mode de répartition...) sont relus et conservés.
-   */
   protected async save(): Promise<void> {
     const draft = this.draft();
     if (!draft || !this.canSave() || this.saving()) {
@@ -183,7 +174,6 @@ export class EntitesComponent {
     this.toast.success(`Entité « ${fields.nom} » enregistrée.`);
   }
 
-  /** Appelé par le garde de sortie de la route. */
   async canLeave(): Promise<boolean> {
     const draft = this.draft();
     if (!draft || !this.dirty()) {

@@ -9,7 +9,6 @@ import {
   filterAudit,
 } from '../../../domain/audit';
 
-/** Administration : qui a fait quoi, sur quel état ou dossier, et quand. */
 @Component({
   selector: 'app-journal-audit',
   templateUrl: './journal-audit.component.html',
@@ -21,10 +20,6 @@ export class JournalAuditComponent {
 
   protected readonly filter = signal<AuditFilter>(EMPTY_AUDIT_FILTER);
 
-  /**
-   * Événements de la piste d'audit : fournis par le module audit du backend, pas encore construit. Rien n'est
-   * affiché d'ici là plutôt que des événements reconstitués dans le navigateur.
-   */
   private readonly all = computed<ReturnType<typeof auditEvents>>(() => []);
   protected readonly users = computed(() =>
     [...new Set(this.all().map((event) => event.who))].sort(),

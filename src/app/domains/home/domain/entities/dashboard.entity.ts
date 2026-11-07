@@ -8,13 +8,10 @@ export interface DashboardStat {
   tone: StatTone;
 }
 
-/** Action proposée sur une ligne de la liste d'accueil. */
 export interface DashboardAction {
   id: string;
   label: string;
-  /** Raison pour laquelle l'action est indisponible ; vide si elle est possible. */
   disabledReason: string;
-  /** Écran ouvert par l'action. */
   path: string;
 }
 
@@ -26,11 +23,9 @@ export interface DashboardRow {
   actions?: DashboardAction[];
 }
 
-/** Contenu de la page d'accueil d'un profil. */
 export interface Dashboard {
   greeting: string;
   subline: string;
-  /** Libellé du bouton menant à l'écran principal du profil. */
   primaryLabel: string;
   stats: DashboardStat[];
   listTitle: string;

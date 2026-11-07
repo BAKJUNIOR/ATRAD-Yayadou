@@ -1,9 +1,7 @@
 import { Browser, Page, expect } from '@playwright/test';
 
-/** Mot de passe des comptes de démonstration, jamais écrit dans le dépôt. */
 export const PASSWORD = process.env['DEMO_PASSWORD'] ?? '';
 
-/** Ouvre une session dans un contexte de navigateur à part (un onglet = un utilisateur). */
 export async function signIn(browser: Browser, matricule: string): Promise<Page> {
   const context = await browser.newContext();
   const page = await context.newPage();
@@ -17,7 +15,6 @@ export async function signIn(browser: Browser, matricule: string): Promise<Page>
   return page;
 }
 
-/** Valide la boîte de dialogue ouverte (confirmation, action sur un dossier...). */
 export async function confirmDialog(page: Page): Promise<void> {
   const button = page.locator('.dialog-confirm');
   await expect(button).toBeEnabled();
@@ -25,7 +22,6 @@ export async function confirmDialog(page: Page): Promise<void> {
   await expect(button).toBeHidden();
 }
 
-/** Numéro de 12 chiffres propre à chaque lancement, pour retrouver le dossier créé. */
 export function uniqueClientNumber(): string {
   return String(Date.now()).padStart(12, '0').slice(-12);
 }
@@ -35,16 +31,13 @@ export function uniqueName(prefix: string, client: string): string {
   return prefix + client.slice(-6).replace(/\d/g, (digit) => 'abcdefghij'[Number(digit)]);
 }
 
-/**
- * Agence : saisit une Demande de prêt dans le type d'état « Accueil central » et l'ajoute au brouillon.
- * Rend la référence attribuée par l'API (`DOS-00012`).
- */
 export async function addLoanRequest(page: Page, client: string, nom: string): Promise<string> {
   await page.goto('/agence/creer-etat');
   await page.getByLabel("Type d'état de transmission").selectOption({ label: 'Accueil central' });
   await page.getByLabel('Type de dossier *').selectOption('Demande de prêt');
   await page.getByLabel('Numéro client').fill(client);
   await page.getByLabel('Nom du client', { exact: true }).fill(nom);
+  await page.getByLabel('N° de compte').fill('00012345678');
   await page.getByLabel(/Montant demandé/).fill('5000000');
   await page.getByLabel(/Durée souhaitée/).fill('36');
   await page.getByLabel(/Apport personnel/).fill('0');

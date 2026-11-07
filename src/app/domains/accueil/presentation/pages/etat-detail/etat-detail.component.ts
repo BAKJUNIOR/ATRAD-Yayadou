@@ -26,12 +26,10 @@ const PRIORITY_TEXT: Record<Priorite, string> = {
   Urgente: 'text-danger',
 };
 
-/** `2 dossiers reçus` */
 function plural(count: number, word: string): string {
   return `${count} dossier${count > 1 ? 's' : ''} ${word}${count > 1 ? 's' : ''}`;
 }
 
-/** Parcours accueil : pointer les dossiers d'un état physiquement reçus. */
 @Component({
   selector: 'app-etat-detail',
   imports: [RouterLink, IconComponent, StatusBadgeComponent, DossierDetailsComponent],
@@ -44,7 +42,6 @@ export class EtatDetailComponent {
   private readonly toast = inject(ToastService);
   private readonly dialog = inject(Dialog);
 
-  /** Référence de l'état, lue dans l'URL (`/accueil-central/etats-recus/:ref`). */
   readonly ref = input.required<string>();
 
   protected readonly formatStamp = formatStamp;
@@ -62,7 +59,6 @@ export class EtatDetailComponent {
   protected readonly etat = computed(
     () => this.reception.etats().find((etat) => etat.ref === this.ref()) ?? null,
   );
-  /** Type d'état et entité réceptrice. */
   protected readonly info = computed(() => etatInfo(this.etat()));
 
   /** Les dossiers que l'entité réceptrice traite elle-même ne passent pas par le dispatch. */

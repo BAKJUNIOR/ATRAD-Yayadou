@@ -1,7 +1,3 @@
-/**
- * Chemins de l'API, communs à tous les environnements (repris par chacun sous `environment.endpoints`).
- * Complétés domaine par domaine au fil du branchement ; un chemin à identifiant est une fonction.
- */
 export const endpoints = {
   auth: {
     login: 'api/v1/auth/login',
@@ -86,7 +82,6 @@ export const endpoints = {
     lue: (id: string) => `api/v1/notifications/${id}/lue`,
     toutesLues: 'api/v1/notifications/lues',
   },
-  /** Point de connexion WebSocket (STOMP) et files personnelles : notifications, données modifiées. */
   tempsReel: {
     socket: 'ws/websocket',
     notifications: '/user/queue/notifications',

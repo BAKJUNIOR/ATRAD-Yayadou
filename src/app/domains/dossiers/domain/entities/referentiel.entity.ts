@@ -2,7 +2,6 @@ import { DossierType, ProduitOption, TypeField } from '../dossier-catalog';
 import { Circuit, Entite, EtatType, SaisieMode } from '../referentiel';
 import type { ApiTransition } from './dossier-api.entity';
 
-/** Entité de l'organisation, telle que renvoyée par l'API (`entites.base`). */
 export interface ApiEntite {
   id: string;
   code: string;
@@ -16,7 +15,6 @@ export interface ApiEntite {
   actif: boolean;
 }
 
-/** Type d'état de transmission (`typesEtat.base`) : une réceptrice, des émettrices autorisées. */
 export interface ApiTypeEtat {
   id: string;
   code: string;
@@ -26,7 +24,6 @@ export interface ApiTypeEtat {
   actif: boolean;
 }
 
-/** Type de dossier et son circuit (`typesDossier.base`) ; `rattache` faux : type pas encore saisissable. */
 export interface ApiTypeDossier {
   id: string;
   code: string;
@@ -42,7 +39,6 @@ export interface ApiTypeDossier {
 
 export type ApiTypeDonnee = 'TEXTE' | 'NOMBRE' | 'DATE' | 'LISTE' | 'EMAIL' | 'BOOLEEN';
 
-/** Champ du formulaire d'un type de dossier ; `valeurs` remplie pour une liste. */
 export interface ApiChamp {
   code: string;
   libelle: string;
@@ -54,23 +50,19 @@ export interface ApiChamp {
   valeurs: { code: string; libelle: string }[];
 }
 
-/** Formulaire de saisie d'un type de dossier (`typesDossier.formulaire`). */
 export interface ApiFormulaire {
   typeDossier: ApiTypeDossier;
   champs: ApiChamp[];
   pieces: { libelle: string; obligatoire: boolean }[];
-  /** Produits (opérations) proposés pour ce type, dans l'ordre. */
   operations: ApiOperation[];
 }
 
-/** Opération, présentée à la saisie comme « produit ». */
 export interface ApiOperation {
   id: string;
   code: string;
   libelle: string;
 }
 
-/** Paramétrage lu dans l'API, avant sa conversion vers le référentiel du front. */
 export interface ApiParametrage {
   entites: ApiEntite[];
   typesEtat: ApiTypeEtat[];
@@ -81,7 +73,6 @@ export interface ApiParametrage {
   circuits: ApiCircuit[];
 }
 
-/** Ce que l'API fournit au référentiel du front (le vocabulaire vient de la marque). */
 export interface ReferentielApiPart {
   entites: Entite[];
   etatTypes: EtatType[];
@@ -92,39 +83,28 @@ export interface ReferentielApiPart {
   typeFields: Record<DossierType, TypeField[]>;
   typePieces: Record<DossierType, string[]>;
   typeOperations: Record<DossierType, ProduitOption[]>;
-  /** Motifs de retour (non-éligibilité), pour afficher ceux d'un dossier retourné. */
   motifsRetour: MotifOption[];
-  /** Code du circuit de statuts de chaque type de dossier. */
   typeCircuits: Record<DossierType, string>;
-  /** Transitions de chaque circuit, par code de circuit. */
   workflows: Record<string, ApiTransition[]>;
 }
 
-/** Circuit de statuts (`circuits.byCode`) : ses passages autorisés. */
 export interface ApiCircuit {
   code: string;
   libelle: string;
   transitions: ApiTransition[];
 }
 
-/** Motif proposé (retour, rejet), avec son identifiant dans l'API. */
 export interface MotifOption {
   id: string;
   label: string;
 }
 
-/** Motif tel que renvoyé par l'API (`motifs.base`). */
 export interface ApiMotif {
   id: string;
   parentId: string | null;
   libelle: string;
 }
 
-/**
- * Référentiel du front à partir du paramétrage de l'API. Le front désigne les entités par leur code et les types
- * de dossier par leur nom ; les identifiants de l'API sont gardés (`id`, `typeIds`) pour les appels suivants.
- * Seuls les types d'état et types de dossier actifs sont repris.
- */
 export function referentielFromApi(api: ApiParametrage): ReferentielApiPart {
   const codeOf = new Map(api.entites.map((entite) => [entite.id, entite.code]));
   const typesDossier = api.typesDossier.filter((type) => type.actif);
@@ -180,7 +160,6 @@ export function referentielFromApi(api: ApiParametrage): ReferentielApiPart {
   };
 }
 
-/** Champ du formulaire de saisie ; une liste propose les libellés, que l'API accepte autant que les codes. */
 function fieldOf(champ: ApiChamp): TypeField {
   const unit = champ.unite === 'FCFA' || champ.unite === 'mois' ? champ.unite : undefined;
   return {

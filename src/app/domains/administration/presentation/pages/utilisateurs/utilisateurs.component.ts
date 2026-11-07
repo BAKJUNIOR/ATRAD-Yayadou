@@ -17,7 +17,6 @@ import {
 
 const TAILLE = 15;
 
-/** Administration : comptes des utilisateurs (recherche, création, modification, activation). */
 @Component({
   selector: 'app-utilisateurs',
   templateUrl: './utilisateurs.component.html',
@@ -31,7 +30,6 @@ export class UtilisateursComponent {
 
   protected readonly formatStamp = formatStamp;
 
-  /** Profils et fonctions proposés à la saisie. */
   private readonly references = toSignal(
     forkJoin({ profils: this.api.profils(), fonctions: this.api.fonctions() }).pipe(
       catchError(() => of({ profils: [], fonctions: [] })),

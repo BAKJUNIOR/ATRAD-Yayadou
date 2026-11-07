@@ -30,7 +30,6 @@ export class BordereauPreviewComponent {
   protected readonly editedAt = formatStamp(nowIso());
   protected readonly formatStamp = formatStamp;
 
-  /** État lu dans l'API, avec tout le contenu de ses dossiers. */
   protected readonly etat = signal<Etat | null>(null);
 
   constructor() {
@@ -40,7 +39,6 @@ export class BordereauPreviewComponent {
     });
   }
 
-  /** Type d'état et entité réceptrice. */
   protected readonly info = computed(() => etatInfo(this.etat()));
 
   /** Inutile quand l'entité réceptrice traite elle-même tous les dossiers de l'état. */
@@ -70,7 +68,6 @@ export class BordereauPreviewComponent {
     })),
   );
 
-  /** Signataire de l'édition : `Aminata Diallo — AG-014`. */
   protected readonly editedBy = computed(() => {
     const account = this.session.account();
     if (!account) {

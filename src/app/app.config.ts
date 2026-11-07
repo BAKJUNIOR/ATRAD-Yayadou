@@ -21,7 +21,6 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes, withComponentInputBinding()),
     { provide: TitleStrategy, useExisting: PageTitleStrategy },
-    // Le jeton est ajouté avant l'envoi ; les erreurs sont traduites au retour.
     provideHttpClient(withInterceptors([authInterceptor, errorInterceptor])),
     // Adresse de l'API d'abord, puis la marque (écran de connexion aux bonnes couleurs) et, pour une session déjà
     // ouverte, le référentiel.
@@ -31,14 +30,11 @@ export const appConfig: ApplicationConfig = {
       const theme = inject(ThemeService);
       const session = inject(SessionService);
       const referentiel = inject(ReferentielStore);
-      return (
-        config
-          .loadConfig()
-          .then(() => brand.refresh())
-          // Mode sombre par défaut de la marque, tant que l'utilisateur n'a pas choisi.
-          .then(() => theme.followBrandDefault())
-          .then(() => (session.isAuthenticated() ? referentiel.refresh() : undefined))
-      );
+      return config
+        .loadConfig()
+        .then(() => brand.refresh())
+        .then(() => theme.followBrandDefault())
+        .then(() => (session.isAuthenticated() ? referentiel.refresh() : undefined));
     }),
   ],
 };

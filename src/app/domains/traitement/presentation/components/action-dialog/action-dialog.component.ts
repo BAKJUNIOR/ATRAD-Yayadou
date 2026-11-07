@@ -18,13 +18,11 @@ import { piecesOf } from '../../../../dossiers/domain/dossier-catalog';
 export interface ActionDialogData {
   dossier: RoutedDossier;
   kind: DossierActionKind;
-  /** Statut visé, pour un simple changement de statut. */
   target?: Status;
 }
 
 const OTHER = 'Autre';
 
-/** Confirmation d'une action de traitement, avec les informations qu'elle exige. */
 @Component({
   selector: 'app-action-dialog',
   imports: [DialogHeadComponent],
@@ -51,7 +49,6 @@ export class ActionDialogComponent {
 
   protected readonly copy = this.buildCopy();
 
-  /** Ce qu'il reste à renseigner avant de pouvoir confirmer. */
   protected readonly missing = computed(() => {
     const missing: string[] = [];
     if (this.kind === 'retour_noneligible' && !this.reason().trim()) {

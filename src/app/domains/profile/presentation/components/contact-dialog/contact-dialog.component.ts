@@ -3,7 +3,6 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { DialogHeadComponent } from '../../../../../shared/ui/dialog-head/dialog-head.component';
 import { Contact, emailError, phoneError } from '../../../domain/profile.rules';
 
-/** Modification des coordonnées de l'utilisateur connecté. */
 @Component({
   selector: 'app-contact-dialog',
   imports: [DialogHeadComponent],

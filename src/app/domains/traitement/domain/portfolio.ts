@@ -30,11 +30,9 @@ export type DelayTone = 'danger' | 'warning' | 'success' | 'muted';
 export interface DelayLabel {
   label: string;
   tone: DelayTone;
-  /** Le délai de fourniture des documents complémentaires est dépassé. */
   docsLate?: boolean;
 }
 
-/** Situation d'un dossier par rapport à son échéance. */
 export function delayOf(dossier: RoutedDossier, todayIso: string): DelayLabel {
   if (dossier.status === ATTENTE_DOCS && dossier.docsDeadlineIso) {
     const deadline = isoDateToFr(dossier.docsDeadlineIso);
@@ -62,7 +60,6 @@ export function delayOf(dossier: RoutedDossier, todayIso: string): DelayLabel {
     : { label: `Dans ${days} jours`, tone: 'success' };
 }
 
-/** Filtre rapide du portefeuille : un statut, les dossiers en retard, ou tout. */
 export type PortfolioFilter = Status | 'late' | null;
 
 export const PORTFOLIO_FILTERS: readonly { filter: PortfolioFilter; label: string }[] = [
@@ -120,7 +117,6 @@ export function matchesCriteria(dossier: RoutedDossier, criteria: PortfolioCrite
   );
 }
 
-/** Dossiers d'une entité qui attendent un gestionnaire. */
 export function unassigned(dossiers: readonly RoutedDossier[]): RoutedDossier[] {
   return dossiers.filter((dossier) => !dossier.gest && !isLocked(dossier));
 }

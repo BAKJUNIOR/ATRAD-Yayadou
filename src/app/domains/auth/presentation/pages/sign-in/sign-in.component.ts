@@ -10,7 +10,6 @@ import { IconComponent } from '../../../../../shared/ui/icon/icon.component';
 import { ReferentielStore } from '../../../../dossiers/infrastructure/store/referentiel.store';
 import { AuthApi } from '../../../infrastructure/api/auth.api';
 
-/** Identifiant gardé d'une connexion à l'autre quand « Se souvenir de moi » est coché. */
 const REMEMBERED_IDENT_KEY = 'atrad_identifiant_v1';
 
 @Component({

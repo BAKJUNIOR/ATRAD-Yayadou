@@ -1,10 +1,5 @@
 import { Service } from '@angular/core';
 
-/**
- * Accès au localStorage, sérialisé en JSON.
- * Les erreurs (navigation privée, quota, valeur corrompue) sont absorbées : l'application
- * doit rester utilisable sans persistance.
- */
 @Service()
 export class StorageService {
   get<T>(key: string): T | null {

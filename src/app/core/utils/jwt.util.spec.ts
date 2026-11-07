@@ -1,6 +1,5 @@
 import { isJwtExpired, jwtExpiresAt } from './jwt.util';
 
-/** Jeton non signé, suffisant pour lire `exp`. */
 function jwt(payload: object): string {
   const encode = (value: object) => btoa(JSON.stringify(value)).replace(/=+$/, '');
   return `${encode({ alg: 'HS256' })}.${encode(payload)}.signature`;

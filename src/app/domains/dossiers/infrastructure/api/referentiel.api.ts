@@ -13,10 +13,6 @@ import {
   referentielFromApi,
 } from '../../domain/entities/referentiel.entity';
 
-/**
- * Paramétrage lu dans l'API pour le référentiel : entités, types d'état, types de dossier et leurs formulaires,
- * mode de saisie. Lecture seule, ouverte à tout utilisateur connecté.
- */
 @Service()
 export class ReferentielApi {
   private readonly baseService = inject(BaseService);
@@ -47,7 +43,6 @@ export class ReferentielApi {
     );
   }
 
-  /** Circuits de statuts utilisés par les types de dossier actifs. */
   private circuits(types: ApiTypeDossier[]): Observable<ApiCircuit[]> {
     const codes = [...new Set(types.filter((type) => type.actif).map((type) => type.circuit))];
     return codes.length

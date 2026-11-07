@@ -7,11 +7,6 @@ import { AppConfigService } from './app-config.service';
 
 export type QueryParams = Record<string, string | number | boolean | null | undefined>;
 
-/**
- * Méthodes d'appel communes à toutes les API des domaines. `endPoint` vient de `environment.endpoints` ; l'adresse
- * du serveur est ajoutée ici. Les réponses JSON sont rendues sans leur enveloppe `ResponseWrapper` (`data` seul).
- * Le jeton et la traduction des erreurs sont faits par les intercepteurs.
- */
 @Service()
 export class BaseService {
   private readonly http = inject(HttpClient);
@@ -48,7 +43,6 @@ export class BaseService {
     );
   }
 
-  /** Envoi d'un fichier en multipart, dans le champ `fichier` attendu par le backend. */
   upload<T>(
     method: 'POST' | 'PUT',
     endPoint: string,
@@ -65,12 +59,10 @@ export class BaseService {
     );
   }
 
-  /** Fichier binaire (pièce jointe, export) : pas d'enveloppe JSON. */
   getBlob(endPoint: string, options?: RequestOptions): Observable<Blob> {
     return this.http.get(this.url(endPoint), { responseType: 'blob', context: contextOf(options) });
   }
 
-  /** Adresse complète d'un chemin d'API, y compris un chemin renvoyé par le serveur (`/api/v1/...`). */
   url(endPoint: string): string {
     return `${this.config.apiBaseUrl}/${endPoint.replace(/^\/+/, '')}`;
   }

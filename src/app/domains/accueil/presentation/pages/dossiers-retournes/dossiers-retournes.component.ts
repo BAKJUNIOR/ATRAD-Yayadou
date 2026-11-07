@@ -12,7 +12,6 @@ import { ENTITES, bareEntity } from '../../../../dossiers/domain/routing';
 import { pendingReturns } from '../../../domain/reception';
 import { AccueilApi, ApiDossierRetourne } from '../../../infrastructure/api/accueil.api';
 
-/** Parcours accueil : renvoyer à leur agence les dossiers retournés par une entité. */
 @Component({
   selector: 'app-dossiers-retournes',
   imports: [IconComponent],
@@ -31,7 +30,6 @@ export class DossiersRetournesComponent {
   protected readonly query = signal('');
   private readonly picked = signal<ReadonlySet<string>>(new Set());
 
-  /** Dossiers retournés par les services traitants, pas encore renvoyés à leur agence (lus dans l'API). */
   protected readonly pending = signal<RoutedDossier[]>([]);
 
   constructor() {
@@ -47,7 +45,6 @@ export class DossiersRetournesComponent {
       .subscribe((retours) => this.pending.set(pendingReturns(retours.map(retourneFromApi))));
   }
 
-  /** Entités ayant au moins un dossier à renvoyer, avec leur nombre. */
   protected readonly entiteOptions = computed(() =>
     ENTITES.map((entite) => ({
       value: entite.name,
@@ -70,7 +67,6 @@ export class DossiersRetournesComponent {
     this.agenceOptions().includes(this.pickedAgence()) ? this.pickedAgence() : '',
   );
 
-  /** Dossiers affichés, du plus récemment retourné au plus ancien. */
   protected readonly rows = computed(() => {
     const query = this.query().trim().toLowerCase();
     return this.ofEntite()
@@ -175,7 +171,6 @@ export class DossiersRetournesComponent {
   }
 }
 
-/** Dossier retourné de l'API, vu comme un dossier routé (motif, pièces manquantes, date du retour). */
 function retourneFromApi(row: ApiDossierRetourne): RoutedDossier {
   return routedFromApi({
     dossier: row.dossier,

@@ -12,7 +12,6 @@ export interface SignedIn {
   account: Account;
 }
 
-/** Connexion à l'API. Les erreurs restent à l'écran de connexion (pas de toast). */
 @Service()
 export class AuthApi {
   private readonly baseService = inject(BaseService);

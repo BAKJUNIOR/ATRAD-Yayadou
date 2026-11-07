@@ -11,7 +11,6 @@ const DOT_CLASSES: Record<StatTone, string> = {
   info: 'bg-info',
 };
 
-/** Indicateur chiffré : libellé, valeur et précision. */
 @Component({
   selector: 'app-stat-card',
   host: {

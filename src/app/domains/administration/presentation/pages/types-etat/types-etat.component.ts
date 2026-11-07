@@ -38,10 +38,6 @@ const SAISIE_MODES: readonly { id: SaisieMode; title: string; text: string; byDe
     },
   ];
 
-/**
- * Administration : types d'état de transmission (entité réceptrice et entités émettrices
- * autorisées) et mode de saisie des entités émettrices.
- */
 @Component({
   selector: 'app-types-etat',
   imports: [NgTemplateOutlet, IconComponent],
@@ -58,7 +54,6 @@ export class TypesEtatComponent {
   protected readonly modes = SAISIE_MODES;
   protected readonly saisieMode = computed(() => this.referentiel.value().saisieMode);
 
-  /** Type d'état en cours de saisie ; `orig` vaut `null` pour un nouveau type. */
   protected readonly draft = signal<EtatTypeDraft | null>(null);
 
   private readonly types = computed(() => {
@@ -96,7 +91,6 @@ export class TypesEtatComponent {
     !this.dirty() ? 'Aucune modification' : (this.errors()[0] ?? "Enregistrer ce type d'état"),
   );
 
-  /** Options du formulaire : entités réceptrices et émettrices. */
   protected readonly recepOptions = computed(() =>
     this.referentiel
       .value()
@@ -120,7 +114,6 @@ export class TypesEtatComponent {
       : 'Cette entité dispatche ensuite chaque dossier vers son entité de traitement.';
   });
 
-  /** L'entité réceptrice ne change plus dès qu'un type de dossier est rattaché. */
   protected readonly recepLocked = computed(() => {
     const draft = this.draft();
     return !!draft?.orig && !!this.types().find((type) => type.id === draft.orig)?.dossiers.length;
@@ -161,8 +154,6 @@ export class TypesEtatComponent {
     this.types().find((type) => type.id === this.draft()?.orig),
   );
 
-  // ----------------------------------------------------------- Mode de saisie
-
   protected async pickMode(id: SaisieMode): Promise<void> {
     if (id === this.saisieMode()) {
       return;
@@ -176,8 +167,6 @@ export class TypesEtatComponent {
     }
     this.toast.success(`Mode de saisie : « ${mode.title} » enregistré.`);
   }
-
-  // ------------------------------------------------------------ Types d'état
 
   protected add(): void {
     if (!this.draft()) {
@@ -265,7 +254,6 @@ export class TypesEtatComponent {
     await this.router.navigate(['/administration/routage']);
   }
 
-  /** Appelé par le garde de sortie de la route. */
   async canLeave(): Promise<boolean> {
     const draft = this.draft();
     if (!draft || !this.dirty()) {

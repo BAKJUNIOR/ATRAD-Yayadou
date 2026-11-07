@@ -1,4 +1,3 @@
-/** Coordonnées qu'un utilisateur peut modifier lui-même. */
 export interface Contact {
   email: string;
   phone: string;
@@ -8,7 +7,6 @@ export const EMPTY_CONTACT: Contact = { email: '', phone: '' };
 
 export const PASSWORD_MIN_LENGTH = 8;
 
-/** Erreur de saisie d'une adresse e-mail ; vide si elle est acceptable (ou non renseignée). */
 export function emailError(email: string): string {
   const value = email.trim();
   if (!value) {
@@ -19,7 +17,6 @@ export function emailError(email: string): string {
     : 'Adresse e-mail invalide (ex. prenom.nom@domaine.com).';
 }
 
-/** Erreur de saisie d'un téléphone ; vide s'il est acceptable (ou non renseigné). */
 export function phoneError(phone: string): string {
   const value = phone.trim();
   if (!value) {
@@ -57,13 +54,11 @@ export function passwordErrors(change: PasswordChange): PasswordErrors {
   return errors;
 }
 
-/** `Aminata Diallo` → prénom `Aminata`, nom `Diallo`. */
 export function splitName(fullName: string): { firstName: string; lastName: string } {
   const [firstName = '', ...rest] = fullName.trim().split(/\s+/);
   return { firstName, lastName: rest.join(' ') };
 }
 
-/** `Agent d'agence — Agence Plateau` → `Agent d'agence`. */
 export function jobTitle(roleLabel: string): string {
   return roleLabel.split(' — ')[0];
 }

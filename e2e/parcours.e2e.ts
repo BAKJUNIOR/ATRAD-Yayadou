@@ -1,11 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { addLoanRequest, confirmDialog, signIn, uniqueClientNumber, uniqueName } from './support';
 
-/**
- * Parcours complet d'une Demande de prêt : saisie et transmission par l'agence, réception par l'Accueil central
- * (vue en temps réel, sans recharger), répartition au Service Crédits, traitement jusqu'à la clôture, puis suivi
- * par l'agence.
- */
 test("Demande de prêt : de l'agence à la clôture", async ({ browser }) => {
   const client = uniqueClientNumber();
   const nom = uniqueName('Parcours', client);

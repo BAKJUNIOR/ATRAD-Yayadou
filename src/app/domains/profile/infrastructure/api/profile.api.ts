@@ -4,7 +4,6 @@ import { environment } from '../../../../../environments/environment';
 import { BaseService } from '../../../../core/services/base.service';
 import { Utilisateur } from '../../../auth/domain/entities/utilisateur.entity';
 
-/** Écran « Mon profil » : le compte connecté, ses coordonnées et son mot de passe. */
 @Service()
 export class ProfileApi {
   private readonly baseService = inject(BaseService);
@@ -18,7 +17,6 @@ export class ProfileApi {
     return this.baseService.update<Utilisateur>(this.url.coordonnees, { email, telephone });
   }
 
-  /** Les erreurs (mot de passe actuel faux...) restent dans le dialogue de saisie. */
   changerMotDePasse(
     motDePasseActuel: string,
     nouveauMotDePasse: string,

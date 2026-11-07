@@ -3,7 +3,6 @@ import { EMPTY_PORTFOLIO_CRITERIA, PortfolioCriteria, PortfolioFilter } from '..
 
 type CriterionKey = keyof PortfolioCriteria;
 
-/** Critères proposés dans « + Ajouter un filtre ». */
 export const PORTFOLIO_FILTERS: readonly { key: CriterionKey; label: string }[] = [
   { key: 'nom', label: 'Nom ou prénom du client' },
   { key: 'num', label: 'N° client' },
@@ -13,18 +12,12 @@ export const PORTFOLIO_FILTERS: readonly { key: CriterionKey; label: string }[] 
 ];
 const DEFAULT_FILTERS: readonly CriterionKey[] = ['nom'];
 
-/**
- * Filtres du portefeuille, partagés par « Mes dossiers », « Rechercher des dossiers » et
- * « En retard & clôturés » : une carte-filtre choisie sur un écran reste active sur l'autre.
- */
 @Service()
 export class PortfolioFilterState {
   readonly filter = signal<PortfolioFilter>(null);
-  /** Critères en cours de saisie ; ils ne s'appliquent qu'au clic sur « Rechercher ». */
   readonly draft = signal<PortfolioCriteria>(EMPTY_PORTFOLIO_CRITERIA);
   readonly applied = signal<PortfolioCriteria>(EMPTY_PORTFOLIO_CRITERIA);
 
-  /** Critères affichés dans le formulaire ; seul le nom du client l'est d'emblée (MO-3). */
   private readonly shown = signal<readonly CriterionKey[]>(DEFAULT_FILTERS);
   readonly hiddenFilters = computed(() =>
     PORTFOLIO_FILTERS.filter((filter) => !this.shown().includes(filter.key)),
@@ -40,7 +33,6 @@ export class PortfolioFilterState {
     }
   }
 
-  /** Retire un critère du formulaire ; sa valeur est effacée, y compris dans la recherche appliquée. */
   hideFilter(key: CriterionKey): void {
     this.shown.update((keys) => keys.filter((candidate) => candidate !== key));
     this.draft.update((criteria) => ({ ...criteria, [key]: EMPTY_PORTFOLIO_CRITERIA[key] }));

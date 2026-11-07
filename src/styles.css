@@ -4,18 +4,8 @@ layer(base);
 @import 'tailwindcss';
 @import '@angular/cdk/overlay-prebuilt.css';
 
-/* Mode sombre piloté par la classe `.dark` posée sur <html> (voir ThemeService). */
 @custom-variant dark (&:is(.dark *));
 
-/*
-  ---------------------------------------------------------------------------
-  Jetons de marque (marque blanche)
-  ---------------------------------------------------------------------------
-  Les couleurs sont des variables CSS et non des valeurs figées dans @theme :
-  l'écran « Logo & Couleurs » doit pouvoir les remplacer à l'exécution.
-  Les composants ne lisent jamais ces variables directement, ils passent par
-  les utilitaires Tailwind déclarés plus bas (bg-card, text-ink-muted, ...).
-*/
 :root {
   color-scheme: light;
 
@@ -33,12 +23,10 @@ layer(base);
   --brand-on-mid: color-mix(in srgb, var(--brand-secondary) 72%, #000000);
   --brand-secondary-2: color-mix(in srgb, var(--brand-secondary) 82%, var(--brand-primary));
 
-  /* Textes posés sur le fond `--brand-secondary` (barre latérale, panneau de connexion). */
   --side-text: color-mix(in srgb, #ffffff 86%, var(--brand-secondary));
   --side-muted: color-mix(in srgb, #ffffff 70%, var(--brand-secondary));
   --side-faint: color-mix(in srgb, #ffffff 52%, var(--brand-secondary));
 
-  /* Surfaces, bordures et textes */
   --bg-page: var(--brand-background);
   --bg-card: #ffffff;
   --bg-subtle: #f8fafc;
@@ -56,7 +44,6 @@ layer(base);
   --brand-tint-soft: color-mix(in srgb, var(--brand-primary) 5%, #ffffff);
   --brand-tint-border: color-mix(in srgb, var(--brand-primary) 26%, #ffffff);
 
-  /* Couleurs sémantiques */
   --success: #1d6b34;
   --success-bg: #e9f6ec;
   --success-border: #c3e4cc;
@@ -72,7 +59,6 @@ layer(base);
   --info-bg: #eef5fb;
   --info-border: #c9dcee;
 
-  /* Statuts des dossiers et des états de transmission */
   --status-temporaire: #4b5a67;
   --status-temporaire-bg: #f4f6f8;
   --status-temporaire-border: #d6dee6;
@@ -202,14 +188,6 @@ html.dark {
   --status-traite-border: rgba(52, 211, 153, 0.38);
 }
 
-/*
-  ---------------------------------------------------------------------------
-  Thème Tailwind
-  ---------------------------------------------------------------------------
-  `inline` : les utilitaires référencent les variables ci-dessus au lieu d'en
-  copier la valeur, ce qui les fait suivre le mode sombre et la marque blanche
-  sans variante `dark:`.
-*/
 @theme inline {
   --font-sans: var(--brand-font-family), system-ui, sans-serif;
   --font-mono: 'Geist Mono', ui-monospace, monospace;
@@ -225,7 +203,6 @@ html.dark {
   --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04);
   --shadow-raised: 0 6px 18px -6px rgba(16, 24, 40, 0.12);
 
-  /* Marque */
   --color-brand: var(--brand-primary);
   --color-brand-dark: var(--brand-primary-dark);
   --color-brand-ink: var(--brand-primary-text);
@@ -241,24 +218,20 @@ html.dark {
   --color-side-muted: var(--side-muted);
   --color-side-faint: var(--side-faint);
 
-  /* Surfaces */
   --color-page: var(--bg-page);
   --color-card: var(--bg-card);
   --color-subtle: var(--bg-subtle);
   --color-soft: var(--bg-muted);
 
-  /* Bordures */
   --color-line: var(--border);
   --color-line-strong: var(--border-strong);
 
-  /* Textes */
   --color-ink: var(--text-main);
   --color-heading: var(--text-heading);
   --color-ink-secondary: var(--text-secondary);
   --color-ink-muted: var(--text-muted);
   --color-ink-faint: var(--text-faint);
 
-  /* Sémantique */
   --color-success: var(--success);
   --color-success-bg: var(--success-bg);
   --color-success-line: var(--success-border);
@@ -351,7 +324,6 @@ html.dark {
 }
 
 @layer components {
-  /* Pastille de statut : la couleur vient du modificateur `.status-<clé>`. */
   .status-badge {
     display: inline-flex;
     align-items: center;
@@ -458,7 +430,6 @@ html.dark {
   scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
 }
 
-/* Variante claire imposée (bordereau imprimable), quel que soit le thème de l'application. */
 .force-light {
   color-scheme: light;
 
@@ -529,7 +500,6 @@ html.dark {
 }
 
 @layer components {
-  /* Carte des dialogues : en-tête centré (`<app-dialog-head>`), actions centrées. */
   .dialog-card {
     @apply relative flex max-h-[calc(100vh-2rem)] animate-enter flex-col gap-5 overflow-y-auto rounded-[calc(var(--radius-brand)*2.4)] bg-card px-6 pt-9 pb-8 shadow-[0_24px_64px_-16px_rgba(14,22,34,0.28)] sm:px-10 sm:pt-10 sm:pb-9;
   }
@@ -547,7 +517,6 @@ html.dark {
   }
 }
 
-/* Carte-filtre du suivi : sa couleur vient du modificateur `.status-<clé>` (ou `.status-all`). */
 .status-all {
   --status-fg: var(--brand-primary);
 }
@@ -621,7 +590,6 @@ html.dark {
     @apply block w-full animate-enter text-[12px] leading-[1.4] font-medium text-danger;
   }
 
-  /* Page « Mon profil » : carte d'une rubrique et bouton d'action à droite de son titre. */
   .profile-card {
     @apply flex flex-col gap-6 rounded-panel border border-line p-5 lg:p-6;
   }
@@ -630,7 +598,6 @@ html.dark {
     @apply inline-flex items-center gap-2 rounded-full border border-line-strong bg-card px-4 py-2.5 text-[13.5px] font-medium whitespace-nowrap text-ink shadow-card transition-colors hover:border-brand hover:text-brand-ink;
   }
 
-  /* Champs de l'écran « Logo & Couleurs » : libellé au-dessus de la saisie. */
   .brand-field {
     @apply flex min-w-0 flex-col gap-1.5 text-[12.5px] font-medium text-ink-secondary;
   }
@@ -647,12 +614,10 @@ html.dark {
     @apply text-[11px] font-semibold tracking-[0.08em] text-ink-muted uppercase;
   }
 
-  /* Pastille d'une liste (types de dossier, entités) ; la couleur est donnée à l'usage. */
   .chip {
     @apply inline-flex items-center rounded-full px-[9px] py-[3px] text-[12px] font-medium whitespace-nowrap;
   }
 
-  /* Pastille d'avertissement accolée à un libellé (« À vérifier », « À rattacher »). */
   .tag-warning {
     @apply rounded-full border border-warning-line bg-warning-bg px-2 py-px text-[11px] font-semibold whitespace-nowrap text-warning;
   }
@@ -779,7 +744,6 @@ html.dark {
     minmax(150px, 1.2fr) 120px;
 }
 
-/* Pastille teintée par `--tone` (pointage de réception). */
 .tone-pill {
   border: 1px solid color-mix(in srgb, var(--tone) 30%, transparent);
   background: color-mix(in srgb, var(--tone) 12%, transparent);

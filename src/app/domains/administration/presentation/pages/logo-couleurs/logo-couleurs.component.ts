@@ -52,12 +52,10 @@ const STATUS_CLASS: Record<StatusTone, string> = {
   muted: 'text-ink-muted',
 };
 
-/** `4.46` → `4,5` */
 function ratioLabel(ratio: number): string {
   return ratio.toFixed(1).replace('.', ',');
 }
 
-/** Administration : identité, couleurs, police et rayon de la marque blanche. */
 @Component({
   selector: 'app-logo-couleurs',
   imports: [IconComponent],
@@ -72,13 +70,10 @@ export class LogoCouleursComponent implements LeaveAware {
   protected readonly fonts = BRAND_FONTS;
   protected readonly previewThemes = PREVIEW_THEMES;
 
-  /** Saisie en cours ; `null` tant que rien n'a été modifié depuis l'enregistrement. */
   private readonly edited = signal<Brand | null>(null);
   private readonly logoErrors = signal<Partial<Record<BrandLogoKey, string>>>({});
-  /** Fichiers choisis, envoyés à l'API à l'enregistrement (l'aperçu montre leur contenu). */
   private readonly logoFiles = signal<Partial<Record<BrandLogoKey, File>>>({});
   protected readonly saving = signal(false);
-  /** Texte saisi dans un champ couleur, conservé tel quel tant qu'il n'est pas valide. */
   private readonly hexInputs = signal<Partial<Record<BrandColorKey, string>>>({});
   protected readonly previewTheme = signal<PreviewTheme>('light');
 
@@ -190,9 +185,7 @@ export class LogoCouleursComponent implements LeaveAware {
       : { text: "Thème enregistré — appliqué à toute l'application.", tone: STATUS_CLASS.muted };
   });
 
-  /** Variables de marque du brouillon, posées sur le seul bloc d'aperçu. */
   protected readonly previewVars = computed(() => brandVars(this.draft()));
-  /** Chiffre d'exemple de la carte d'aperçu (seule la mise en forme est montrée). */
   protected readonly treatedCount = computed(() => 12);
 
   constructor() {
@@ -282,7 +275,6 @@ export class LogoCouleursComponent implements LeaveAware {
     this.update({ darkDefault: !this.draft().darkDefault });
   }
 
-  /** Vocabulaire : mots qui remplacent « Tiers » et « Dossier » dans toute l'application. */
   protected setVocab(key: 'tiers' | 'dossier', event: Event): void {
     this.update({
       vocab: { ...this.draft().vocab, [key]: (event.target as HTMLInputElement).value },
@@ -336,7 +328,6 @@ export class LogoCouleursComponent implements LeaveAware {
     this.toast.success(`Thème ${BRAND_DEFAULT.shortName} par défaut rétabli.`);
   }
 
-  /** Appelé par le garde de sortie de la route. */
   canLeave(): boolean | Promise<boolean> {
     if (!this.dirty()) {
       return true;

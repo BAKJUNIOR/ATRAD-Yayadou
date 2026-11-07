@@ -1,7 +1,3 @@
-/**
- * Statuts d'un dossier ou d'un état de transmission, associés à la clé de leur jeu de
- * couleurs (`--status-<clé>` dans styles.css).
- */
 export const STATUS_KEYS = {
   Temporaire: 'temporaire',
   Transmis: 'transmis',

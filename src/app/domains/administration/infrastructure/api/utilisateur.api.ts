@@ -5,7 +5,6 @@ import { PaginationResponse } from '../../../../core/models/pagination.model';
 import { BaseService } from '../../../../core/services/base.service';
 import { Utilisateur } from '../../../auth/domain/entities/utilisateur.entity';
 
-/** Critères de recherche des utilisateurs ; `page` commence à 0. */
 export interface RechercheUtilisateurs {
   recherche?: string;
   entiteId?: string;
@@ -33,7 +32,6 @@ export interface ApiUtilisateurModification {
   telephone: string | null;
 }
 
-/** Profil (rôle) attribuable à un utilisateur : AGENCE, ACCUEIL, TRAITEMENT, MANAGER, ADMIN. */
 export interface ApiProfil {
   id: string;
   code: string;
@@ -42,7 +40,6 @@ export interface ApiProfil {
   actif: boolean;
 }
 
-/** Fonction d'un utilisateur dans son entité (gestionnaire, agent...). */
 export interface ApiFonction {
   id: string;
   code: string;
@@ -50,7 +47,6 @@ export interface ApiFonction {
   actif: boolean;
 }
 
-/** Gestion des utilisateurs (administrateur). */
 @Service()
 export class UtilisateurApi {
   private readonly baseService = inject(BaseService);
@@ -61,7 +57,6 @@ export class UtilisateurApi {
     return this.baseService.getOne<PaginationResponse<Utilisateur>>(this.url.base, { ...criteres });
   }
 
-  /** Création et modifications : les erreurs restent dans le dialogue de saisie (pas de toast). */
   creer(utilisateur: ApiUtilisateurCreation): Observable<Utilisateur> {
     return this.baseService.create<Utilisateur>(this.url.base, utilisateur, { silentErrors: true });
   }

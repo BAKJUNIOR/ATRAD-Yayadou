@@ -11,7 +11,6 @@ const FIELDS: { key: keyof PasswordChange; label: string; autocomplete: string }
   { key: 'confirmation', label: 'Confirmer le nouveau mot de passe', autocomplete: 'new-password' },
 ];
 
-/** Changement du mot de passe, enregistré par l'API ; se ferme sur `true` une fois le mot de passe changé. */
 @Component({
   selector: 'app-password-dialog',
   imports: [DialogHeadComponent],
@@ -62,7 +61,6 @@ export class PasswordDialogComponent {
   protected readonly minLength = PASSWORD_MIN_LENGTH;
 
   protected readonly change = signal<PasswordChange>({ current: '', next: '', confirmation: '' });
-  /** Les erreurs ne s'affichent qu'après une première tentative de validation. */
   private readonly submitted = signal(false);
   private readonly errors = computed(() => passwordErrors(this.change()));
 

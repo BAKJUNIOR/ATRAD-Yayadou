@@ -32,11 +32,9 @@ interface DetailField {
   label: string;
   value: string;
   classes?: string;
-  /** Précision affichée sous la valeur. */
   sub?: string;
 }
 
-/** Fiche d'un dossier transmis et historique de son parcours. */
 @Component({
   selector: 'app-suivi-dossier-detail',
   imports: [RouterLink, StatusBadgeComponent, TimelineComponent],
@@ -47,11 +45,9 @@ export class SuiviDossierDetailComponent {
   private readonly etatApi = inject(EtatApi);
   private readonly clock = inject(Clock);
 
-  /** Identifiant du dossier, lu dans l'URL (`/agence/suivi/:id`). */
   readonly id = input.required<string>();
 
   protected readonly dossier = signal<SuiviDossier | null>(null);
-  /** Chargement terminé : le message « aucun dossier » ne s'affiche qu'ensuite. */
   protected readonly loaded = signal(false);
 
   protected readonly history = computed(() => timelineOf(this.dossier()?.log ?? []));
@@ -63,7 +59,6 @@ export class SuiviDossierDetailComponent {
       .subscribe(() => void this.load(this.id(), true));
   }
 
-  /** Fiche du dossier, puis son état d'origine pour le pointage de réception (`quiet` : relecture sans attente). */
   private async load(id: string, quiet = false): Promise<void> {
     if (!quiet) {
       this.loaded.set(false);

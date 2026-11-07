@@ -37,13 +37,8 @@ import {
 
 type TextFieldKey = BaseFieldKey | 'note';
 
-/** Au-delà, une recherche est proposée au-dessus de la liste des types de dossier. */
 const TYPE_SEARCH_THRESHOLD = 15;
 
-/**
- * État et actions de l'écran « Créer un état » : saisie d'un dossier, constitution de l'état
- * puis transmission. Fourni par la page et partagé par ses composants.
- */
 @Injectable()
 export class CreerEtatFacade {
   private readonly store = inject(BrouillonStore);
@@ -53,18 +48,14 @@ export class CreerEtatFacade {
   private readonly bordereau = inject(BordereauService);
   private readonly referentiel = inject(ReferentielStore);
 
-  /** Libellés et règles du formulaire de saisie. */
   readonly labels = DOSSIER_FORM;
 
-  // --- Type d'état et types de dossier autorisés pour l'entité émettrice
   private readonly emetCode = computed(() => entityCode(this.session.account()?.entity ?? ''));
   readonly autoMode = computed(() => this.referentiel.value().saisieMode === 'auto');
-  /** Types d'état ouverts à l'entité ; vide si l'administrateur ne l'autorise nulle part. */
   readonly etatTypes = computed(() => {
     this.referentiel.value();
     return etatTypesFor(this.emetCode());
   });
-  /** Type d'état choisi (mode « choix ») ; à défaut, celui du premier dossier du brouillon. */
   private readonly etatTypeChoice = signal(
     etatTypeOfDossier(this.store.draft()[0]?.type ?? '')?.id ?? '',
   );
@@ -78,7 +69,6 @@ export class CreerEtatFacade {
   });
   readonly typeQuery = signal('');
   readonly typeSearchOn = computed(() => this.allowed().length > TYPE_SEARCH_THRESHOLD);
-  /** Types proposés : filtrés par la recherche, le type sélectionné restant visible. */
   readonly typeOptions = computed(() => {
     const all = this.allowed();
     const query = this.typeQuery().trim().toLowerCase();
@@ -90,21 +80,17 @@ export class CreerEtatFacade {
     return found.includes(type) || !all.includes(type) ? found : [type, ...found];
   });
 
-  // --- Formulaire de dossier
   readonly value = signal<DossierFormValue>(emptyDossierForm(this.allowed()[0] ?? ''));
   readonly errors = signal<Record<string, string>>({});
-  /** Une tentative d'envoi a échoué : les champs obligatoires vides sont signalés. */
   readonly touched = signal(false);
   readonly formError = signal('');
   readonly pieces = signal<PieceJointe[]>([]);
   readonly pieceError = signal('');
 
-  // --- Modification d'un dossier de l'état en cours
   readonly editId = signal<string | null>(null);
   readonly editOriginalType = signal<DossierType | null>(null);
   private editSnapshot = '';
 
-  // --- État en cours et état venant d'être transmis
   /**
    * Dossiers de l'état en cours. En mode « choix », seuls ceux du type d'état choisi : les autres restent dans le
    * brouillon (`waiting`) et reviennent quand l'agent rechoisit leur type d'état.
@@ -117,7 +103,6 @@ export class CreerEtatFacade {
       ? all
       : all.filter((dossier) => etatTypeOfDossier(dossier.type)?.id === etatTypeId);
   });
-  /** Dossiers saisis pour les autres types d'état, par type d'état : `Réclamations (2)`. */
   readonly waiting = computed(() => {
     const shown = new Set(this.draft().map((dossier) => dossier.id));
     const counts = new Map<string, number>();
@@ -131,10 +116,8 @@ export class CreerEtatFacade {
   });
   readonly draftRef = this.store.draftRef;
   readonly draftCreatedAt = this.store.draftCreatedAt;
-  /** Un appel à l'API est en cours (ajout, modification, transmission) : les boutons attendent. */
   readonly busy = signal(false);
 
-  /** États produits par le dernier envoi (un par type d'état). */
   readonly sentEtats = signal<readonly Etat[]>([]);
   readonly sentEtat = computed(() => this.sentEtats()[0] ?? null);
   readonly editing = computed(
@@ -144,13 +127,11 @@ export class CreerEtatFacade {
   readonly plannedEntity = computed(() => entityOf(this.value().type));
   readonly draftEntities = computed(() => entitySummary(this.draft()));
 
-  /** Dossiers du brouillon répartis par type d'état, et ceux qu'aucun n'accepte. */
   readonly groups = computed(() => {
     this.referentiel.value();
     return draftGroups(this.draft(), this.emetCode(), this.etatType()?.id ?? '');
   });
 
-  /** Ligne « Destination » de l'en-tête de l'état en cours. */
   readonly destinationLabel = computed(() => {
     if (this.autoMode()) {
       const count = this.groups().groups.length;
@@ -160,7 +141,6 @@ export class CreerEtatFacade {
     return etatType ? `${etatType.nom} · ${entityLabel(etatType.recep)}` : '—';
   });
 
-  /** `Informatique → Service Informatique (SI-001) (2 dossiers) · …` */
   private readonly groupsText = computed(() =>
     this.groups()
       .groups.map(
@@ -184,7 +164,6 @@ export class CreerEtatFacade {
       : '';
   });
 
-  /** Ligne de compte rendu de l'écran « État transmis ». */
   readonly sentLine = computed(() => {
     const etats = this.sentEtats();
     if (etats.length > 1) {
@@ -196,13 +175,11 @@ export class CreerEtatFacade {
       : '';
   });
 
-  /** Changer de type en cours de modification efface les informations de l'ancien type. */
   readonly editTypeWarning = computed(() => {
     const editing = this.editing();
     return !!editing && editing.type !== this.value().type && editing.extra.length > 0;
   });
 
-  /** Agence de l'utilisateur, sans son code. */
   readonly agenceName = computed(() =>
     (this.session.account()?.entity ?? '').replace(/ \([^)]+\)$/, ''),
   );
@@ -211,9 +188,6 @@ export class CreerEtatFacade {
     void this.store.load().catch(() => undefined);
   }
 
-  // ---------------------------------------------------------------- Saisie
-
-  /** Enregistre un champ texte et renvoie la valeur retenue (le n° client est filtré). */
   setText(key: TextFieldKey, raw: string): string {
     const text =
       key === 'client' ? filterClientInput(raw) : key === 'compte' ? filterAccountInput(raw) : raw;
@@ -273,7 +247,6 @@ export class CreerEtatFacade {
         produit: produits.includes(value.produit) ? value.produit : (produits[0] ?? ''),
       };
     });
-    // Les erreurs des champs propres à l'ancien type n'ont plus d'objet.
     this.errors.update((errors) =>
       Object.fromEntries(
         BASE_FIELD_KEYS.filter((key) => errors[key]).map((key) => [key, errors[key]]),
@@ -283,7 +256,6 @@ export class CreerEtatFacade {
     this.formError.set('');
   }
 
-  /** Contrôle un champ quand l'utilisateur le quitte. */
   validateField(key: string): void {
     const value = this.value();
     const raw = BASE_FIELD_KEYS.includes(key as BaseFieldKey)
@@ -295,7 +267,6 @@ export class CreerEtatFacade {
     }));
   }
 
-  /** Erreur d'un champ propre au type : contrôle effectué, ou champ obligatoire resté vide. */
   isInvalid(key: string): boolean {
     return !!this.errors()[key];
   }
@@ -304,9 +275,6 @@ export class CreerEtatFacade {
     this.clearForm(true);
   }
 
-  // ---------------------------------------------------------- Pièces jointes
-
-  /** Les fichiers retenus restent en mémoire ; ils sont envoyés à l'API avec le dossier. */
   addPieces(fileList: FileList | null | undefined): void {
     const { accepted, errors } = screenPieces(Array.from(fileList ?? []), this.pieces());
     if (!accepted.length) {
@@ -334,8 +302,6 @@ export class CreerEtatFacade {
     this.pieces.update((pieces) => pieces.filter((candidate) => candidate.id !== piece.id));
     this.pieceError.set('');
   }
-
-  // ------------------------------------------------- Ajout et modification
 
   async submit(): Promise<void> {
     if (this.busy()) {
@@ -447,8 +413,6 @@ export class CreerEtatFacade {
     this.toast.success(`Dossier ${dossier.ref} supprimé de l'état.`);
   }
 
-  // ----------------------------------------------------------- Transmission
-
   async send(): Promise<void> {
     const draft = this.draft();
     const account = this.session.account();
@@ -509,9 +473,6 @@ export class CreerEtatFacade {
     }
   }
 
-  // ------------------------------------------------- Saisie non enregistrée
-
-  /** Motif pour lequel quitter l'écran ferait perdre une saisie, ou chaîne vide. */
   unsavedMessage(): string {
     const editing = this.editing();
     if (editing) {
@@ -524,7 +485,6 @@ export class CreerEtatFacade {
       : '';
   }
 
-  /** Demande confirmation avant d'abandonner une saisie en cours, puis la vide. */
   async confirmLeave(): Promise<boolean> {
     const message = this.unsavedMessage();
     if (!message) {
@@ -544,8 +504,6 @@ export class CreerEtatFacade {
     return confirmed;
   }
 
-  // ----------------------------------------------------------------- Privé
-
   private revalidate(key: string, raw: string): void {
     if (this.errors()[key]) {
       this.errors.update((errors) => ({
@@ -561,7 +519,6 @@ export class CreerEtatFacade {
     this.formError.set(error);
   }
 
-  /** Après un ajout, le type, le produit et la priorité sont conservés pour enchaîner les saisies. */
   private clearForm(resetChoices: boolean): void {
     const current = this.value();
     this.value.set(
@@ -584,10 +541,6 @@ export class CreerEtatFacade {
     this.editSnapshot = '';
   }
 
-  /**
-   * Exécute un appel à l'API en bloquant les boutons ; rend `null` en cas d'échec (l'erreur est déjà affichée par
-   * l'intercepteur).
-   */
   private async run<T>(call: () => Promise<T>): Promise<T | null> {
     this.busy.set(true);
     try {

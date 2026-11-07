@@ -5,7 +5,6 @@ import { PilotageApi } from '../../../infrastructure/api/pilotage.api';
 import { TONE_BAR, TONE_TEXT } from '../../tone';
 import { RealtimeService } from '../../../../../core/realtime/realtime.service';
 
-/** Pilotage : comparatif des agences d'origine. */
 @Component({
   selector: 'app-agences',
   template: `
@@ -65,7 +64,6 @@ export class AgencesComponent {
   protected readonly toneBar = TONE_BAR;
   protected readonly toneText = TONE_TEXT;
 
-  /** Comparatif calculé par l'API, de l'agence la plus en retard à la moins en retard. */
   private readonly agences = toSignal(
     inject(RealtimeService).live(() => inject(PilotageApi).agences()),
     {

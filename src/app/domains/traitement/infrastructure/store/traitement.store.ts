@@ -19,16 +19,11 @@ const NO_FUNCTION: MemberFunctions = {
   rechercher: false,
 };
 
-/** Fiche d'un dossier et passages du circuit que son gestionnaire peut faire. */
 export interface DossierFiche {
   dossier: RoutedDossier;
   actions: ApiTransition[];
 }
 
-/**
- * Entité de traitement de l'utilisateur, tenue par l'API : sa répartition (mode, équipe, droits) et ses
- * portefeuilles (mes dossiers, pool, bac du répartiteur, tous les dossiers pour le droit « Rechercher »).
- */
 @Service()
 export class TraitementStore {
   private readonly api = inject(TraitementApi);
@@ -40,7 +35,6 @@ export class TraitementStore {
   readonly bac = signal<RoutedDossier[]>([]);
   readonly entity = signal<RoutedDossier[]>([]);
 
-  /** Membre de l'équipe correspondant à l'utilisateur connecté. */
   readonly me = computed(
     () =>
       this.repartition()?.membres.find(
@@ -60,12 +54,10 @@ export class TraitementStore {
       : NO_FUNCTION;
   });
 
-  /** Équipe de l'entité, en prénom et nom. */
   readonly team = computed(() => (this.repartition()?.membres ?? []).map(nomComplet));
 
   private loading: Promise<void> | null = null;
 
-  /** Chargement en cours ou terminé ; lance le premier chargement si besoin (gardes des routes). */
   ready(): Promise<void> {
     return this.loading ?? this.load();
   }
@@ -99,7 +91,6 @@ export class TraitementStore {
     return { dossier: this.withGestionnaire(routedFromApi(detail)), actions: detail.actions };
   }
 
-  /** Applique une action de traitement ; rend le message de compte rendu. */
   async act(dossier: RoutedDossier, action: DossierAction): Promise<string> {
     await firstValueFrom(this.call(dossier, action));
     await this.load();
@@ -111,7 +102,6 @@ export class TraitementStore {
     await this.load();
   }
 
-  /** Attribue (ou réattribue) un dossier au membre désigné par son nom. */
   async assign(id: string, gestionnaire: string, commentaire?: string): Promise<void> {
     const membre = this.repartition()?.membres.find(
       (candidate) => nomComplet(candidate) === gestionnaire,
@@ -142,7 +132,6 @@ export class TraitementStore {
     return dossiers.map((dossier) => this.withGestionnaire(routedFromApi(empty(dossier))));
   }
 
-  /** Nom du gestionnaire en charge, lu dans l'équipe de l'entité. */
   private withGestionnaire(dossier: RoutedDossier): RoutedDossier {
     if (dossier.gest) {
       return dossier;
@@ -158,7 +147,6 @@ function nomComplet(membre: ApiMembre): string {
   return `${membre.prenom} ${membre.nom}`.trim();
 }
 
-/** Détail réduit au dossier, pour les listes (sans historique ni pièces). */
 function empty(dossier: ApiDossier): ApiDossierDetail {
   return { dossier, actions: [], suspens: null, retour: null, pieces: [], historique: [] };
 }

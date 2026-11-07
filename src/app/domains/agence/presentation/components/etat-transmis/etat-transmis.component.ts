@@ -4,10 +4,6 @@ import { IconComponent } from '../../../../../shared/ui/icon/icon.component';
 import { Etat } from '../../../../dossiers/domain/entities/etat.entity';
 import { entityOfDossier, entitySummary, shortEntity } from '../../../../dossiers/domain/routing';
 
-/**
- * Confirmation affichée après la transmission, avec son récapitulatif. Un envoi peut produire
- * plusieurs états (un par type d'état) : chacun a sa référence et son bordereau.
- */
 @Component({
   selector: 'app-etat-transmis',
   imports: [IconComponent],
@@ -15,11 +11,9 @@ import { entityOfDossier, entitySummary, shortEntity } from '../../../../dossier
 })
 export class EtatTransmisComponent {
   readonly etats = input.required<readonly Etat[]>();
-  /** Compte rendu de l'envoi : état(s) produit(s) et leur entité réceptrice. */
   readonly line = input.required<string>();
 
   readonly newEtat = output<void>();
-  /** Référence de l'état dont imprimer le bordereau. */
   readonly print = output<string>();
 
   protected readonly etat = computed(() => this.etats()[0]);
