@@ -180,13 +180,11 @@ export function matchesCriteria(dossier: SuiviRow, criteria: SuiviCriteria): boo
 }
 
 export const SUIVI_STATUS_FILTERS: readonly { status: Status; label: string }[] = [
-  { status: 'Transmis', label: 'Transmis' },
-  { status: 'En cours', label: 'En cours' },
-  { status: 'En attente de document(s) complémentaire(s)', label: 'À compléter' },
-  { status: 'Dossier retourné', label: 'Dossier retourné' },
-  { status: 'Retourné en agence', label: 'Retourné en agence' },
-  { status: 'Validé', label: 'Validé' },
-  { status: 'Clôturé', label: 'Clôturé' },
+  { status: 'Transmis', label: 'Dossiers transmis' },
+  { status: 'En cours', label: 'Dossiers en cours' },
+  { status: 'En attente de document(s) complémentaire(s)', label: 'Dossiers à compléter' },
+  { status: 'Dossier retourné', label: 'Dossiers retournés' },
+  { status: 'Retourné en agence', label: 'Retournés en agence' },
 ];
 
 export function shortStatusLabel(status: Status): string {

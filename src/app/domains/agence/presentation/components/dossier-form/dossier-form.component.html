@@ -21,12 +21,9 @@
         La référence est conservée. Chaque modification est historisée sur le dossier.
       </p>
     } @else {
-      <h2 id="dossier-form-title" class="mb-[3px] text-[15px] font-semibold text-ink">
+      <h2 id="dossier-form-title" class="text-[15px] font-semibold text-ink">
         Nouveau dossier à transmettre
       </h2>
-      <p class="text-[12.5px] text-ink-muted">
-        Les dossiers ajoutés restent au statut Temporaire jusqu'à la validation de l'état.
-      </p>
     }
   </header>
 
@@ -42,13 +39,6 @@
               </option>
             }
           </select>
-          <span
-            class="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12px] font-normal text-ink-muted"
-          >
-            <app-icon name="arrow-right" [size]="12" [strokeWidth]="2.2" />
-            Réceptionné par :
-            <strong class="font-semibold whitespace-nowrap text-ink">{{ recepLine() }}</strong>
-          </span>
         </label>
       } @else {
         <p
@@ -283,16 +273,6 @@
         </ul>
       }
     </div>
-
-    <app-form-field label="Observation (facultatif)">
-      <textarea
-        rows="2"
-        class="form-control resize-y"
-        placeholder="Précisions pour l'entité de traitement…"
-        [value]="value.note"
-        (input)="onText('note', $event)"
-      ></textarea>
-    </app-form-field>
 
     @if (facade.editTypeWarning()) {
       <div

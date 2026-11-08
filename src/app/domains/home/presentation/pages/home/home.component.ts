@@ -25,6 +25,7 @@ import { isLate } from '../../../../traitement/domain/portfolio';
 import { TraitementContext } from '../../../../traitement/presentation/traitement-context.service';
 import { Dashboard, DashboardAction } from '../../../domain/entities/dashboard.entity';
 import { DASHBOARD_TEXTS } from '../../../domain/dashboard.texts';
+import { CreerEtatComponent } from '../../../../agence/presentation/pages/creer-etat/creer-etat.component';
 
 const LIFECYCLE = [
   {
@@ -49,7 +50,7 @@ const PRIMARY_ICON: Record<Role, IconName> = {
 
 @Component({
   selector: 'app-home',
-  imports: [IconComponent, StatCardComponent, StatusBadgeComponent],
+  imports: [CreerEtatComponent, IconComponent, StatCardComponent, StatusBadgeComponent],
   templateUrl: './home.component.html',
 })
 export class HomeComponent {
@@ -63,6 +64,7 @@ export class HomeComponent {
   private readonly toast = inject(ToastService);
 
   protected readonly lifecycle = LIFECYCLE;
+  protected readonly isAgence = computed(() => this.session.role() === 'agence');
 
   protected readonly dashboard = computed<Dashboard | null>(() => {
     const account = this.session.account();
@@ -127,7 +129,7 @@ export class HomeComponent {
     const etats = this.brouillon.etatsEmis();
     const closed = this.brouillon.clotures();
     return {
-      subline: `${draft.length} dossier(s) au statut Temporaire dans l'état en cours de constitution.`,
+      subline: '',
       stats: [
         {
           label: 'Dossiers temporaires',

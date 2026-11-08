@@ -11,7 +11,6 @@ import {
 } from '../../../../dossiers/domain/dossier-catalog';
 import { fileSizeLabel } from '../../../../dossiers/domain/piece.rules';
 import { PieceOpener } from '../../../../dossiers/presentation/piece-opener.service';
-import { entityLabel } from '../../../../dossiers/domain/referentiel';
 import { BaseFieldKey } from '../../../domain/dossier-form.rules';
 import { CreerEtatFacade } from '../../creer-etat.facade';
 
@@ -30,12 +29,7 @@ export class DossierFormComponent {
 
   protected readonly dragging = signal(false);
 
-  protected readonly recepLine = computed(() => {
-    const etatType = this.facade.etatType();
-    return etatType ? entityLabel(etatType.recep) : '—';
-  });
-
-  protected onText(key: BaseFieldKey | 'note', event: Event): void {
+  protected onText(key: BaseFieldKey, event: Event): void {
     const control = event.target as HTMLInputElement | HTMLTextAreaElement;
     // Réécrit la valeur retenue : le n° client n'accepte que des chiffres.
     control.value = this.facade.setText(key, control.value);

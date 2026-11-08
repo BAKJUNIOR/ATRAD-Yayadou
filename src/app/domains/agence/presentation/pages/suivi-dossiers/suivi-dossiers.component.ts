@@ -29,8 +29,6 @@ const FILTER_ICONS: Partial<Record<Status, IconName>> = {
   'En attente de document(s) complémentaire(s)': 'clock',
   'Dossier retourné': 'rotate',
   'Retourné en agence': 'list',
-  Validé: 'check-circle',
-  Clôturé: 'archive',
 };
 
 type TextCriterion = Exclude<keyof SuiviCriteria, 'type'>;

@@ -5,7 +5,7 @@ export const AGENCE_ROUTES: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'creer-etat' },
   {
     path: 'creer-etat',
-    title: 'Créer un état de transmission',
+    title: 'Création',
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () =>
       import('./pages/creer-etat/creer-etat.component').then((m) => m.CreerEtatComponent),

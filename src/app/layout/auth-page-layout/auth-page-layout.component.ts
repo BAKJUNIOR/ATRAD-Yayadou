@@ -7,10 +7,4 @@ import { ThemeToggleComponent } from '../../shared/ui/theme-toggle/theme-toggle.
   imports: [BrandMarkComponent, ThemeToggleComponent],
   templateUrl: './auth-page-layout.component.html',
 })
-export class AuthPageLayoutComponent {
-  protected readonly steps = [
-    "Transmission depuis l'agence",
-    "Réception et dispatch par l'entité réceptrice",
-    'Instruction, validation, clôture',
-  ];
-}
+export class AuthPageLayoutComponent {}

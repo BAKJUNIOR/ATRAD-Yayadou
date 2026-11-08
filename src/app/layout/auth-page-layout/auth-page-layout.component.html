@@ -1,43 +1,16 @@
-<div class="grid min-h-screen bg-soft lg:grid-cols-[1.05fr_0.95fr]">
-  <aside
-    class="hidden min-h-screen flex-col bg-linear-to-b from-navy to-navy-2 px-14 pt-14 pb-11 text-white lg:flex"
-  >
+<main
+  class="flex min-h-screen flex-col items-center justify-center gap-8 bg-soft bg-[radial-gradient(48rem_32rem_at_50%_0%,var(--brand-tint-soft),transparent_70%)] px-5 py-12 sm:px-10"
+>
+  <div class="rounded-brand bg-navy px-4 py-3 shadow-raised">
     <app-brand-mark />
-
-    <div class="my-auto flex max-w-[460px] flex-col gap-6">
-      <p class="text-[40px] leading-[1.12] font-semibold tracking-[-0.01em] text-pretty">
-        La traçabilité de vos dossiers, de l'agence à la clôture.
-      </p>
-      <p class="text-[15px] leading-relaxed text-pretty text-side-muted">
-        Chaque état de transmission est horodaté, affecté et suivi. Plus de dossier perdu entre
-        l'agence et le back-office.
-      </p>
-      <ol class="flex flex-col gap-2.5 pt-2">
-        @for (step of steps; track step; let index = $index) {
-          <li class="flex items-center gap-3 text-[13.5px] text-side">
-            <span
-              class="flex size-[22px] flex-none items-center justify-center rounded-full bg-brand-mid/18 text-[12px] text-brand-accent"
-              aria-hidden="true"
-            >
-              {{ index + 1 }}
-            </span>
-            {{ step }}
-          </li>
-        }
-      </ol>
-    </div>
-  </aside>
-
-  <main
-    class="flex min-h-screen flex-col items-center justify-center gap-8 bg-[radial-gradient(48rem_32rem_at_100%_0%,var(--brand-tint-soft),transparent_70%)] px-5 py-12 sm:px-10"
-  >
-    <div class="rounded-brand bg-navy px-4 py-3 shadow-raised lg:hidden">
-      <app-brand-mark />
-    </div>
-    <ng-content />
-  </main>
-
-  <div class="fixed end-5 bottom-5 z-50">
-    <app-theme-toggle />
   </div>
+  <div
+    class="flex w-full justify-center rounded-brand border border-line bg-card px-6 py-8 shadow-raised sm:max-w-[464px] sm:px-8"
+  >
+    <ng-content />
+  </div>
+</main>
+
+<div class="fixed end-5 bottom-5 z-50">
+  <app-theme-toggle />
 </div>

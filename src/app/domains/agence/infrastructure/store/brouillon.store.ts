@@ -35,7 +35,6 @@ export class BrouillonStore {
       '',
     ),
   );
-  readonly draftRef = computed(() => 'Nouvel état');
 
   async load(): Promise<void> {
     const [dossiers, etats, suivi] = await Promise.all([

@@ -31,7 +31,7 @@ export const NAVIGATION: Record<Role, NavMenu> = {
     primaryPath: '/agence/creer-etat',
     items: [
       HOME,
-      { id: 'creer', label: 'Créer un état', icon: '＋', path: '/agence/creer-etat' },
+      { id: 'creer', label: 'Création', icon: '＋', path: '/agence/creer-etat' },
       { id: 'suivi', label: 'Suivi des dossiers', icon: '◷', path: '/agence/suivi' },
     ],
   },

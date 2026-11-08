@@ -1,4 +1,4 @@
-import { Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Clock } from '../../core/services/clock.service';
 import { SessionService } from '../../core/services/session.service';
@@ -31,7 +31,6 @@ const PROFILE_ENTRIES: { label: string; icon: IconName }[] = [
   imports: [RouterLink, IconComponent, ThemeToggleComponent],
   host: {
     '(document:keydown.escape)': 'closeMenus()',
-    '(document:keydown)': 'onShortcut($event)',
   },
   templateUrl: './app-header.component.html',
 })
@@ -41,8 +40,6 @@ export class AppHeaderComponent {
   private readonly clock = inject(Clock);
   protected readonly sidebar = inject(SidebarService);
   protected readonly notifications = inject(NotificationsService);
-
-  private readonly search = viewChild<ElementRef<HTMLInputElement>>('search');
 
   protected readonly account = this.session.account;
 
@@ -76,13 +73,6 @@ export class AppHeaderComponent {
       this.sidebar.toggleCollapsed();
     } else {
       this.sidebar.setMobileOpen(!this.sidebar.isMobileOpen());
-    }
-  }
-
-  protected onShortcut(event: KeyboardEvent): void {
-    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
-      event.preventDefault();
-      this.search()?.nativeElement.focus();
     }
   }
 

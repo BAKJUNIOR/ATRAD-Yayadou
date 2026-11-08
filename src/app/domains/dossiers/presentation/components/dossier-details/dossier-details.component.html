@@ -31,11 +31,11 @@
   </div>
 }
 
-<div class="flex flex-col gap-1.5 border-t border-dashed border-line-strong pt-3">
-  <span class="text-[10.5px] font-medium tracking-[0.07em] text-ink-muted uppercase">
-    Pièces jointes ({{ dossier().pieces.length }})
-  </span>
-  @if (dossier().pieces.length) {
+@if (dossier().pieces.length) {
+  <div class="flex flex-col gap-1.5 border-t border-dashed border-line-strong pt-3">
+    <span class="text-[10.5px] font-medium tracking-[0.07em] text-ink-muted uppercase">
+      Pièces jointes ({{ dossier().pieces.length }})
+    </span>
     <ul class="flex flex-wrap gap-1.5">
       @for (piece of dossier().pieces; track piece.id) {
         <li>
@@ -58,16 +58,5 @@
         </li>
       }
     </ul>
-  } @else {
-    <span class="text-[13px] text-ink-muted">Aucune pièce jointe</span>
-  }
-</div>
-
-<div class="flex flex-col gap-[3px] border-t border-dashed border-line-strong pt-3">
-  <span class="text-[10.5px] font-medium tracking-[0.07em] text-ink-muted uppercase"
-    >Observation</span
-  >
-  <span class="text-[13px] leading-normal whitespace-pre-wrap text-ink-secondary">{{
-    dossier().note || 'Aucune observation'
-  }}</span>
-</div>
+  </div>
+}

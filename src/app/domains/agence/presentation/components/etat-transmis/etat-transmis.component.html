@@ -67,50 +67,6 @@
       </div>
     </dl>
 
-    <div class="flex flex-col overflow-hidden rounded-brand border border-success-line bg-card">
-      <div class="flex items-center justify-between gap-3 border-b border-line px-3.5 py-2.5">
-        <h3 class="text-[13px] font-semibold text-ink">Récapitulatif des dossiers transmis</h3>
-        <span
-          class="rounded-full bg-soft px-[9px] py-0.5 text-[12px] font-semibold whitespace-nowrap text-ink-secondary"
-        >
-          {{ rows().length }} dossier(s)
-        </span>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="w-full min-w-[640px] border-collapse text-[13px] text-ink">
-          <thead>
-            <tr
-              class="border-b border-line bg-subtle text-[11px] tracking-[0.06em] text-ink-muted uppercase"
-            >
-              <th scope="col" class="w-[42px] py-2 ps-3.5 pe-1.5 text-start font-medium">N°</th>
-              <th scope="col" class="w-[116px] px-1.5 py-2 text-start font-medium">Référence</th>
-              <th scope="col" class="px-1.5 py-2 text-start font-medium">Client</th>
-              <th scope="col" class="px-1.5 py-2 text-start font-medium">Type</th>
-              <th scope="col" class="px-1.5 py-2 text-start font-medium">Produit</th>
-              <th scope="col" class="py-2 ps-1.5 pe-3.5 text-start font-medium">
-                Entité de traitement
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (row of rows(); track row.ref) {
-              <tr class="border-b border-soft last:border-b-0">
-                <td class="py-[9px] ps-3.5 pe-1.5 text-ink-muted tabular-nums">{{ row.n }}</td>
-                <td class="px-1.5 py-[9px] font-mono text-[12px] font-semibold">{{ row.ref }}</td>
-                <td class="px-1.5 py-[9px]">
-                  <span class="block truncate font-medium">{{ row.client }}</span>
-                  <span class="block font-mono text-[11.5px] text-ink-muted">{{ row.num }}</span>
-                </td>
-                <td class="px-1.5 py-[9px]">{{ row.type }}</td>
-                <td class="px-1.5 py-[9px] text-ink-secondary">{{ row.produit }}</td>
-                <td class="py-[9px] ps-1.5 pe-3.5 text-ink-secondary">{{ row.entite }}</td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    </div>
-
     <div class="flex flex-wrap gap-2.5 pt-0.5">
       <button type="button" class="btn-primary px-4 py-2.5 text-[13px]" (click)="newEtat.emit()">
         Créer un nouvel état

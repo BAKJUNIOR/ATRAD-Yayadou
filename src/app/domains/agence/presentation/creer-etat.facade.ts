@@ -3,7 +3,12 @@ import { ConfirmService } from '../../../core/services/confirm.service';
 import { SessionService } from '../../../core/services/session.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { nowIso, todayIsoDate } from '../../../core/utils/date.util';
-import { DOSSIER_FORM, DossierType, fieldsOf, produitsOf } from '../../dossiers/domain/dossier-catalog';
+import {
+  DOSSIER_FORM,
+  DossierType,
+  fieldsOf,
+  produitsOf,
+} from '../../dossiers/domain/dossier-catalog';
 import { Dossier, PieceJointe } from '../../dossiers/domain/entities/dossier.entity';
 import { Etat } from '../../dossiers/domain/entities/etat.entity';
 import { screenPieces } from '../../dossiers/domain/piece.rules';
@@ -114,7 +119,6 @@ export class CreerEtatFacade {
     }
     return [...counts].map(([nom, count]) => `« ${nom} » (${count})`).join(', ');
   });
-  readonly draftRef = this.store.draftRef;
   readonly draftCreatedAt = this.store.draftCreatedAt;
   readonly busy = signal(false);
 
@@ -179,10 +183,6 @@ export class CreerEtatFacade {
     const editing = this.editing();
     return !!editing && editing.type !== this.value().type && editing.extra.length > 0;
   });
-
-  readonly agenceName = computed(() =>
-    (this.session.account()?.entity ?? '').replace(/ \([^)]+\)$/, ''),
-  );
 
   constructor() {
     void this.store.load().catch(() => undefined);
@@ -435,7 +435,7 @@ export class CreerEtatFacade {
       ? `${draft.length} dossier(s) · cet envoi produira ${groups.length} état(s) : ${this.groupsText()}. Chaque état a sa référence et son bordereau. Cette action est définitive et horodatée.`
       : `${draft.length} dossier(s) seront transmis à ${etatType ? entityLabel(etatType.recep) : '—'} (type d'état « ${etatType?.nom ?? '—'} »). Cette action est définitive et horodatée.`;
     const confirmed = await this.confirm.ask({
-      title: `Valider et transmettre l'état ${this.draftRef()} ?`,
+      title: "Valider et transmettre l'état ?",
       text,
       note: `En confirmant, vous certifiez que les ${draft.length} dossier(s) accompagnent cet état.`,
       okLabel: 'Confirmer la transmission',
