@@ -115,17 +115,27 @@
       </table>
     </div>
   } @else {
-    <div class="px-5 py-8">
+    <div class="p-5">
       <div
         role="status"
-        class="mx-auto flex max-w-[460px] items-start gap-3 rounded-brand border border-warning-line bg-warning-bg px-4 py-4"
+        class="flex flex-col items-center gap-3 rounded-brand border border-dashed border-line-strong bg-subtle px-6 py-10 text-center"
       >
-        <app-icon name="x-circle" class="mt-px text-danger" [size]="20" [strokeWidth]="2" />
-        <p class="flex flex-col gap-1 text-[13px] leading-normal text-pretty text-ink">
-          <strong class="font-semibold">Aucun dossier pour l'instant.</strong>
-          <span class="text-ink-secondary">
-            Remplissez le formulaire puis cliquez sur « Ajouter à l'état de transmission ».
+        <span class="relative flex size-14 items-center justify-center">
+          <span class="absolute inset-0 rounded-full bg-brand-tint"></span>
+          <span
+            class="relative flex size-11 items-center justify-center rounded-full bg-card text-brand-ink shadow-card ring-1 ring-brand-tint-line"
+          >
+            <app-icon name="inbox" [size]="20" [strokeWidth]="1.9" />
           </span>
+        </span>
+        <p class="text-[14.5px] font-semibold tracking-[-0.01em] text-ink">
+          Aucun dossier pour l'instant
+        </p>
+        <p class="max-w-[340px] text-[12.5px] leading-relaxed text-pretty text-ink-muted">
+          Remplissez le formulaire puis cliquez sur
+          <span class="font-medium whitespace-nowrap text-brand-ink"
+            >« Ajouter à l'état de transmission »</span
+          >.
         </p>
       </div>
     </div>
