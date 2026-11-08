@@ -71,11 +71,7 @@ export class CreerEtatFacade {
   readonly editId = signal<string | null>(null);
   readonly allowed = computed(() => {
     this.referentiel.value();
-    if (this.autoMode() || this.editId()) {
-      return allowedTypes(this.emetCode(), this.etatType()?.id ?? '');
-    }
-    const all = this.etatTypes().flatMap((etatType) => allowedTypes(this.emetCode(), etatType.id));
-    return [...new Set(all)];
+    return allowedTypes(this.emetCode(), this.etatType()?.id ?? '');
   });
   readonly typeQuery = signal('');
   readonly typeSearchOn = computed(() => this.allowed().length > TYPE_SEARCH_THRESHOLD);
@@ -265,16 +261,6 @@ export class CreerEtatFacade {
   }
 
   setType(type: DossierType): void {
-    const etatTypeId = etatTypeOfDossier(type)?.id;
-    if (
-      !this.autoMode() &&
-      !this.editId() &&
-      etatTypeId &&
-      etatTypeId !== this.etatType()?.id &&
-      this.etatTypes().some((etatType) => etatType.id === etatTypeId)
-    ) {
-      this.etatTypeChoice.set(etatTypeId);
-    }
     // Le produit suit le type : il reste s'il est proposé pour le nouveau type, sinon le premier est retenu.
     this.value.update((value) => {
       const produits = produitsOf(type);

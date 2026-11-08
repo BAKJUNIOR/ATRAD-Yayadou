@@ -26,6 +26,18 @@
 
   <form class="flex flex-col gap-3 px-[18px] py-4" novalidate (submit)="submit($event)">
     <div class="form-grid flex flex-col gap-2.5">
+      @if (!facade.autoMode()) {
+        <label class="form-label">
+          Type d'état de transmission *
+          <select class="form-control" (change)="onEtatType($event)">
+            @for (option of facade.etatTypes(); track option.id) {
+              <option [value]="option.id" [selected]="option.id === facade.etatType()?.id">
+                {{ option.nom }}
+              </option>
+            }
+          </select>
+        </label>
+      }
       <label class="form-label">
         {{ labels.type }} *
         @if (facade.typeSearchOn()) {
