@@ -1,4 +1,5 @@
 import { Status } from '../../../../shared/models/status';
+import { IconName } from '../../../../shared/ui/icon/icon.component';
 import { StatTone } from '../../../../shared/ui/stat-card/stat-card.component';
 
 export interface DashboardStat {
@@ -6,6 +7,7 @@ export interface DashboardStat {
   value: string;
   hint: string;
   tone: StatTone;
+  icon?: IconName;
 }
 
 export interface DashboardAction {

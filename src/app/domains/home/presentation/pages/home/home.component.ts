@@ -133,24 +133,28 @@ export class HomeComponent {
       stats: [
         {
           label: 'Dossiers temporaires',
+          icon: 'file',
           value: String(draft.length),
           hint: 'à intégrer à un état',
           tone: 'warning',
         },
         {
           label: 'États transmis',
+          icon: 'send',
           value: String(etats.length),
           hint: 'toutes périodes',
           tone: 'heading',
         },
         {
           label: 'En attente de réception',
+          icon: 'clock',
           value: String(etats.filter((etat) => !etat.receivedAt).length),
           hint: "non confirmés par l'entité réceptrice",
           tone: 'danger',
         },
         {
           label: 'Dossiers clôturés',
+          icon: 'archive',
           value: String(closed),
           hint: 'cumul',
           tone: 'success',

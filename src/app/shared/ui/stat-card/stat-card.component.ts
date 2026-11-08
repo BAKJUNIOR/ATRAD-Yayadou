@@ -1,38 +1,40 @@
 import { Component, computed, input } from '@angular/core';
+import { IconComponent, IconName } from '../icon/icon.component';
 
 export type StatTone = 'heading' | 'brand' | 'success' | 'warning' | 'danger' | 'info';
 
-const DOT_CLASSES: Record<StatTone, string> = {
-  heading: 'bg-heading',
-  brand: 'bg-brand-ink',
-  success: 'bg-success',
-  warning: 'bg-warning',
-  danger: 'bg-danger',
-  info: 'bg-info',
+const TONES: Record<StatTone, { tile: string; icon: IconName }> = {
+  heading: { tile: 'bg-soft text-heading', icon: 'layers' },
+  brand: { tile: 'bg-brand-tint text-brand-ink', icon: 'inbox' },
+  success: { tile: 'bg-success-bg text-success', icon: 'check-circle' },
+  warning: { tile: 'bg-warning-bg text-warning', icon: 'clock' },
+  danger: { tile: 'bg-danger-bg text-danger', icon: 'alert' },
+  info: { tile: 'bg-info-bg text-info', icon: 'info' },
 };
 
 @Component({
   selector: 'app-stat-card',
+  imports: [IconComponent],
   host: {
     class:
-      'flex flex-col gap-3 rounded-[calc(var(--radius-brand)*1.4)] border border-line bg-card px-5 py-[18px] shadow-card transition hover:-translate-y-px hover:border-line-strong hover:shadow-raised',
+      'flex items-center gap-3 rounded-brand border border-line bg-card px-4 py-3 shadow-card transition hover:border-line-strong hover:shadow-raised',
+    '[attr.title]': 'hint() || null',
   },
   template: `
     <span
-      class="flex min-h-[34px] items-start gap-2 text-[12.5px] leading-snug font-medium text-ink-muted"
+      class="flex size-10 flex-none items-center justify-center rounded-[calc(var(--radius-brand)*0.9)]"
+      [class]="tileClass()"
     >
+      <app-icon [name]="iconName()" [size]="18" [strokeWidth]="2" />
+    </span>
+    <span class="flex min-w-0 flex-col">
       <span
-        class="mt-[5px] size-[7px] flex-none rounded-full ring-3 ring-soft"
-        [class]="dotClass()"
-      ></span>
-      <span class="min-w-0 text-pretty">{{ label() }}</span>
+        class="text-[22px] leading-[1.15] font-semibold tracking-[-0.02em] text-ink tabular-nums"
+      >
+        {{ value() }}
+      </span>
+      <span class="truncate text-[12.5px] font-medium text-ink-muted">{{ label() }}</span>
     </span>
-    <span class="text-[30px] leading-[1.1] font-semibold tracking-[-0.03em] text-ink tabular-nums">
-      {{ value() }}
-    </span>
-    @if (hint()) {
-      <span class="text-[11.5px] text-ink-muted">{{ hint() }}</span>
-    }
   `,
 })
 export class StatCardComponent {
@@ -40,6 +42,8 @@ export class StatCardComponent {
   readonly value = input.required<string>();
   readonly hint = input('');
   readonly tone = input<StatTone>('heading');
+  readonly icon = input<IconName | undefined>(undefined);
 
-  protected readonly dotClass = computed(() => DOT_CLASSES[this.tone()]);
+  protected readonly tileClass = computed(() => TONES[this.tone()].tile);
+  protected readonly iconName = computed(() => this.icon() ?? TONES[this.tone()].icon);
 }
