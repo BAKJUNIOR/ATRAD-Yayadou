@@ -145,6 +145,11 @@ export class CreerEtatFacade {
     return etatType ? `${etatType.nom} · ${entityLabel(etatType.recep)}` : '—';
   });
 
+  readonly etatTypeNames = computed(() => {
+    const names = this.groups().groups.map(({ etatType }) => etatType.nom);
+    return names.length ? names.join(', ') : (this.etatType()?.nom ?? '—');
+  });
+
   private readonly groupsText = computed(() =>
     this.groups()
       .groups.map(
@@ -156,7 +161,7 @@ export class CreerEtatFacade {
 
   readonly groupsLine = computed(() => {
     const count = this.groups().groups.length;
-    return this.autoMode() && this.draft().length
+    return this.autoMode() && count > 1
       ? `Cet envoi produira ${count} état${count > 1 ? 's' : ''} : ${this.groupsText()}`
       : '';
   });

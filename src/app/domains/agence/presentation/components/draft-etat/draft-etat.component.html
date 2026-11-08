@@ -18,11 +18,6 @@
           }
         </select>
       </label>
-    } @else {
-      <p class="text-[12px] leading-[1.45] text-ink-secondary">
-        Génération automatique : à la validation, un état est créé par type d'état (une destination
-        par état).
-      </p>
     }
     @if (!facade.etatTypes().length) {
       <p role="alert" class="text-[12px] font-medium text-danger">
@@ -33,6 +28,12 @@
       <dl
         class="grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-x-6 gap-y-1.5 text-[12.5px]"
       >
+        @if (facade.autoMode()) {
+          <div class="flex gap-1.5">
+            <dt class="whitespace-nowrap text-ink-muted">Type d'état :</dt>
+            <dd class="font-medium text-ink">{{ facade.etatTypeNames() }}</dd>
+          </div>
+        }
         <div class="flex gap-1.5">
           <dt class="whitespace-nowrap text-ink-muted">Agence :</dt>
           <dd class="font-medium text-ink">{{ facade.agenceName() }}</dd>
