@@ -53,6 +53,10 @@ test.describe("Saisie d'un état de transmission", () => {
     // Le temps réel relit le brouillon après coup : toujours une seule ligne.
     await page.waitForTimeout(1500);
     await expect(rows).toHaveCount(1);
+
+    await rows.getByRole('button').last().click();
+    await page.locator('.dialog-confirm').click();
+    await expect(rows).toHaveCount(0);
   });
 
   test('le n° de compte ne garde que 11 chiffres', async ({ browser }) => {
