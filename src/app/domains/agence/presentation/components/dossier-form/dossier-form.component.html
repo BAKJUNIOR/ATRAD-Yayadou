@@ -2,7 +2,6 @@
 @let errors = facade.errors();
 @let editing = facade.editing();
 @let labels = facade.labels;
-@let etatType = facade.etatType();
 
 <section class="panel overflow-hidden" aria-labelledby="dossier-form-title">
   <header class="border-b border-line px-5 py-4">
@@ -27,31 +26,6 @@
 
   <form class="flex flex-col gap-3 px-[18px] py-4" novalidate (submit)="submit($event)">
     <div class="form-grid flex flex-col gap-2.5">
-      @if (!facade.autoMode()) {
-        <label class="form-label">
-          Type d'état de transmission *
-          <select class="form-control" (change)="onEtatType($event)">
-            @for (option of facade.etatTypes(); track option.id) {
-              <option [value]="option.id" [selected]="option.id === etatType?.id">
-                {{ option.nom }}
-              </option>
-            }
-          </select>
-        </label>
-      } @else {
-        <p
-          class="rounded-control border border-line bg-subtle px-[11px] py-2 text-[12px] leading-[1.45] text-ink-secondary"
-        >
-          Génération automatique : à la validation, un état est créé par type d'état (une
-          destination par état).
-        </p>
-      }
-      @if (!facade.etatTypes().length) {
-        <p role="alert" class="text-[12px] font-medium text-danger">
-          Aucun type d'état n'autorise votre entité à émettre. Contactez l'administrateur.
-        </p>
-      }
-
       <label class="form-label">
         {{ labels.type }} *
         @if (facade.typeSearchOn()) {

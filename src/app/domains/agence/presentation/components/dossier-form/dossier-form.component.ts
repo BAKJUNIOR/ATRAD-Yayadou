@@ -35,15 +35,6 @@ export class DossierFormComponent {
     control.value = this.facade.setText(key, control.value);
   }
 
-  protected onEtatType(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-    const previous = this.facade.etatType()?.id ?? '';
-    void this.facade.setEtatType(select.value).then(() => {
-      // Changement refusé : la liste revient au type d'état conservé.
-      select.value = this.facade.etatType()?.id ?? previous;
-    });
-  }
-
   protected onTypeQuery(event: Event): void {
     this.facade.setTypeQuery((event.target as HTMLInputElement).value);
   }

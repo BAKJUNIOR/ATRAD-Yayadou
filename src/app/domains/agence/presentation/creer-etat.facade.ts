@@ -184,6 +184,11 @@ export class CreerEtatFacade {
     return !!editing && editing.type !== this.value().type && editing.extra.length > 0;
   });
 
+  readonly agenceName = computed(() =>
+    (this.session.account()?.entity ?? '').replace(/ \([^)]+\)$/, ''),
+  );
+  readonly agentName = computed(() => this.session.account()?.name ?? '');
+
   constructor() {
     void this.store.load().catch(() => undefined);
   }
@@ -411,6 +416,35 @@ export class CreerEtatFacade {
       return;
     }
     this.toast.success(`Dossier ${dossier.ref} supprimé de l'état.`);
+  }
+
+  async cancelEtat(): Promise<void> {
+    const draft = this.draft();
+    if (!draft.length) {
+      return;
+    }
+    if (this.editId()) {
+      this.toast.warning("Terminez ou annulez la modification en cours avant d'annuler l'état.");
+      return;
+    }
+    const confirmed = await this.confirm.ask({
+      title: "Annuler l'état ?",
+      text: `Les ${draft.length} dossier(s) de l'état en cours de constitution seront supprimés.`,
+      okLabel: "Annuler l'état",
+      danger: true,
+    });
+    if (!confirmed) {
+      return;
+    }
+    const ok = await this.run(async () => {
+      for (const dossier of draft) {
+        await this.store.remove(dossier.id);
+      }
+      return true;
+    });
+    if (ok) {
+      this.toast.success("L'état en cours a été annulé.");
+    }
   }
 
   async send(): Promise<void> {

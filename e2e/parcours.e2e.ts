@@ -17,6 +17,8 @@ test("Demande de prêt : de l'agence à la clôture", async ({ browser }) => {
   // 1. Agence : saisie puis transmission.
   const agence = await signIn(browser, 'a.diallo');
   const dossier = await addLoanRequest(agence, client, nom);
+  // La transmission envoie tout le brouillon : le test s'arrête plutôt que d'envoyer d'autres dossiers.
+  await expect(agence.locator('app-draft-etat tbody tr')).toHaveCount(1);
   await agence.getByRole('button', { name: /Valider et transmettre/ }).click();
   await confirmDialog(agence);
   const transmis = agence.locator('app-etat-transmis');

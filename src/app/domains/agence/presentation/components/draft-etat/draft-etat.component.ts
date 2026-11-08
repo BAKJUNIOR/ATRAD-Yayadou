@@ -15,4 +15,13 @@ export class DraftEtatComponent {
   protected readonly createdLabel = computed(() =>
     this.facade.draftCreatedAt() ? formatDateTime(this.facade.draftCreatedAt()) : '—',
   );
+
+  protected onEtatType(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const previous = this.facade.etatType()?.id ?? '';
+    void this.facade.setEtatType(select.value).then(() => {
+      // Changement refusé : la liste revient au type d'état conservé.
+      select.value = this.facade.etatType()?.id ?? previous;
+    });
+  }
 }

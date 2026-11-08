@@ -1,40 +1,59 @@
 @let draft = facade.draft();
 
-@if (!draft.length) {
-  <section class="panel flex flex-col gap-3 px-5 py-7" aria-label="État en cours de constitution">
-    <p class="text-center text-[13px] leading-normal text-pretty text-ink-muted">
-      Aucun dossier pour l'instant. Remplissez le formulaire puis cliquez sur « Ajouter à l'état de
-      transmission ».
-    </p>
-    @if (facade.waiting()) {
-      <p
-        class="rounded-control border border-info-line bg-info-bg px-3 py-[9px] text-[12.5px] leading-[1.45] text-info"
+<section class="panel flex flex-col overflow-hidden" aria-labelledby="draft-etat-title">
+  <header class="flex flex-col gap-3 border-b border-line px-5 py-4">
+    <h2 id="draft-etat-title" class="text-[15px] font-semibold text-ink">
+      État de transmission en cours
+    </h2>
+    @if (!facade.autoMode()) {
+      <label
+        class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] font-medium text-ink-secondary"
       >
-        Également en attente dans votre brouillon : {{ facade.waiting() }}. Choisissez ce type
-        d'état pour les transmettre.
+        Type d'état de transmission *
+        <select class="form-control max-w-[300px] flex-1 py-[7px]" (change)="onEtatType($event)">
+          @for (option of facade.etatTypes(); track option.id) {
+            <option [value]="option.id" [selected]="option.id === facade.etatType()?.id">
+              {{ option.nom }}
+            </option>
+          }
+        </select>
+      </label>
+    } @else {
+      <p class="text-[12px] leading-[1.45] text-ink-secondary">
+        Génération automatique : à la validation, un état est créé par type d'état (une destination
+        par état).
       </p>
     }
-  </section>
-} @else {
-  <section class="panel flex flex-col overflow-hidden" aria-labelledby="draft-etat-title">
-    <header class="flex flex-col gap-2.5 border-b border-line px-5 py-4">
-      <h2 id="draft-etat-title" class="text-[15px] font-semibold text-ink">Dossiers ajoutés</h2>
-      <dl class="flex flex-wrap gap-x-6 gap-y-1.5 text-[12.5px]">
-        <div class="flex gap-1.5 whitespace-nowrap">
-          <dt class="text-ink-muted">Type d'état :</dt>
-          <dd class="font-medium text-ink">{{ facade.etatType()?.nom ?? '—' }}</dd>
+    @if (!facade.etatTypes().length) {
+      <p role="alert" class="text-[12px] font-medium text-danger">
+        Aucun type d'état n'autorise votre entité à émettre. Contactez l'administrateur.
+      </p>
+    }
+    @if (draft.length) {
+      <dl
+        class="grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-x-6 gap-y-1.5 text-[12.5px]"
+      >
+        <div class="flex gap-1.5">
+          <dt class="whitespace-nowrap text-ink-muted">Agence :</dt>
+          <dd class="font-medium text-ink">{{ facade.agenceName() }}</dd>
         </div>
-        <div class="flex gap-1.5 whitespace-nowrap">
-          <dt class="text-ink-muted">Créé le :</dt>
+        <div class="flex gap-1.5">
+          <dt class="whitespace-nowrap text-ink-muted">Date de création :</dt>
           <dd class="font-medium text-ink">{{ createdLabel() }}</dd>
         </div>
-        <div class="flex gap-1.5 whitespace-nowrap">
-          <dt class="text-ink-muted">Nombre de dossiers :</dt>
+        <div class="flex gap-1.5">
+          <dt class="whitespace-nowrap text-ink-muted">Agent émetteur :</dt>
+          <dd class="font-medium text-ink">{{ facade.agentName() }}</dd>
+        </div>
+        <div class="flex gap-1.5">
+          <dt class="whitespace-nowrap text-ink-muted">Nombre de dossiers :</dt>
           <dd class="font-medium text-ink">{{ draft.length }}</dd>
         </div>
       </dl>
-    </header>
+    }
+  </header>
 
+  @if (draft.length) {
     <div class="max-h-[56vh] overflow-auto">
       <table class="w-full min-w-[600px] border-collapse text-[12.5px] text-ink">
         <caption class="sr-only">
@@ -104,54 +123,66 @@
         </tbody>
       </table>
     </div>
+  } @else {
+    <p class="px-5 py-7 text-center text-[13px] leading-normal text-pretty text-ink-muted">
+      Aucun dossier pour l'instant. Remplissez le formulaire puis cliquez sur « Ajouter à l'état de
+      transmission ».
+    </p>
+  }
 
+  @if (facade.waiting()) {
+    <p
+      class="mx-5 mb-4 rounded-control border border-info-line bg-info-bg px-3 py-[9px] text-[12.5px] leading-[1.45] text-info"
+    >
+      Également en attente dans votre brouillon : {{ facade.waiting() }}. Choisissez ce type d'état
+      pour les transmettre.
+    </p>
+  }
+
+  @if (draft.length) {
     <footer class="flex flex-col gap-2.5 border-t border-line bg-card px-5 pt-3.5 pb-[18px]">
-      @if (draft.length) {
-        <p
-          class="rounded-control border border-brand-tint-line bg-brand-tint-soft px-3 py-[9px] text-[12.5px] leading-[1.45] text-brand-ink"
-        >
-          <strong class="font-semibold">Entités de traitement prévues :</strong>
-          {{ facade.draftEntities() }}
-        </p>
-        @if (facade.groupsLine()) {
-          <p
-            class="rounded-control border border-info-line bg-info-bg px-3 py-[9px] text-[12.5px] leading-[1.45] font-medium text-info"
-          >
-            {{ facade.groupsLine() }}
-          </p>
-        }
-        @if (facade.blockMessage()) {
-          <p
-            role="alert"
-            class="rounded-control border border-danger-line bg-danger-bg px-3 py-[9px] text-[12.5px] leading-[1.45] font-medium text-danger"
-          >
-            ⚠ {{ facade.blockMessage() }}
-          </p>
-        }
-      }
-      @if (facade.waiting()) {
-        <p
-          class="rounded-control border border-info-line bg-info-bg px-3 py-[9px] text-[12.5px] leading-[1.45] text-info"
-        >
-          Également en attente dans votre brouillon : {{ facade.waiting() }}. Choisissez ce type
-          d'état pour les transmettre.
-        </p>
-      }
-      <button
-        type="button"
-        class="btn-primary w-full py-3"
-        [disabled]="!draft.length || facade.groups().miss.length > 0"
-        [attr.title]="
-          draft.length ? null : 'Ajoutez au moins un dossier pour pouvoir transmettre l\'état.'
-        "
-        (click)="facade.send()"
+      <p
+        class="rounded-control border border-brand-tint-line bg-brand-tint-soft px-3 py-[9px] text-[12.5px] leading-[1.45] text-brand-ink"
       >
-        Valider et transmettre ({{ draft.length }})
-      </button>
+        <strong class="font-semibold">Entités de traitement prévues :</strong>
+        {{ facade.draftEntities() }}
+      </p>
+      @if (facade.groupsLine()) {
+        <p
+          class="rounded-control border border-info-line bg-info-bg px-3 py-[9px] text-[12.5px] leading-[1.45] font-medium text-info"
+        >
+          {{ facade.groupsLine() }}
+        </p>
+      }
+      @if (facade.blockMessage()) {
+        <p
+          role="alert"
+          class="rounded-control border border-danger-line bg-danger-bg px-3 py-[9px] text-[12.5px] leading-[1.45] font-medium text-danger"
+        >
+          ⚠ {{ facade.blockMessage() }}
+        </p>
+      }
+      <div class="flex flex-wrap gap-2.5">
+        <button
+          type="button"
+          class="btn-primary flex-1 py-3"
+          [disabled]="facade.groups().miss.length > 0"
+          (click)="facade.send()"
+        >
+          Valider et transmettre ({{ draft.length }})
+        </button>
+        <button
+          type="button"
+          class="rounded-control border border-danger-line bg-card px-4 py-3 text-[13.5px] font-medium text-danger-solid transition-colors hover:bg-danger-bg"
+          (click)="facade.cancelEtat()"
+        >
+          Annuler l'état
+        </button>
+      </div>
       <span class="text-[12px] leading-normal text-pretty text-ink-muted">
         Après validation, l'état passe au statut Transmis et est horodaté. Les dossiers ne pourront
         plus être modifiés ni supprimés.
       </span>
     </footer>
-  </section>
-}
+  }
+</section>
