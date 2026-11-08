@@ -2,9 +2,13 @@
 
 <section class="panel flex flex-col overflow-hidden" aria-labelledby="draft-etat-title">
   <header class="flex flex-col gap-3 border-b border-line px-5 py-4">
-    <h2 id="draft-etat-title" class="text-[15px] font-semibold text-ink">
-      État de transmission en cours
-    </h2>
+    <div class="flex flex-col gap-1">
+      <h2 id="draft-etat-title" class="text-[15px] font-semibold text-ink">Dossiers ajoutés</h2>
+      <p class="text-[12.5px] text-ink-muted">
+        Chaque dossier enregistré à l'aide du formulaire de gauche est ajouté à la liste des
+        dossiers de l'état ci-dessous.
+      </p>
+    </div>
     @if (!facade.etatTypes().length) {
       <p role="alert" class="text-[12px] font-medium text-danger">
         Aucun type d'état n'autorise votre entité à émettre. Contactez l'administrateur.
@@ -111,10 +115,20 @@
       </table>
     </div>
   } @else {
-    <p class="px-5 py-7 text-center text-[13px] leading-normal text-pretty text-ink-muted">
-      Aucun dossier pour l'instant. Remplissez le formulaire puis cliquez sur « Ajouter à l'état de
-      transmission ».
-    </p>
+    <div class="px-5 py-8">
+      <div
+        role="status"
+        class="mx-auto flex max-w-[460px] items-start gap-3 rounded-brand border border-warning-line bg-warning-bg px-4 py-4"
+      >
+        <app-icon name="x-circle" class="mt-px text-danger" [size]="20" [strokeWidth]="2" />
+        <p class="flex flex-col gap-1 text-[13px] leading-normal text-pretty text-ink">
+          <strong class="font-semibold">Aucun dossier pour l'instant.</strong>
+          <span class="text-ink-secondary">
+            Remplissez le formulaire puis cliquez sur « Ajouter à l'état de transmission ».
+          </span>
+        </p>
+      </div>
+    </div>
   }
 
   @for (group of facade.waitingGroups(); track group.id) {
