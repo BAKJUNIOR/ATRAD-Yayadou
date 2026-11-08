@@ -29,7 +29,6 @@ test("l'administrateur ajoute un champ à un type de dossier, l'agence le saisit
 
   const agence = await signIn(browser, 'a.diallo');
   await agence.goto('/agence/creer-etat');
-  await agence.getByLabel("Type d'état de transmission").selectOption({ label: 'Réclamations' });
   await agence.getByLabel('Type de dossier *').selectOption('Réclamation');
   await expect(agence.getByLabel(/Canal de contact/)).toBeVisible();
 

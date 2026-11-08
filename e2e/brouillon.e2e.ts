@@ -2,20 +2,22 @@ import { expect, test } from '@playwright/test';
 import { addLoanRequest, signIn, uniqueClientNumber, uniqueName } from './support';
 
 test.describe("Saisie d'un état de transmission", () => {
-  test("MO-1 : changer de type d'état garde les dossiers déjà saisis", async ({ browser }) => {
+  test("MO-1 : choisir un dossier d'un autre type d'état garde les dossiers déjà saisis", async ({
+    browser,
+  }) => {
     const page = await signIn(browser, 'a.diallo');
     const client = uniqueClientNumber();
     const nom = uniqueName('Brouillon', client);
     const dossier = await addLoanRequest(page, client, nom);
 
-    await page.getByLabel("Type d'état de transmission").selectOption({ label: 'Réclamations' });
+    await page.getByLabel('Type de dossier *').selectOption('Réclamation');
     await expect(page.locator('.dialog-confirm')).toBeHidden();
     await expect(page.locator('app-draft-etat')).not.toContainText(dossier);
     await expect(page.locator('app-draft-etat')).toContainText(
-      'Également en attente dans votre brouillon : « Accueil central »',
+      'Autre état en cours : « Accueil central »',
     );
 
-    await page.getByLabel("Type d'état de transmission").selectOption({ label: 'Accueil central' });
+    await page.locator('app-draft-etat').getByRole('button', { name: 'Afficher' }).click();
     await expect(page.locator('app-draft-etat')).toContainText(dossier);
     await page
       .locator('app-draft-etat tbody tr', { hasText: nom })
@@ -33,7 +35,6 @@ test.describe("Saisie d'un état de transmission", () => {
     const client = uniqueClientNumber();
     const nom = uniqueName('Piece', client);
     await page.goto('/agence/creer-etat');
-    await page.getByLabel("Type d'état de transmission").selectOption({ label: 'Accueil central' });
     await page.getByLabel('Type de dossier *').selectOption('Demande de prêt');
     await page.getByLabel('Numéro client').fill(client);
     await page.getByLabel('Nom du client', { exact: true }).fill(nom);

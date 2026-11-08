@@ -33,7 +33,6 @@ export function uniqueName(prefix: string, client: string): string {
 
 export async function addLoanRequest(page: Page, client: string, nom: string): Promise<string> {
   await page.goto('/agence/creer-etat');
-  await page.getByLabel("Type d'état de transmission").selectOption({ label: 'Accueil central' });
   await page.getByLabel('Type de dossier *').selectOption('Demande de prêt');
   await page.getByLabel('Numéro client').fill(client);
   await page.getByLabel('Nom du client', { exact: true }).fill(nom);

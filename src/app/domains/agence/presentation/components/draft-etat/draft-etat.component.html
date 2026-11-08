@@ -5,20 +5,6 @@
     <h2 id="draft-etat-title" class="text-[15px] font-semibold text-ink">
       État de transmission en cours
     </h2>
-    @if (!facade.autoMode()) {
-      <label
-        class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] font-medium text-ink-secondary"
-      >
-        Type d'état de transmission *
-        <select class="form-control max-w-[300px] flex-1 py-[7px]" (change)="onEtatType($event)">
-          @for (option of facade.etatTypes(); track option.id) {
-            <option [value]="option.id" [selected]="option.id === facade.etatType()?.id">
-              {{ option.nom }}
-            </option>
-          }
-        </select>
-      </label>
-    }
     @if (!facade.etatTypes().length) {
       <p role="alert" class="text-[12px] font-medium text-danger">
         Aucun type d'état n'autorise votre entité à émettre. Contactez l'administrateur.
@@ -28,12 +14,6 @@
       <dl
         class="grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-x-6 gap-y-1.5 text-[12.5px]"
       >
-        @if (facade.autoMode()) {
-          <div class="flex gap-1.5">
-            <dt class="whitespace-nowrap text-ink-muted">Type d'état :</dt>
-            <dd class="font-medium text-ink">{{ facade.etatTypeNames() }}</dd>
-          </div>
-        }
         <div class="flex gap-1.5">
           <dt class="whitespace-nowrap text-ink-muted">Agence :</dt>
           <dd class="font-medium text-ink">{{ facade.agenceName() }}</dd>
@@ -50,6 +30,12 @@
           <dt class="whitespace-nowrap text-ink-muted">Nombre de dossiers :</dt>
           <dd class="font-medium text-ink">{{ draft.length }}</dd>
         </div>
+        @if (!facade.autoMode()) {
+          <div class="flex gap-1.5">
+            <dt class="whitespace-nowrap text-ink-muted">Type d'état :</dt>
+            <dd class="font-medium text-ink">{{ facade.etatType()?.nom ?? '—' }}</dd>
+          </div>
+        }
       </dl>
     }
   </header>
@@ -131,12 +117,22 @@
     </p>
   }
 
-  @if (facade.waiting()) {
+  @for (group of facade.waitingGroups(); track group.id) {
     <p
-      class="mx-5 mb-4 rounded-control border border-info-line bg-info-bg px-3 py-[9px] text-[12.5px] leading-[1.45] text-info"
+      class="mx-5 mb-4 flex flex-wrap items-center justify-between gap-2 rounded-control border border-info-line bg-info-bg px-3 py-[9px] text-[12.5px] leading-[1.45] text-info"
     >
-      Également en attente dans votre brouillon : {{ facade.waiting() }}. Choisissez ce type d'état
-      pour les transmettre.
+      <span>
+        Autre état en cours : « {{ group.nom }} » ({{ group.count }} dossier{{
+          group.count > 1 ? 's' : ''
+        }})
+      </span>
+      <button
+        type="button"
+        class="rounded-[calc(var(--radius-brand)*0.7)] border border-info-line bg-card px-2.5 py-1 text-[12px] font-semibold text-info transition-colors hover:bg-info-bg"
+        (click)="facade.setEtatType(group.id)"
+      >
+        Afficher
+      </button>
     </p>
   }
 

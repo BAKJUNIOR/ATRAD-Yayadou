@@ -68,9 +68,14 @@ export class CreerEtatFacade {
     this.referentiel.value();
     return currentEtatType(this.emetCode(), this.etatTypeChoice()) ?? null;
   });
+  readonly editId = signal<string | null>(null);
   readonly allowed = computed(() => {
     this.referentiel.value();
-    return allowedTypes(this.emetCode(), this.etatType()?.id ?? '');
+    if (this.autoMode() || this.editId()) {
+      return allowedTypes(this.emetCode(), this.etatType()?.id ?? '');
+    }
+    const all = this.etatTypes().flatMap((etatType) => allowedTypes(this.emetCode(), etatType.id));
+    return [...new Set(all)];
   });
   readonly typeQuery = signal('');
   readonly typeSearchOn = computed(() => this.allowed().length > TYPE_SEARCH_THRESHOLD);
@@ -92,7 +97,6 @@ export class CreerEtatFacade {
   readonly pieces = signal<PieceJointe[]>([]);
   readonly pieceError = signal('');
 
-  readonly editId = signal<string | null>(null);
   readonly editOriginalType = signal<DossierType | null>(null);
   private editSnapshot = '';
 
@@ -107,6 +111,19 @@ export class CreerEtatFacade {
     return this.autoMode()
       ? all
       : all.filter((dossier) => etatTypeOfDossier(dossier.type)?.id === etatTypeId);
+  });
+  readonly waitingGroups = computed(() => {
+    const shown = new Set(this.draft().map((dossier) => dossier.id));
+    const groups = new Map<string, { id: string; nom: string; count: number }>();
+    for (const dossier of this.store.draft()) {
+      const etatType = etatTypeOfDossier(dossier.type);
+      if (!shown.has(dossier.id) && etatType) {
+        const group = groups.get(etatType.id) ?? { id: etatType.id, nom: etatType.nom, count: 0 };
+        group.count++;
+        groups.set(etatType.id, group);
+      }
+    }
+    return [...groups.values()];
   });
   readonly waiting = computed(() => {
     const shown = new Set(this.draft().map((dossier) => dossier.id));
@@ -241,13 +258,23 @@ export class CreerEtatFacade {
       this.clearForm(true);
     }
     this.etatTypeChoice.set(id);
-    if (!this.allowed().includes(this.value().type)) {
-      this.setType(this.allowed()[0] ?? '');
+    if (etatTypeOfDossier(this.value().type)?.id !== id) {
+      this.setType(allowedTypes(this.emetCode(), id)[0] ?? '');
     }
     this.value.update((value) => ({ ...value, extra: {} }));
   }
 
   setType(type: DossierType): void {
+    const etatTypeId = etatTypeOfDossier(type)?.id;
+    if (
+      !this.autoMode() &&
+      !this.editId() &&
+      etatTypeId &&
+      etatTypeId !== this.etatType()?.id &&
+      this.etatTypes().some((etatType) => etatType.id === etatTypeId)
+    ) {
+      this.etatTypeChoice.set(etatTypeId);
+    }
     // Le produit suit le type : il reste s'il est proposé pour le nouveau type, sinon le premier est retenu.
     this.value.update((value) => {
       const produits = produitsOf(type);
