@@ -19,8 +19,8 @@ import { CreerEtatFacade } from '../../creer-etat.facade';
       />
     } @else {
       <div class="flex animate-enter flex-wrap items-start gap-[18px]">
-        <app-dossier-form class="block min-w-0 flex-[1_1_300px]" />
-        <app-draft-etat class="min-w-0 flex-[1.7_1_300px] lg:sticky lg:top-[84px]" />
+        <app-dossier-form class="block w-full min-w-0 lg:w-[390px] lg:flex-none" />
+        <app-draft-etat class="min-w-0 flex-[1_1_440px] lg:sticky lg:top-[84px]" />
       </div>
     }
   `,

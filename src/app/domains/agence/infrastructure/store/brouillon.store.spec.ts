@@ -1,9 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Subject, of } from 'rxjs';
-import {
-  ApiDossier,
-  ApiPieceJointe,
-} from '../../../dossiers/domain/entities/dossier-api.entity';
+import { ApiDossier, ApiPieceJointe } from '../../../dossiers/domain/entities/dossier-api.entity';
 import { DossierData } from '../../../dossiers/domain/entities/dossier.entity';
 import { DossierApi } from '../../../dossiers/infrastructure/api/dossier.api';
 import { EtatApi } from '../../../dossiers/infrastructure/api/etat.api';
@@ -63,7 +60,10 @@ describe('BrouillonStore', () => {
       providers: [
         { provide: DossierApi, useValue: dossierApi },
         { provide: EtatApi, useValue: { emis: () => of([]) } },
-        { provide: SuiviAgenceApi, useValue: { dossiers: () => of({ dossiers: [], compteurs: [] }) } },
+        {
+          provide: SuiviAgenceApi,
+          useValue: { dossiers: () => of({ dossiers: [], compteurs: [] }) },
+        },
       ],
     });
     const store = TestBed.inject(BrouillonStore);
@@ -78,7 +78,7 @@ describe('BrouillonStore', () => {
     expect(store.draft().map((dossier) => dossier.ref)).toEqual(['DOS-00008']);
   });
 
-  it("ne transmet que les dossiers demandés et garde les autres dans le brouillon (MO-1)", async () => {
+  it('ne transmet que les dossiers demandés et garde les autres dans le brouillon (MO-1)', async () => {
     const reclamation = { ...CREATED, id: 'd-9', reference: 'DOS-00009' };
     const etatApi = { emis: () => of([]), transmettre: vi.fn(() => of([])) };
     TestBed.configureTestingModule({
@@ -91,7 +91,10 @@ describe('BrouillonStore', () => {
           },
         },
         { provide: EtatApi, useValue: etatApi },
-        { provide: SuiviAgenceApi, useValue: { dossiers: () => of({ dossiers: [], compteurs: [] }) } },
+        {
+          provide: SuiviAgenceApi,
+          useValue: { dossiers: () => of({ dossiers: [], compteurs: [] }) },
+        },
       ],
     });
     const store = TestBed.inject(BrouillonStore);

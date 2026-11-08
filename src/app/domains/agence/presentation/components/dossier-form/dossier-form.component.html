@@ -21,16 +21,14 @@
         La référence est conservée. Chaque modification est historisée sur le dossier.
       </p>
     } @else {
-      <h2 id="dossier-form-title" class="text-[15px] font-semibold text-ink">
-        Nouveau dossier à transmettre
-      </h2>
+      <h2 id="dossier-form-title" class="text-[15px] font-semibold text-ink">Formulaire d'ajout</h2>
     }
   </header>
 
   <form class="flex flex-col gap-3 px-[18px] py-4" novalidate (submit)="submit($event)">
-    <div class="flex flex-col gap-2.5">
+    <div class="form-grid flex flex-col gap-2.5">
       @if (!facade.autoMode()) {
-        <label class="form-label flex flex-col gap-1">
+        <label class="form-label">
           Type d'état de transmission *
           <select class="form-control" (change)="onEtatType($event)">
             @for (option of facade.etatTypes(); track option.id) {
@@ -54,7 +52,7 @@
         </p>
       }
 
-      <label class="form-label flex flex-col gap-1">
+      <label class="form-label">
         {{ labels.type }} *
         @if (facade.typeSearchOn()) {
           <input
@@ -298,7 +296,7 @@
         <button type="button" class="btn-outline" (click)="facade.cancelEdit()">Annuler</button>
       } @else {
         <button type="submit" class="btn-primary">Ajouter à l'état de transmission</button>
-        <button type="button" class="btn-outline" (click)="facade.resetForm()">Effacer</button>
+        <button type="button" class="btn-outline" (click)="facade.resetForm()">Annuler</button>
       }
       <span class="text-[12px] text-ink-muted">* champs obligatoires</span>
     </div>

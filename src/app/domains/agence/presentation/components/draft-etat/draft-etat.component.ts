@@ -1,48 +1,18 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { formatDateTime } from '../../../../../core/utils/date.util';
 import { IconComponent } from '../../../../../shared/ui/icon/icon.component';
-import { DossierDetailsComponent } from '../../../../dossiers/presentation/components/dossier-details/dossier-details.component';
 import { CreerEtatFacade } from '../../creer-etat.facade';
 
 @Component({
   selector: 'app-draft-etat',
-  imports: [IconComponent, DossierDetailsComponent],
+  imports: [IconComponent],
   host: { class: 'block' },
   templateUrl: './draft-etat.component.html',
 })
 export class DraftEtatComponent {
   protected readonly facade = inject(CreerEtatFacade);
 
-  private readonly expanded = signal<ReadonlySet<string>>(new Set());
-
   protected readonly createdLabel = computed(() =>
-    this.facade.draftCreatedAt()
-      ? formatDateTime(this.facade.draftCreatedAt())
-      : "À l'ajout du 1er dossier",
+    this.facade.draftCreatedAt() ? formatDateTime(this.facade.draftCreatedAt()) : '—',
   );
-
-  protected readonly allExpanded = computed(() => {
-    const draft = this.facade.draft();
-    return draft.length > 0 && draft.every((dossier) => this.expanded().has(dossier.id));
-  });
-
-  protected isExpanded(id: string): boolean {
-    return this.expanded().has(id);
-  }
-
-  protected toggle(id: string): void {
-    this.expanded.update((expanded) => {
-      const next = new Set(expanded);
-      if (!next.delete(id)) {
-        next.add(id);
-      }
-      return next;
-    });
-  }
-
-  protected toggleAll(): void {
-    this.expanded.set(
-      this.allExpanded() ? new Set() : new Set(this.facade.draft().map((dossier) => dossier.id)),
-    );
-  }
 }

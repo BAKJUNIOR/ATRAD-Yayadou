@@ -17,119 +17,93 @@
   </section>
 } @else {
   <section class="panel flex flex-col overflow-hidden" aria-labelledby="draft-etat-title">
-    <header class="flex flex-col gap-3 border-b border-line px-5 pt-[18px] pb-3.5">
-      <div class="flex items-center justify-between gap-3">
-        <h2 id="draft-etat-title" class="text-[14.5px] font-semibold tracking-[-0.01em] text-ink">
-          État en cours de constitution
-        </h2>
-        <span
-          class="rounded-full border border-line-strong bg-soft px-[9px] py-[3px] text-[11.5px] font-semibold text-ink-secondary"
-        >
-          Temporaire
-        </span>
-      </div>
-      <dl class="flex flex-col gap-[7px] text-[12.5px] text-ink-muted">
-        <div class="flex items-baseline justify-between gap-3">
-          <dt class="whitespace-nowrap">Destination</dt>
-          <dd class="text-end text-ink">{{ facade.destinationLabel() }}</dd>
+    <header class="flex flex-col gap-2.5 border-b border-line px-5 py-4">
+      <h2 id="draft-etat-title" class="text-[15px] font-semibold text-ink">Dossiers ajoutés</h2>
+      <dl class="flex flex-wrap gap-x-6 gap-y-1.5 text-[12.5px]">
+        <div class="flex gap-1.5 whitespace-nowrap">
+          <dt class="text-ink-muted">Type d'état :</dt>
+          <dd class="font-medium text-ink">{{ facade.etatType()?.nom ?? '—' }}</dd>
         </div>
-        <div class="flex items-baseline justify-between gap-3">
-          <dt class="whitespace-nowrap">Créé le</dt>
-          <dd class="text-end text-ink">{{ createdLabel() }}</dd>
+        <div class="flex gap-1.5 whitespace-nowrap">
+          <dt class="text-ink-muted">Créé le :</dt>
+          <dd class="font-medium text-ink">{{ createdLabel() }}</dd>
+        </div>
+        <div class="flex gap-1.5 whitespace-nowrap">
+          <dt class="text-ink-muted">Nombre de dossiers :</dt>
+          <dd class="font-medium text-ink">{{ draft.length }}</dd>
         </div>
       </dl>
     </header>
 
-    <div class="flex items-center justify-between gap-2 border-b border-line bg-subtle px-5 py-2.5">
-      <h3
-        class="text-[12px] font-semibold tracking-[0.06em] whitespace-nowrap text-ink-muted uppercase"
-      >
-        Dossiers ({{ draft.length }})
-      </h3>
-      @if (draft.length) {
-        <button
-          type="button"
-          class="rounded-[calc(var(--radius-brand)*0.7)] border border-line-strong bg-card px-[9px] py-1 text-[12px] font-medium whitespace-nowrap text-ink-secondary transition-colors hover:border-brand hover:text-brand-ink"
-          (click)="toggleAll()"
-        >
-          {{ allExpanded() ? 'Tout replier' : 'Tout déplier' }}
-        </button>
-      }
-    </div>
-
-    @if (draft.length) {
-      <ul class="flex max-h-[52vh] flex-col overflow-y-auto">
-        @for (dossier of draft; track dossier.id) {
-          @let open = isExpanded(dossier.id);
-          @let inEdit = facade.editId() === dossier.id;
-          <li>
-            <div
-              class="flex items-center gap-2.5 border-b border-soft py-2.5 ps-5 pe-3.5 transition-colors hover:bg-brand-tint-soft"
-              [class]="inEdit ? 'bg-brand-tint-soft' : 'bg-card'"
+    <div class="max-h-[56vh] overflow-auto">
+      <table class="w-full min-w-[600px] border-collapse text-[12.5px] text-ink">
+        <caption class="sr-only">
+          Dossiers de l'état en cours de constitution
+        </caption>
+        <thead class="sticky top-0 z-[1]">
+          <tr class="border-b border-line bg-subtle text-start text-[11.5px] text-ink-muted">
+            <th scope="col" class="py-2 ps-4 pe-1.5 text-start font-semibold">N° dossier</th>
+            <th scope="col" class="px-1.5 py-2 text-start font-semibold">Nom à restituer</th>
+            <th scope="col" class="px-1.5 py-2 text-start font-semibold">N° compte</th>
+            <th scope="col" class="px-1.5 py-2 text-start font-semibold">N° client</th>
+            <th scope="col" class="px-1.5 py-2 text-start font-semibold">Type</th>
+            <th scope="col" class="px-1.5 py-2 text-start font-semibold">Opération</th>
+            <th scope="col" class="px-1.5 py-2 text-end font-semibold">Montant</th>
+            <th scope="col" class="py-2 ps-1.5 pe-3 text-end font-semibold">
+              <span class="sr-only">Actions</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (dossier of draft; track dossier.id) {
+            @let inEdit = facade.editId() === dossier.id;
+            <tr
+              class="border-b border-soft transition-colors last:border-b-0 hover:bg-brand-tint-soft"
+              [class.bg-brand-tint-soft]="inEdit"
             >
-              <button
-                type="button"
-                class="flex min-w-0 flex-1 items-center gap-2.5 text-start"
-                title="Cliquer pour voir le détail"
-                [attr.aria-expanded]="open"
-                [attr.aria-controls]="'draft-detail-' + dossier.id"
-                (click)="toggle(dossier.id)"
-              >
-                <app-icon
-                  name="chevron-down"
-                  class="text-ink-muted transition-transform duration-200"
-                  [class.rotate-180]="open"
-                  [size]="13"
-                  [strokeWidth]="2.2"
-                />
-                <span class="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span class="flex min-w-0 items-center gap-2">
-                    <span class="font-mono text-[11.5px] whitespace-nowrap text-brand-ink">
-                      {{ dossier.ref }}
-                    </span>
-                    <span class="truncate text-[13px] text-ink">{{ dossier.client }}</span>
-                  </span>
-                  <span class="truncate text-[11.5px] text-ink-muted">
-                    {{ dossier.type }}{{ dossier.produit ? ' · ' + dossier.produit : '' }}
-                  </span>
-                </span>
-              </button>
-              @if (inEdit) {
-                <span class="text-[11px] font-semibold whitespace-nowrap text-brand-ink">
-                  En modification
-                </span>
-              }
-              <button
-                type="button"
-                class="flex size-[30px] flex-none items-center justify-center rounded-[calc(var(--radius-brand)*0.7)] border border-info-line bg-card text-info transition-colors hover:bg-info-bg"
-                title="Modifier le dossier"
-                [attr.aria-label]="'Modifier ' + dossier.ref"
-                (click)="facade.startEdit(dossier)"
-              >
-                <app-icon name="pencil" [size]="14" [strokeWidth]="2" />
-              </button>
-              <button
-                type="button"
-                class="flex size-[30px] flex-none items-center justify-center rounded-[calc(var(--radius-brand)*0.7)] border border-danger-line bg-card text-danger-solid transition-colors hover:bg-danger-bg"
-                title="Supprimer le dossier de l'état"
-                [attr.aria-label]="'Supprimer ' + dossier.ref"
-                (click)="facade.remove(dossier)"
-              >
-                <app-icon name="trash" [size]="14" [strokeWidth]="2" />
-              </button>
-            </div>
-            @if (open) {
-              <div
-                class="animate-enter border-b border-line bg-subtle px-5 pt-3.5 pb-[18px]"
-                [attr.id]="'draft-detail-' + dossier.id"
-              >
-                <app-dossier-details [dossier]="dossier" />
-              </div>
-            }
-          </li>
-        }
-      </ul>
-    }
+              <td class="py-2.5 ps-4 pe-1.5 font-mono text-[12px] whitespace-nowrap text-brand-ink">
+                {{ dossier.ref }}
+              </td>
+              <td class="px-1.5 py-2.5 font-medium">{{ dossier.client }}</td>
+              <td class="px-1.5 py-2.5 font-mono text-[12px] whitespace-nowrap">
+                {{ dossier.compte || '—' }}
+              </td>
+              <td class="px-1.5 py-2.5 font-mono text-[12px] whitespace-nowrap">
+                {{ dossier.num || '—' }}
+              </td>
+              <td class="px-1.5 py-2.5">{{ dossier.type }}</td>
+              <td class="px-1.5 py-2.5 text-ink-secondary">{{ dossier.produit || '—' }}</td>
+              <td class="px-1.5 py-2.5 text-end tabular-nums">
+                {{ dossier.montant || '—' }}
+              </td>
+              <td class="py-2 ps-1.5 pe-3">
+                <div class="flex items-center justify-end gap-1.5">
+                  <button
+                    type="button"
+                    class="flex size-[28px] flex-none items-center justify-center rounded-[calc(var(--radius-brand)*0.7)] border border-info-line bg-card text-info transition-colors hover:bg-info-bg"
+                    title="Modifier le dossier"
+                    [attr.aria-label]="'Modifier le dossier de ' + dossier.client"
+                    [attr.aria-pressed]="inEdit"
+                    (click)="facade.startEdit(dossier)"
+                  >
+                    <app-icon name="pencil" [size]="13" [strokeWidth]="2" />
+                  </button>
+                  <button
+                    type="button"
+                    class="flex size-[28px] flex-none items-center justify-center rounded-[calc(var(--radius-brand)*0.7)] border border-danger-line bg-card text-danger-solid transition-colors hover:bg-danger-bg"
+                    title="Retirer le dossier de l'état"
+                    [attr.aria-label]="'Retirer le dossier de ' + dossier.client"
+                    (click)="facade.remove(dossier)"
+                  >
+                    <app-icon name="trash" [size]="13" [strokeWidth]="2" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
 
     <footer class="flex flex-col gap-2.5 border-t border-line bg-card px-5 pt-3.5 pb-[18px]">
       @if (draft.length) {

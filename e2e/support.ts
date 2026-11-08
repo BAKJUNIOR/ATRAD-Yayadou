@@ -42,7 +42,7 @@ export async function addLoanRequest(page: Page, client: string, nom: string): P
   await page.getByLabel(/Durée souhaitée/).fill('36');
   await page.getByLabel(/Apport personnel/).fill('0');
   await page.getByRole('button', { name: "Ajouter à l'état de transmission" }).click();
-  const row = page.locator('app-draft-etat li', { hasText: nom });
+  const row = page.locator('app-draft-etat tbody tr', { hasText: nom });
   await expect(row).toHaveCount(1);
   return (await row.locator('.font-mono').first().innerText()).trim();
 }

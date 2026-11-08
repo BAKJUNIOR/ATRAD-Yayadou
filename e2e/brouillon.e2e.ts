@@ -17,7 +17,11 @@ test.describe("Saisie d'un état de transmission", () => {
 
     await page.getByLabel("Type d'état de transmission").selectOption({ label: 'Accueil central' });
     await expect(page.locator('app-draft-etat')).toContainText(dossier);
-    await page.locator('app-draft-etat li', { hasText: nom }).getByRole('button').last().click();
+    await page
+      .locator('app-draft-etat tbody tr', { hasText: nom })
+      .getByRole('button')
+      .last()
+      .click();
     await page.locator('.dialog-confirm').click();
     await expect(page.locator('app-draft-etat')).not.toContainText(dossier);
   });
@@ -44,7 +48,7 @@ test.describe("Saisie d'un état de transmission", () => {
     });
     await page.getByRole('button', { name: "Ajouter à l'état de transmission" }).click();
 
-    const rows = page.locator('app-draft-etat li', { hasText: nom });
+    const rows = page.locator('app-draft-etat tbody tr', { hasText: nom });
     await expect(rows).toHaveCount(1);
     // Le temps réel relit le brouillon après coup : toujours une seule ligne.
     await page.waitForTimeout(1500);
