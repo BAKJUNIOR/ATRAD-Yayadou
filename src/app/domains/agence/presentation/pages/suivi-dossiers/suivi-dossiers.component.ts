@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, linkedSignal, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
 import { Router, RouterLink } from '@angular/router';
@@ -6,6 +6,7 @@ import { RealtimeService } from '../../../../../core/realtime/realtime.service';
 import { formatDate, formatTime } from '../../../../../core/utils/date.util';
 import { STATUS_KEYS, Status } from '../../../../../shared/models/status';
 import { IconComponent, IconName } from '../../../../../shared/ui/icon/icon.component';
+import { PaginationComponent } from '../../../../../shared/ui/pagination/pagination.component';
 import { StatusBadgeComponent } from '../../../../../shared/ui/status-badge/status-badge.component';
 import { DOSSIER_TYPES, DossierType } from '../../../../dossiers/domain/dossier-catalog';
 import { etatFromApi } from '../../../../dossiers/domain/entities/dossier-api.entity';
@@ -46,7 +47,7 @@ const DEFAULT_FILTERS: readonly CriterionKey[] = ['nom'];
 
 @Component({
   selector: 'app-suivi-dossiers',
-  imports: [RouterLink, IconComponent, StatusBadgeComponent],
+  imports: [RouterLink, IconComponent, PaginationComponent, StatusBadgeComponent],
   templateUrl: './suivi-dossiers.component.html',
 })
 export class SuiviDossiersComponent {
@@ -92,6 +93,12 @@ export class SuiviDossiersComponent {
     const status = this.statusFilter();
     return this.matching().filter((dossier) => !status || dossier.status === status);
   });
+
+  protected readonly pageSize = 8;
+  protected readonly page = linkedSignal({ source: this.rows, computation: () => 0 });
+  protected readonly pageRows = computed(() =>
+    this.rows().slice(this.page() * this.pageSize, (this.page() + 1) * this.pageSize),
+  );
 
   protected readonly filters = computed(() => {
     const matching = this.matching();

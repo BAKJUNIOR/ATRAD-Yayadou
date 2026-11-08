@@ -525,8 +525,9 @@ html.dark {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 14px 16px;
+  gap: 6px;
+  min-width: 0;
+  padding: 11px 14px 12px;
   border: 1px solid var(--border);
   border-radius: calc(var(--brand-border-radius) * 1.4);
   background: var(--bg-card);
@@ -563,6 +564,9 @@ html.dark {
 }
 
 .stat-filter-check {
+  position: absolute;
+  top: 8px;
+  inset-inline-end: 8px;
   display: flex;
   align-items: center;
   justify-content: center;

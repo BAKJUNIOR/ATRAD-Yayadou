@@ -5,7 +5,7 @@
   <div
     role="group"
     aria-label="Filtrer par statut"
-    class="grid grid-cols-[repeat(auto-fit,minmax(132px,1fr))] gap-3"
+    class="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-2.5"
   >
     @for (card of cards(); track card.label) {
       <button
@@ -16,28 +16,26 @@
         [attr.title]="card.tip"
         (click)="pick(card.filter)"
       >
-        <span class="flex items-center justify-between gap-2">
+        <span class="flex items-center gap-2.5">
           <span class="stat-filter-icon">
             <app-icon [name]="card.icon" [size]="16" [strokeWidth]="2" />
           </span>
-          @if (card.on) {
-            <span class="stat-filter-check animate-enter">
-              <app-icon name="check" [size]="11" [strokeWidth]="3" />
-            </span>
-          }
-        </span>
-        <span class="flex flex-col gap-0.5">
           <span
-            class="text-[24px] leading-[1.05] font-semibold tracking-[-0.03em] text-ink tabular-nums"
+            class="text-[22px] leading-none font-semibold tracking-[-0.02em] text-ink tabular-nums"
           >
             {{ card.count }}
           </span>
-          <span
-            class="truncate text-[12.5px]"
-            [class]="card.on ? 'font-semibold text-ink' : 'font-medium text-ink-muted'"
-          >
-            {{ card.label }}
+        </span>
+        @if (card.on) {
+          <span class="stat-filter-check animate-enter">
+            <app-icon name="check" [size]="11" [strokeWidth]="3" />
           </span>
+        }
+        <span
+          class="truncate text-[12.5px]"
+          [class]="card.on ? 'font-semibold text-ink' : 'font-medium text-ink-muted'"
+        >
+          {{ card.label }}
         </span>
       </button>
     }
