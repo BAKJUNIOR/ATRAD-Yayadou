@@ -1,7 +1,13 @@
 import { Location, NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { HOME, NAVIGATION, NavMenu, ROLE_CAPABILITY } from '../../core/navigation/navigation';
+import {
+  HOME,
+  NAVIGATION,
+  NavMenu,
+  RECHERCHE,
+  ROLE_CAPABILITY,
+} from '../../core/navigation/navigation';
 import { SessionService } from '../../core/services/session.service';
 import { SidebarService } from '../../core/services/sidebar.service';
 import { initialsOf } from '../../core/utils/text.util';
@@ -33,6 +39,11 @@ export class AppSidebarComponent {
   private readonly traitement = inject(TraitementContext);
 
   protected readonly menu = computed((): NavMenu | null => {
+    const menu = this.roleMenu();
+    return menu && menu.items.length > 1 ? { ...menu, items: [...menu.items, RECHERCHE] } : menu;
+  });
+
+  private readonly roleMenu = computed((): NavMenu | null => {
     this.referentiel.value();
     const role = this.session.role();
     if (!role) {

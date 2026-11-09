@@ -90,6 +90,10 @@ export const endpoints = {
     notifications: '/user/queue/notifications',
     donnees: '/user/queue/donnees',
   },
+  recherche: {
+    etats: 'api/v1/recherche/etats',
+    attestations: 'api/v1/recherche/attestations',
+  },
   suivi: {
     agence: 'api/v1/suivi/agence',
     agenceDossier: (id: string) => `api/v1/suivi/agence/dossiers/${id}`,

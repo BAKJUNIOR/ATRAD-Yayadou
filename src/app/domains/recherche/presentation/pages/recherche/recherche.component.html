@@ -1,0 +1,332 @@
+@let etatsPage = etats();
+@let attestationsPage = attestations();
+
+<div class="flex animate-enter flex-col gap-5">
+  <section class="panel overflow-hidden" aria-labelledby="recherche-title">
+    <header class="flex items-center gap-3 border-b border-line px-5 py-4">
+      <span
+        class="flex size-9 flex-none items-center justify-center rounded-[calc(var(--radius-brand)*0.9)] bg-brand-tint-soft text-brand-ink"
+      >
+        <app-icon name="search" [size]="17" [strokeWidth]="2" />
+      </span>
+      <div class="flex min-w-0 flex-col gap-0.5">
+        <h2 id="recherche-title" class="text-[15px] font-semibold text-ink">
+          Rechercher un état ou une attestation
+        </h2>
+        <p class="text-[12.5px] text-ink-muted">
+          Choisissez le type de recherche et saisissez la valeur.
+        </p>
+      </div>
+    </header>
+
+    <form class="flex flex-col gap-4 bg-subtle px-5 py-4" novalidate (submit)="rechercher($event)">
+      <fieldset class="flex flex-col gap-2">
+        <legend class="mb-2 text-[12.5px] font-medium text-ink-secondary">Recherche par</legend>
+        <div class="flex flex-wrap gap-2">
+          @for (critere of criteres; track critere.value) {
+            <label
+              class="flex cursor-pointer items-center gap-2 rounded-full border px-3.5 py-2 text-[13px] transition-colors has-focus-visible:ring-3 has-focus-visible:ring-brand/16"
+              [class]="
+                critere.value === this.critere()
+                  ? 'border-brand bg-brand-tint-soft font-semibold text-brand-ink'
+                  : 'border-line-strong bg-card font-medium text-ink-secondary hover:border-brand'
+              "
+            >
+              <input
+                type="radio"
+                name="critere"
+                class="accent-brand"
+                [value]="critere.value"
+                [checked]="critere.value === this.critere()"
+                (change)="pickCritere(critere.value)"
+              />
+              {{ critere.label }}
+            </label>
+          }
+        </div>
+      </fieldset>
+
+      <div class="flex flex-wrap items-end gap-3">
+        <label class="form-label min-w-[min(100%,280px)] flex-1 gap-[5px] sm:max-w-[420px]">
+          <span
+            >{{ option().field }} <span class="text-danger-solid" aria-hidden="true">*</span></span
+          >
+          <input
+            class="form-control text-[13px]"
+            [class.font-mono]="option().numeric"
+            [attr.inputmode]="option().numeric ? 'numeric' : null"
+            [placeholder]="option().placeholder"
+            [value]="valeur()"
+            required
+            [attr.aria-invalid]="!!erreur()"
+            [attr.aria-describedby]="erreur() ? 'recherche-erreur' : null"
+            (input)="onValeur($event)"
+          />
+        </label>
+        <button type="submit" class="btn-primary px-5 py-2.5">
+          <app-icon name="search" [size]="15" [strokeWidth]="2" />
+          Rechercher
+        </button>
+      </div>
+      @if (erreur()) {
+        <p id="recherche-erreur" class="form-error -mt-2" role="alert">{{ erreur() }}</p>
+      }
+    </form>
+  </section>
+
+  @if (requete(); as requete) {
+    <section class="panel overflow-hidden" aria-labelledby="resultats-title">
+      <header
+        class="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4"
+      >
+        <h2 id="resultats-title" class="text-[14px] text-ink-secondary" aria-live="polite">
+          Résultats pour {{ libelleCritere() }}
+          <strong class="font-mono font-semibold text-ink">« {{ requete.valeur }} »</strong> :
+          @if (etatsPage && attestationsPage) {
+            <strong class="font-semibold text-ink">{{ etatsPage.totalElements }}</strong> état(s) ·
+            <strong class="font-semibold text-ink">{{ attestationsPage.totalElements }}</strong>
+            attestation(s)
+          } @else {
+            recherche en cours…
+          }
+        </h2>
+        <div class="flex gap-1 rounded-control bg-soft p-1" role="tablist" aria-label="Résultats">
+          <button
+            type="button"
+            role="tab"
+            id="onglet-etats"
+            aria-controls="panneau-etats"
+            class="rounded-control px-4 py-1.5 text-[13px] whitespace-nowrap transition-colors"
+            [class]="
+              onglet() === 'etats'
+                ? 'bg-card font-semibold text-ink shadow-sm'
+                : 'font-medium text-ink-muted hover:text-ink'
+            "
+            [attr.aria-selected]="onglet() === 'etats'"
+            (click)="onglet.set('etats')"
+          >
+            États ({{ etatsPage?.totalElements ?? '…' }})
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id="onglet-attestations"
+            aria-controls="panneau-attestations"
+            class="rounded-control px-4 py-1.5 text-[13px] whitespace-nowrap transition-colors"
+            [class]="
+              onglet() === 'attestations'
+                ? 'bg-card font-semibold text-ink shadow-sm'
+                : 'font-medium text-ink-muted hover:text-ink'
+            "
+            [attr.aria-selected]="onglet() === 'attestations'"
+            (click)="onglet.set('attestations')"
+          >
+            Attestations ({{ attestationsPage?.totalElements ?? '…' }})
+          </button>
+        </div>
+      </header>
+
+      @if (onglet() === 'etats') {
+        <div id="panneau-etats" role="tabpanel" aria-labelledby="onglet-etats">
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[1040px] table-fixed border-collapse text-[13px]">
+              <colgroup>
+                <col class="w-[128px]" />
+                <col />
+                <col class="w-[15%]" />
+                <col class="w-[88px]" />
+                <col class="w-[14%]" />
+                <col class="w-[112px]" />
+                <col class="w-[150px]" />
+                <col class="w-[104px]" />
+              </colgroup>
+              <thead>
+                <tr
+                  class="border-b border-line bg-subtle text-[11px] tracking-[0.07em] text-ink-muted uppercase"
+                >
+                  <th scope="col" class="py-[11px] ps-5 pe-1.5 text-start font-medium">N° état</th>
+                  <th scope="col" class="px-1.5 py-[11px] text-start font-medium">Agence</th>
+                  <th scope="col" class="px-1.5 py-[11px] text-start font-medium">
+                    Agent émetteur
+                  </th>
+                  <th scope="col" class="px-1.5 py-[11px] text-end font-medium">Dossiers</th>
+                  <th scope="col" class="px-1.5 py-[11px] text-start font-medium">Type état</th>
+                  <th scope="col" class="px-1.5 py-[11px] text-start font-medium">Envoyé le</th>
+                  <th scope="col" class="px-1.5 py-[11px] text-start font-medium">Réception</th>
+                  <th scope="col" class="py-[11px] ps-1.5 pe-5 text-end font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (etat of etatsPage?.content ?? []; track etat.id) {
+                  @let reception = receptionOf(etat);
+                  <tr class="border-b border-soft transition-colors hover:bg-brand-tint-soft">
+                    <td
+                      class="py-3 ps-5 pe-1.5 font-mono text-[12.5px] whitespace-nowrap text-brand-ink"
+                    >
+                      {{ etat.reference }}
+                    </td>
+                    <td class="px-1.5 py-3">
+                      <span class="block truncate font-medium text-ink">{{
+                        etat.entiteEmettrice.nom
+                      }}</span>
+                      <span class="block font-mono text-[11.5px] text-ink-muted">{{
+                        etat.entiteEmettrice.code
+                      }}</span>
+                    </td>
+                    <td class="truncate px-1.5 py-3 text-ink-secondary">
+                      {{ etat.agentEmetteur || '—' }}
+                    </td>
+                    <td class="px-1.5 py-3 text-end font-medium text-ink tabular-nums">
+                      {{ etat.nombreDossiers }}
+                    </td>
+                    <td class="truncate px-1.5 py-3 text-ink-secondary">
+                      {{ etat.typeEtatNom || '—' }}
+                    </td>
+                    <td class="px-1.5 py-3 tabular-nums">
+                      <span class="block text-ink">{{ formatDate(etat.transmisLe ?? '') }}</span>
+                      <span class="block text-[11.5px] text-ink-muted">{{
+                        formatTime(etat.transmisLe ?? '')
+                      }}</span>
+                    </td>
+                    <td
+                      class="px-1.5 py-3 tabular-nums"
+                      [class]="reception.recu ? 'text-ink' : 'font-semibold text-danger-solid'"
+                    >
+                      {{ reception.label }}
+                    </td>
+                    <td class="py-3 ps-1.5 pe-5">
+                      <span class="flex justify-end gap-1.5">
+                        <button
+                          type="button"
+                          class="icon-button border-brand-tint-line text-brand-ink hover:bg-brand-tint-soft"
+                          title="Voir l'état"
+                          [attr.aria-label]="'Voir l\'état ' + etat.reference"
+                          (click)="voir(etat.id)"
+                        >
+                          <app-icon name="eye" [size]="16" />
+                        </button>
+                        <button
+                          type="button"
+                          class="icon-button border-brand-tint-line text-brand-ink hover:bg-brand-tint-soft"
+                          title="Bordereau PDF"
+                          [attr.aria-label]="'Bordereau PDF de l\'état ' + etat.reference"
+                          (click)="imprimer(etat)"
+                        >
+                          <app-icon name="printer" [size]="16" />
+                        </button>
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <app-pagination
+            [total]="etatsPage?.totalElements ?? 0"
+            [pageSize]="pageSize"
+            [(page)]="pageEtats"
+          />
+          @if (etatsPage && !etatsPage.totalElements) {
+            <p class="px-5 py-10 text-center text-[13.5px] text-ink-muted">
+              Aucun état ne correspond à cette recherche.
+            </p>
+          }
+        </div>
+      } @else {
+        <div id="panneau-attestations" role="tabpanel" aria-labelledby="onglet-attestations">
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[1000px] table-fixed border-collapse text-[13px]">
+              <colgroup>
+                <col class="w-[112px]" />
+                <col />
+                <col class="w-[128px]" />
+                <col class="w-[15%]" />
+                <col class="w-[15%]" />
+                <col class="w-[104px]" />
+                <col class="w-[13%]" />
+                <col class="w-[80px]" />
+              </colgroup>
+              <thead>
+                <tr
+                  class="border-b border-line bg-subtle text-[11px] tracking-[0.07em] text-ink-muted uppercase"
+                >
+                  <th scope="col" class="py-[11px] ps-5 pe-1.5 text-start font-medium">
+                    N° dossier
+                  </th>
+                  <th scope="col" class="px-1.5 py-[11px] text-start font-medium">Client</th>
+                  <th scope="col" class="px-1.5 py-[11px] text-start font-medium">N° compte</th>
+                  <th scope="col" class="px-1.5 py-[11px] text-start font-medium">
+                    Type d'attestation
+                  </th>
+                  <th scope="col" class="px-1.5 py-[11px] text-start font-medium">Agence</th>
+                  <th scope="col" class="px-1.5 py-[11px] text-start font-medium">Saisie le</th>
+                  <th scope="col" class="px-1.5 py-[11px] text-start font-medium">Statut</th>
+                  <th scope="col" class="py-[11px] ps-1.5 pe-5 text-end font-medium">Voir</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (attestation of attestationsPage?.content ?? []; track attestation.dossierId) {
+                  <tr class="border-b border-soft transition-colors hover:bg-brand-tint-soft">
+                    <td
+                      class="py-3 ps-5 pe-1.5 font-mono text-[12.5px] whitespace-nowrap text-brand-ink"
+                    >
+                      {{ attestation.reference }}
+                    </td>
+                    <td class="truncate px-1.5 py-3 font-medium text-ink">
+                      {{ attestation.client || '—' }}
+                    </td>
+                    <td class="px-1.5 py-3 font-mono text-[12px] whitespace-nowrap text-ink-muted">
+                      {{ attestation.compte || '—' }}
+                    </td>
+                    <td class="truncate px-1.5 py-3 text-ink-secondary">
+                      {{ attestation.typeAttestation || '—' }}
+                    </td>
+                    <td class="px-1.5 py-3">
+                      <span class="block truncate text-ink">{{
+                        attestation.entiteEmettrice.nom
+                      }}</span>
+                      <span class="block font-mono text-[11.5px] text-ink-muted">{{
+                        attestation.entiteEmettrice.code
+                      }}</span>
+                    </td>
+                    <td class="px-1.5 py-3 text-ink tabular-nums">
+                      {{ formatDate(attestation.creeLe) }}
+                    </td>
+                    <td class="truncate px-1.5 py-3 text-ink-secondary">
+                      {{ attestation.statut }}
+                    </td>
+                    <td class="py-3 ps-1.5 pe-5">
+                      @if (attestation.etatId; as etatId) {
+                        <button
+                          type="button"
+                          class="icon-button ms-auto border-brand-tint-line text-brand-ink hover:bg-brand-tint-soft"
+                          title="Voir l'état qui contient l'attestation"
+                          [attr.aria-label]="
+                            'Voir l\'état de l\'attestation ' + attestation.reference
+                          "
+                          (click)="voir(etatId)"
+                        >
+                          <app-icon name="eye" [size]="16" />
+                        </button>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <app-pagination
+            [total]="attestationsPage?.totalElements ?? 0"
+            [pageSize]="pageSize"
+            [(page)]="pageAttestations"
+          />
+          @if (attestationsPage && !attestationsPage.totalElements) {
+            <p class="px-5 py-10 text-center text-[13.5px] text-ink-muted">
+              Aucune attestation ne correspond à cette recherche.
+            </p>
+          }
+        </div>
+      }
+    </section>
+  }
+</div>

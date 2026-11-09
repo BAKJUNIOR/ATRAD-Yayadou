@@ -28,6 +28,14 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'recherche',
+        title: 'Recherche',
+        loadComponent: () =>
+          import('./domains/recherche/presentation/pages/recherche/recherche.component').then(
+            (m) => m.RechercheComponent,
+          ),
+      },
+      {
         path: 'agence',
         canActivate: [roleGuard('agence')],
         loadChildren: () =>

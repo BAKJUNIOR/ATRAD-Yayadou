@@ -19,6 +19,13 @@ export interface NavMenu {
 
 export const HOME: NavItem = { id: 'accueil', label: 'Accueil', icon: '◱', path: '/' };
 
+export const RECHERCHE: NavItem = {
+  id: 'recherche-etats',
+  label: 'Recherche',
+  icon: '⌕',
+  path: '/recherche',
+};
+
 export const ROLE_CAPABILITY: Partial<Record<Role, EntityCapability>> = {
   agence: 'emet',
   accueil: 'recep',
