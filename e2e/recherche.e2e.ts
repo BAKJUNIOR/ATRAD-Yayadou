@@ -22,8 +22,14 @@ test('Recherche : un état retrouvé par le nom du client puis par son numéro',
   await expect(agence.getByRole('alert')).toContainText('Saisissez le numéro de compte');
 
   await agence.getByRole('radio', { name: 'Nom client' }).check();
+  await expect(agence.getByRole('radio', { name: 'Nom client' })).toBeChecked();
   await agence.getByLabel('Nom ou prénom du client').fill(`awa ${nom.toLowerCase()}`);
+  const reponse = agence.waitForResponse((r) => r.url().includes('/api/v1/recherche/etats'));
   await agence.getByRole('button', { name: 'Rechercher', exact: true }).click();
+  const etats = await reponse;
+  const corps = await etats.text();
+  expect(etats.ok(), `${etats.url()} → ${corps}`).toBe(true);
+  expect(JSON.parse(corps).data.totalElements, `${etats.url()} → ${corps}`).toBe(1);
   await expect(agence.getByRole('tab', { name: 'États (1)' })).toBeVisible();
   const ligne = agence.getByRole('row', { name: new RegExp(etat) });
   await expect(ligne).toContainText('Non reçu');
