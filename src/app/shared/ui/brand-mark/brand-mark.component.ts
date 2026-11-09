@@ -1,4 +1,4 @@
-import { Component, inject, input } from '@angular/core';
+import { Component, booleanAttribute, inject, input } from '@angular/core';
 import { BrandService } from '../../../core/services/brand.service';
 
 @Component({
@@ -8,13 +8,15 @@ import { BrandService } from '../../../core/services/brand.service';
     @let brand = service.brand();
     @if (brand.logoFull && !compact()) {
       <img
-        class="flex-none object-contain object-left h-[42px] w-[225px]"
+        class="flex-none object-contain object-left"
+        [class]="large() ? 'h-[47px] w-[250px]' : 'h-[42px] w-[225px]'"
         [src]="brand.logoFull"
         [alt]="service.appName()"
       />
     } @else {
       <span
-        class="flex flex-none items-center justify-center overflow-hidden rounded-control bg-brand-mid font-bold text-brand-on-mid size-11 text-[15px]"
+        class="flex flex-none items-center justify-center overflow-hidden rounded-control bg-brand-mid font-bold text-brand-on-mid"
+        [class]="large() ? 'size-12 text-[16px]' : 'size-11 text-[15px]'"
         aria-hidden="true"
       >
         @if (brand.logoIcon) {
@@ -25,11 +27,17 @@ import { BrandService } from '../../../core/services/brand.service';
       </span>
       @if (!compact()) {
         <span class="flex min-w-0 flex-col">
-          <span class="truncate font-semibold tracking-[0.06em] text-white text-[16.5px]">
+          <span
+            class="truncate font-semibold tracking-[0.06em] text-white"
+            [class]="large() ? 'text-[18px]' : 'text-[16.5px]'"
+          >
             {{ service.appName() }}
           </span>
           @if (brand.org) {
-            <span class="truncate tracking-[0.12em] text-side-muted uppercase text-[11px]">
+            <span
+              class="truncate tracking-[0.12em] text-side-muted uppercase"
+              [class]="large() ? 'text-[11.5px]' : 'text-[11px]'"
+            >
               {{ brand.org }}
             </span>
           }
@@ -42,6 +50,7 @@ import { BrandService } from '../../../core/services/brand.service';
 })
 export class BrandMarkComponent {
   readonly compact = input(false);
+  readonly large = input(false, { transform: booleanAttribute });
 
   protected readonly service = inject(BrandService);
 }
