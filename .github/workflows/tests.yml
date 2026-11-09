@@ -39,6 +39,12 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U atrad -d atrad_bd"
           --health-interval 5s --health-timeout 5s --health-retries 10
+      # Serveur d'e-mails de test : le parcours « mot de passe oublié » y lit le lien reçu (API sur localhost:8025).
+      mailpit:
+        image: axllent/mailpit:v1.31.6
+        ports:
+          - 1025:1025
+          - 8025:8025
     steps:
       - uses: actions/checkout@v4
       - name: mot de passe des comptes de démo, tiré au hasard
@@ -48,8 +54,8 @@ jobs:
         with:
           username: ${{ env.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      # Pas de serveur d'e-mails ici : sans MANAGEMENT_HEALTH_MAIL_ENABLED=false, /actuator/health répondrait
-      # DOWN (503) et l'attente ci-dessous échouerait alors que l'API fonctionne.
+      # E-mails envoyés à Mailpit (localhost:1025, valeurs par défaut de l'API) ; le contrôle de santé du mail reste
+      # coupé pour que /actuator/health ne dépende pas de son démarrage.
       - name: démarrer l'API (dernière image du backend, données de démo)
         run: |
           docker run -d --name atrad-back --network host \
@@ -58,6 +64,7 @@ jobs:
             -e JWT_SECRET="$(openssl rand -base64 48 | tr -d '\n')" \
             -e DEMO_PASSWORD -e LIQUIBASE_CONTEXTS=demo \
             -e MANAGEMENT_HEALTH_MAIL_ENABLED=false \
+            -e MAIL_SMTP=localhost -e MAIL_PORT=1025 \
             -e STOCKAGE_DOSSIER=/tmp/stockage \
             ${{ env.DOCKERHUB_USER }}/atrad-back:0.0.1-SNAPSHOT
       - uses: actions/setup-node@v4
