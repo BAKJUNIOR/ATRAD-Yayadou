@@ -1,0 +1,47 @@
+.zone-recherche {
+  background:
+    radial-gradient(120% 140% at 0% 0%, var(--color-brand-tint-soft) 0%, transparent 55%),
+    var(--color-subtle);
+  box-shadow: 0 18px 40px -28px rgba(14, 22, 34, 0.35);
+}
+
+.choix:has(.choix-radio:focus-visible) {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+.choix-radio {
+  appearance: none;
+  display: inline-grid;
+  place-content: center;
+  width: 15px;
+  height: 15px;
+  flex: none;
+  margin: 0;
+  border: 1.5px solid currentColor;
+  border-radius: 999px;
+  opacity: 0.75;
+  transition: opacity 0.15s ease;
+}
+
+.choix-radio::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: currentColor;
+  transform: scale(0);
+  transition: transform 0.15s ease;
+}
+
+.choix-radio:checked {
+  opacity: 1;
+}
+
+.choix-radio:checked::before {
+  transform: scale(1);
+}
+
+.choix-radio:focus-visible {
+  outline: none;
+}

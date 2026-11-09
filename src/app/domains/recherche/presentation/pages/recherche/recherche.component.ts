@@ -26,6 +26,7 @@ interface Requete {
   selector: 'app-recherche',
   imports: [IconComponent, PaginationComponent],
   templateUrl: './recherche.component.html',
+  styleUrl: './recherche.component.css',
 })
 export class RechercheComponent {
   private readonly api = inject(RechercheApi);

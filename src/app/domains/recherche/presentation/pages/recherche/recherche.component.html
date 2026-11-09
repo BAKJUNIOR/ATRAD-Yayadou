@@ -3,34 +3,40 @@
 
 <div class="flex animate-enter flex-col gap-5">
   <section class="panel overflow-hidden" aria-labelledby="recherche-title">
-    <header class="border-b border-line px-6 py-4">
-      <h2 id="recherche-title" class="text-[15px] font-semibold text-ink">Critères de recherche</h2>
+    <header
+      class="border-b border-line bg-linear-to-r from-brand-tint-soft via-card to-card px-6 py-4"
+    >
+      <h2 id="recherche-title" class="text-[15px] font-semibold tracking-[-0.01em] text-ink">
+        Critères de recherche
+      </h2>
       <p class="mt-0.5 text-[12.5px] text-ink-muted">
         Choisissez le type de recherche et saisissez la valeur qui doit être prise en compte.
       </p>
     </header>
 
-    <form class="px-4 py-7 sm:px-6" novalidate (submit)="rechercher($event)">
+    <form class="px-4 py-8 sm:px-6" novalidate (submit)="rechercher($event)">
       <div
-        class="mx-auto flex max-w-[820px] flex-col gap-5 rounded-control border border-line bg-subtle px-5 py-5 sm:px-8"
+        class="zone-recherche mx-auto flex max-w-[980px] flex-col gap-6 rounded-[calc(var(--radius-brand)*1.6)] border border-brand-tint-line px-5 py-6 sm:px-9"
       >
-        <fieldset class="flex flex-wrap items-center gap-x-5 gap-y-2.5">
-          <legend class="float-left me-2 text-[13px] font-semibold text-ink">
+        <fieldset class="flex flex-wrap items-center justify-center gap-2">
+          <legend
+            class="float-left me-2 text-[12px] font-semibold tracking-[0.06em] text-ink-muted uppercase"
+          >
             Recherche par :
           </legend>
           @for (critere of criteres; track critere.value) {
             <label
-              class="flex cursor-pointer items-center gap-2 text-[13px] transition-colors"
+              class="choix flex cursor-pointer items-center gap-2 rounded-full border px-3.5 py-[7px] text-[13px] transition-all duration-150"
               [class]="
                 critere.value === this.critere()
-                  ? 'font-semibold text-brand-ink'
-                  : 'font-medium text-ink-secondary hover:text-ink'
+                  ? 'border-brand bg-brand font-semibold text-white shadow-[0_6px_16px_-8px_var(--color-brand)]'
+                  : 'border-line-strong bg-card font-medium text-ink-secondary hover:-translate-y-px hover:border-brand hover:text-brand-ink'
               "
             >
               <input
                 type="radio"
                 name="critere"
-                class="size-4 accent-brand"
+                class="choix-radio"
                 [value]="critere.value"
                 [checked]="critere.value === this.critere()"
                 (change)="pickCritere(critere.value)"
@@ -40,7 +46,9 @@
           }
         </fieldset>
 
-        <div class="flex flex-wrap items-start justify-center gap-x-4 gap-y-3">
+        <div
+          class="flex flex-wrap items-start justify-center gap-x-4 gap-y-3 border-t border-dashed border-brand-tint-line pt-6"
+        >
           <label
             for="recherche-valeur"
             class="pt-2.5 text-[13px] font-semibold whitespace-nowrap text-ink"
@@ -50,7 +58,7 @@
           <div class="flex w-full max-w-[300px] flex-col gap-1.5">
             <input
               id="recherche-valeur"
-              class="form-control text-[13px]"
+              class="form-control bg-card py-[11px] text-[13.5px] shadow-[inset_0_1px_2px_rgba(14,22,34,0.06)]"
               [class.font-mono]="option().numeric"
               [attr.inputmode]="option().numeric ? 'numeric' : null"
               autocomplete="off"
@@ -64,7 +72,10 @@
               <p id="recherche-erreur" class="form-error" role="alert">{{ erreur() }}</p>
             }
           </div>
-          <button type="submit" class="btn-primary px-6 py-2.5">
+          <button
+            type="submit"
+            class="btn-primary px-6 py-[11px] shadow-[0_10px_22px_-12px_var(--color-brand)] transition-all hover:-translate-y-px hover:bg-brand hover:brightness-110"
+          >
             <app-icon name="search" [size]="15" [strokeWidth]="2" />
             Rechercher
           </button>
@@ -75,11 +86,17 @@
 
   @if (requete(); as requete) {
     <section class="panel overflow-hidden" aria-labelledby="resultats-title">
-      <header class="flex flex-col gap-3 border-b border-line px-6 pt-4">
-        <h2 id="resultats-title" class="text-[14.5px] font-semibold text-ink" aria-live="polite">
+      <header class="flex flex-col gap-3 border-b border-line px-6 pt-5">
+        <h2
+          id="resultats-title"
+          class="text-[14.5px] leading-7 font-semibold text-ink"
+          aria-live="polite"
+        >
           Résultats de la recherche pour :
           @if (etatsPage && attestationsPage) {
-            <span class="text-success">
+            <span
+              class="ms-1 inline-flex items-center rounded-full border border-success-line bg-success-bg px-3 py-0.5 text-[13px] text-success tabular-nums"
+            >
               {{ etatsPage.totalElements }} état(s) / {{ attestationsPage.totalElements }}
               attestation(s)
             </span>
@@ -87,7 +104,10 @@
             <span class="font-normal text-ink-muted">recherche en cours…</span>
           }
           <span class="block text-[12.5px] font-normal text-ink-muted">
-            {{ libelleCritere() }} : <span class="font-mono text-ink">{{ requete.valeur }}</span>
+            {{ libelleCritere() }} :
+            <span class="rounded bg-soft px-1.5 py-px font-mono text-[12px] text-ink">{{
+              requete.valeur
+            }}</span>
           </span>
         </h2>
         <div class="-mb-px flex gap-1" role="tablist" aria-label="Résultats">
@@ -96,11 +116,11 @@
             role="tab"
             id="onglet-etats"
             aria-controls="panneau-etats"
-            class="border-b-2 px-4 py-2.5 text-[13px] whitespace-nowrap transition-colors"
+            class="border-b-2 px-4 pt-2 pb-3 text-[13px] whitespace-nowrap transition-colors"
             [class]="
               onglet() === 'etats'
                 ? 'border-brand font-semibold text-brand-ink'
-                : 'border-transparent font-medium text-ink-muted hover:text-ink'
+                : 'border-transparent font-medium text-ink-muted hover:border-line-strong hover:text-ink'
             "
             [attr.aria-selected]="onglet() === 'etats'"
             (click)="onglet.set('etats')"
@@ -112,11 +132,11 @@
             role="tab"
             id="onglet-attestations"
             aria-controls="panneau-attestations"
-            class="border-b-2 px-4 py-2.5 text-[13px] whitespace-nowrap transition-colors"
+            class="border-b-2 px-4 pt-2 pb-3 text-[13px] whitespace-nowrap transition-colors"
             [class]="
               onglet() === 'attestations'
                 ? 'border-brand font-semibold text-brand-ink'
-                : 'border-transparent font-medium text-ink-muted hover:text-ink'
+                : 'border-transparent font-medium text-ink-muted hover:border-line-strong hover:text-ink'
             "
             [attr.aria-selected]="onglet() === 'attestations'"
             (click)="onglet.set('attestations')"
@@ -188,11 +208,18 @@
                         formatTime(etat.transmisLe ?? '')
                       }}</span>
                     </td>
-                    <td
-                      class="px-1.5 py-3 tabular-nums"
-                      [class]="reception.recu ? 'text-ink' : 'font-semibold text-danger-solid'"
-                    >
-                      {{ reception.label }}
+                    <td class="px-1.5 py-3">
+                      <span
+                        class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[12px] font-medium whitespace-nowrap tabular-nums"
+                        [class]="
+                          reception.recu
+                            ? 'border-success-line bg-success-bg text-success'
+                            : 'border-danger-line bg-danger-bg font-semibold text-danger-solid'
+                        "
+                      >
+                        <span class="size-1.5 rounded-full bg-current" aria-hidden="true"></span>
+                        {{ reception.label }}
+                      </span>
                     </td>
                     <td class="py-3 ps-1.5 pe-5">
                       <span class="flex justify-end gap-1.5">
