@@ -26,7 +26,7 @@ const api: ApiDossier = {
   montant: 5000000,
   donnees: { montantPret: 5000000, duree: 36 },
   note: 'Urgent',
-  comptes: [{ role: 'AUTRE', numero: '00012345678', cle: null, intitule: null }],
+  comptes: [{ role: 'AUTRE', numero: '000123456', cle: '78', intitule: null }],
   affecteAId: null,
   affecteLe: null,
   creeLe: '2026-10-30T08:00:00Z',
@@ -104,7 +104,7 @@ describe('dossier-api.entity', () => {
       ref: 'DOS-00012',
       type: 'Demande de prêt',
       produit: 'Prêt habitat',
-      compte: '00012345678',
+      compte: '000123456 78',
       client: 'Awa Diallo',
       prio: 'Haute',
       montant: '5 000 000 FCFA',
@@ -135,7 +135,7 @@ describe('dossier-api.entity', () => {
       montant: 5000000,
       donnees: { montantPret: '5000000', duree: '36' },
       note: 'Urgent',
-      comptes: [{ role: 'AUTRE', numero: '00012345678' }],
+      comptes: [{ role: 'AUTRE', numero: '000123456', cle: '78' }],
     });
   });
 

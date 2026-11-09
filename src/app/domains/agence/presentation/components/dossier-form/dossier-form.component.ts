@@ -1,22 +1,25 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormFieldComponent } from '../../../../../shared/ui/form-field/form-field.component';
 import { IconComponent } from '../../../../../shared/ui/icon/icon.component';
 import {
+  COMPTE_LABELS,
   DossierType,
   PRIORITES,
   Priorite,
   Produit,
   TypeField,
   produitsOf,
+  saisieOf,
 } from '../../../../dossiers/domain/dossier-catalog';
-import { fileSizeLabel } from '../../../../dossiers/domain/piece.rules';
+import { fileSizeLabel, pieceHint } from '../../../../dossiers/domain/piece.rules';
 import { PieceOpener } from '../../../../dossiers/presentation/piece-opener.service';
 import { BaseFieldKey } from '../../../domain/dossier-form.rules';
 import { CreerEtatFacade } from '../../creer-etat.facade';
 
 @Component({
   selector: 'app-dossier-form',
-  imports: [FormFieldComponent, IconComponent],
+  imports: [FormFieldComponent, IconComponent, NgTemplateOutlet],
   templateUrl: './dossier-form.component.html',
 })
 export class DossierFormComponent {
@@ -24,6 +27,32 @@ export class DossierFormComponent {
   protected readonly pieceOpener = inject(PieceOpener);
 
   protected readonly produits = computed(() => produitsOf(this.facade.value().type));
+  protected readonly saisie = computed(() => {
+    this.facade.typeFields();
+    return saisieOf(this.facade.value().type);
+  });
+  /** Un compte par rôle demandé : le premier dans `compte`/`cle`, le second dans `compte2`/`cle2`. */
+  protected readonly comptes = computed(() =>
+    this.saisie().comptes.map((role, index) => ({
+      label: COMPTE_LABELS[role],
+      numero: (index ? 'compte2' : 'compte') as BaseFieldKey,
+      cle: (index ? 'cle2' : 'cle') as BaseFieldKey,
+    })),
+  );
+  protected readonly headFields = computed(() =>
+    this.facade.typeFields().filter((field) => field.enTete),
+  );
+  protected readonly bodyFields = computed(() =>
+    this.facade.typeFields().filter((field) => !field.enTete),
+  );
+  protected readonly fichier = computed(() => this.saisie().fichier);
+  protected readonly pieceHint = computed(() => pieceHint(this.fichier()));
+  protected readonly accept = computed(() => {
+    const fichier = this.fichier();
+    return fichier
+      ? fichier.formats.map((format) => `.${format}`).join(',')
+      : '.pdf,.jpg,.jpeg,.png,.doc,.docx';
+  });
   protected readonly priorites = PRIORITES;
   protected readonly sizeLabel = fileSizeLabel;
 

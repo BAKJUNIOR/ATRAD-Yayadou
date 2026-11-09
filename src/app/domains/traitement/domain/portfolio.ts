@@ -111,7 +111,7 @@ export function matchesCriteria(dossier: RoutedDossier, criteria: PortfolioCrite
   return (
     has(dossier.num, criteria.num) &&
     has([dossier.prenom, dossier.nom, dossier.client].join(' '), criteria.nom) &&
-    has(dossier.compte, criteria.compte) &&
+    has(dossier.compte.replace(/\s/g, ''), criteria.compte.replace(/\s/g, '')) &&
     has(dossier.ref, criteria.ref) &&
     (!criteria.type || dossier.type === criteria.type)
   );

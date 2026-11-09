@@ -1,6 +1,6 @@
 import { Status } from '../../../../shared/models/status';
 import { TimelineTone } from '../../../../shared/ui/timeline/timeline.component';
-import { DossierType, Priorite, Produit } from '../dossier-catalog';
+import { DossierType, Priorite, Produit, RoleCompte } from '../dossier-catalog';
 
 export interface PieceJointe {
   id: string;
@@ -27,11 +27,24 @@ export interface DossierLog {
   pre?: boolean;
 }
 
+/** Compte saisi : 9 chiffres et une clé de 2 chiffres. */
+export interface CompteSaisi {
+  role: RoleCompte;
+  numero: string;
+  cle: string;
+}
+
+export function compteLabel(compte: Pick<CompteSaisi, 'numero' | 'cle'>): string {
+  return compte.cle ? `${compte.numero} ${compte.cle}` : compte.numero;
+}
+
 export interface DossierData {
   num: string;
   prenom: string;
   nom: string;
+  /** Premier compte, tel qu'affiché (numéro et clé). */
   compte: string;
+  comptes: CompteSaisi[];
   client: string;
   type: DossierType;
   produit: Produit;

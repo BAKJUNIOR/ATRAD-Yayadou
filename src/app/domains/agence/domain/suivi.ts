@@ -172,7 +172,7 @@ export function matchesCriteria(dossier: SuiviRow, criteria: SuiviCriteria): boo
   return (
     includes(dossier.num, criteria.num) &&
     includes(dossier.client, criteria.nom) &&
-    includes(dossier.compte, criteria.compte) &&
+    includes(dossier.compte.replace(/\s/g, ''), criteria.compte.replace(/\s/g, '')) &&
     includes(dossier.ref, criteria.ref) &&
     includes(dossier.etatRef, criteria.etat) &&
     (!criteria.type || dossier.type === criteria.type)

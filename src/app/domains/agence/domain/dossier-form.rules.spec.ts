@@ -46,11 +46,48 @@ describe('dossier form rules', () => {
     expect(fieldError('client', '000123456789', 'Réclamation', TODAY)).toBe('');
   });
 
-  it('requires an account number of exactly 11 digits when it is given', () => {
+  it('requires an account number of 9 digits and a 2-digit key', () => {
     expect(fieldError('compte', '', 'Réclamation', TODAY)).toBe('Champ obligatoire.');
-    expect(fieldError('compte', '1234567890', 'Réclamation', TODAY)).toContain('(10/11)');
-    expect(fieldError('compte', 'CPT-0042817', 'Réclamation', TODAY)).toContain('11 chiffres');
-    expect(fieldError('compte', '00042817123', 'Réclamation', TODAY)).toBe('');
+    expect(fieldError('compte', '12345678', 'Réclamation', TODAY)).toContain('(8/9)');
+    expect(fieldError('compte', '000428171', 'Réclamation', TODAY)).toBe('');
+    expect(fieldError('cle', '', 'Réclamation', TODAY)).toBe('Clé obligatoire.');
+    expect(fieldError('cle', '7', 'Réclamation', TODAY)).toContain('2 chiffres');
+    expect(fieldError('cle', '23', 'Réclamation', TODAY)).toBe('');
+  });
+
+  it('follows the fixed fields of the type: accounts, client number and operation', () => {
+    setReferentiel({
+      ...emptyReferentiel(),
+      dossierTypes: ['PEL'],
+      typeFields: { PEL: [] },
+      typeOperations: { PEL: [{ id: 'op-ouverture', label: 'Ouverture' }] },
+      typeSaisies: {
+        PEL: { numeroClient: false, comptes: ['COMPTE_CHEQUE', 'COMPTE_PRODUIT'], fichier: null },
+      },
+    });
+    expect(fieldError('client', '', 'PEL', TODAY)).toBe('');
+    expect(fieldError('compte2', '', 'PEL', TODAY)).toBe('Champ obligatoire.');
+    expect(fieldError('produit', '', 'PEL', TODAY)).toBe('Champ obligatoire.');
+
+    const result = buildDossierData(
+      {
+        ...emptyDossierForm('PEL'),
+        prenom: 'Awa',
+        nom: 'Sylla',
+        compte: '000428171',
+        cle: '23',
+        compte2: '000654321',
+        cle2: '12',
+        produit: 'Ouverture',
+      },
+      [],
+      TODAY,
+    );
+    expect(result.ok && result.data.comptes).toEqual([
+      { role: 'COMPTE_CHEQUE', numero: '000428171', cle: '23' },
+      { role: 'COMPTE_PRODUIT', numero: '000654321', cle: '12' },
+    ]);
+    expect(result.ok && result.data.compte).toBe('000428171 23');
   });
 
   it('accepts a zero amount only where it is allowed', () => {
@@ -69,8 +106,8 @@ describe('dossier form rules', () => {
     const result = buildDossierData(emptyDossierForm(), [], TODAY);
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      // N° client, n° de compte et les deux champs obligatoires d'une ouverture de compte.
-      expect(result.error).toContain('4 champ(s)');
+      // N° client, n° de compte, clé, prénom, nom et les deux champs d'une ouverture de compte.
+      expect(result.error).toContain('7 champ(s)');
     }
   });
 
@@ -82,7 +119,8 @@ describe('dossier form rules', () => {
         client: '000123456789',
         prenom: ' Awa ',
         nom: 'Sylla',
-        compte: '00042817123',
+        compte: '000428171',
+        cle: '23',
         extra: { montantPret: '5000000', duree: '36', apport: '0' },
       },
       [],
@@ -91,7 +129,7 @@ describe('dossier form rules', () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.data.client).toBe('Awa Sylla');
-      expect(result.data.compte).toBe('00042817123');
+      expect(result.data.compte).toBe('000428171 23');
       expect(result.data.montant).toBe('5 000 000 FCFA');
       expect(result.data.extra).toEqual([
         { label: 'Montant demandé', value: '5 000 000 FCFA' },
@@ -108,8 +146,10 @@ describe('dossier form rules', () => {
           ...emptyDossierForm(),
           type: 'Demande de prêt',
           client: '000123456789',
+          prenom: 'Awa',
           nom,
-          compte: '00042817123',
+          compte: '000428171',
+          cle: '23',
           extra: { montantPret: '100', duree, apport: '0' },
         },
         [],
@@ -127,5 +167,7 @@ describe('dossier form rules', () => {
     const reloaded = formValueOf({ ...before, id: 'd-1', ref: 'DOS-1', createdAt: '', log: [] });
     expect(reloaded.client).toBe('000123456789');
     expect(reloaded.extra['duree']).toBe('12');
+    expect(reloaded.compte).toBe('000428171');
+    expect(reloaded.cle).toBe('23');
   });
 });

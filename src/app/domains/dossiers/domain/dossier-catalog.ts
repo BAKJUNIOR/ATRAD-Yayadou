@@ -24,7 +24,33 @@ export interface TypeField {
   optional?: boolean;
   zeroOk?: boolean;
   unit?: 'FCFA' | 'mois';
+  enTete?: boolean;
 }
+
+export type RoleCompte = 'AUTRE' | 'COMPTE_CHEQUE' | 'COMPTE_PRODUIT';
+
+export const COMPTE_LABELS: Record<RoleCompte, string> = {
+  AUTRE: 'Numéro compte',
+  COMPTE_CHEQUE: 'Compte chèque',
+  COMPTE_PRODUIT: 'Compte produit',
+};
+
+/** Pièce à joindre dans le formulaire (ex. Capture Delta), avec ses formats et sa taille maximale. */
+export interface PieceAJoindre {
+  libelle: string;
+  formats: readonly string[];
+  tailleMaxKo: number | null;
+  obligatoire: boolean;
+}
+
+/** Champs fixes réglés par type de dossier. */
+export interface TypeSaisie {
+  numeroClient: boolean;
+  comptes: readonly RoleCompte[];
+  fichier: PieceAJoindre | null;
+}
+
+const DEFAULT_SAISIE: TypeSaisie = { numeroClient: true, comptes: ['AUTRE'], fichier: null };
 
 export interface DossierFormLabels {
   type: string;
@@ -45,21 +71,21 @@ export interface DossierFormLabels {
 }
 
 export const DOSSIER_FORM: DossierFormLabels = {
-  type: 'Type de dossier',
-  produit: 'Type de produit',
+  type: 'Type produit',
+  produit: 'Nature opération',
   client: 'Numéro client',
   clientPlaceholder: '12 chiffres, ex. 000123456789',
   clientRule: 'digits12',
   clientMax: 12,
-  prenom: 'Prénom du client',
-  nom: 'Nom du client',
-  compte: 'N° de compte',
-  comptePlaceholder: '11 chiffres, ex. 00012345678',
+  prenom: 'Prénom client',
+  nom: 'Nom client',
+  compte: 'Numéro compte',
+  comptePlaceholder: '9 chiffres',
   showProduit: true,
   showPrenom: true,
   showCompte: true,
   showPrio: false,
-  identityRequired: false,
+  identityRequired: true,
 };
 
 // Catalogue lu dans l'API (`setReferentiel`). La liste des types est mise à jour sur place pour que ses lecteurs
@@ -68,6 +94,7 @@ const types: string[] = [];
 let typeFields: Record<string, readonly TypeField[]> = {};
 let typePieces: Record<string, readonly string[]> = {};
 let typeProduits: Record<string, readonly ProduitOption[]> = {};
+let typeSaisies: Record<string, TypeSaisie> = {};
 
 export const DOSSIER_TYPES: readonly DossierType[] = types;
 
@@ -79,10 +106,16 @@ export function setTypeCatalog(
   fields: Record<string, readonly TypeField[]>,
   pieces: Record<string, readonly string[]>,
   produits: Record<string, readonly ProduitOption[]> = {},
+  saisies: Record<string, TypeSaisie> = {},
 ): void {
   typeFields = fields;
   typePieces = pieces;
   typeProduits = produits;
+  typeSaisies = saisies;
+}
+
+export function saisieOf(type: DossierType): TypeSaisie {
+  return typeSaisies[type] ?? DEFAULT_SAISIE;
 }
 
 export function produitsOf(type: DossierType): readonly Produit[] {

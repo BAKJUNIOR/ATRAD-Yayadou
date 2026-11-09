@@ -57,37 +57,61 @@
         </select>
       </label>
 
-      <app-form-field [label]="labels.client + ' *'" [error]="errors['client'] ?? ''">
-        <input
-          type="text"
-          [attr.inputmode]="labels.clientRule === 'digits12' ? 'numeric' : 'text'"
-          autocomplete="off"
-          class="form-control"
-          [class.font-mono]="labels.clientRule !== 'objet'"
-          [placeholder]="labels.clientPlaceholder"
-          [attr.maxlength]="labels.clientMax"
-          [value]="value.client"
-          [attr.aria-invalid]="!!errors['client']"
-          (input)="onText('client', $event)"
-          (blur)="facade.validateField('client')"
-        />
-      </app-form-field>
-
-      @if (labels.showPrenom) {
-        <app-form-field
-          [label]="labels.prenom + (labels.identityRequired ? ' *' : '')"
-          [error]="errors['prenom'] ?? ''"
-        >
-          <input
-            type="text"
-            autocomplete="off"
+      @if (produits().length) {
+        <app-form-field [label]="labels.produit + ' *'" [error]="errors['produit'] ?? ''">
+          <select
             class="form-control"
-            placeholder="Prénom"
-            [value]="value.prenom"
-            [attr.aria-invalid]="!!errors['prenom']"
-            (input)="onText('prenom', $event)"
-            (blur)="facade.validateField('prenom')"
-          />
+            [attr.aria-invalid]="!!errors['produit']"
+            (change)="onProduit($event)"
+            (blur)="facade.validateField('produit')"
+          >
+            <option value="" [selected]="!value.produit">Choisissez l'opération…</option>
+            @for (produit of produits(); track produit) {
+              <option [value]="produit" [selected]="produit === value.produit">
+                {{ produit }}
+              </option>
+            }
+          </select>
+        </app-form-field>
+      }
+
+      @for (field of headFields(); track field.key) {
+        <ng-container *ngTemplateOutlet="extraField; context: { $implicit: field }" />
+      }
+
+      @for (compte of comptes(); track compte.numero) {
+        <app-form-field
+          [label]="compte.label + ' *'"
+          [error]="errors[compte.numero] || errors[compte.cle] || ''"
+        >
+          <span class="flex gap-2">
+            <input
+              type="text"
+              autocomplete="off"
+              inputmode="numeric"
+              maxlength="9"
+              class="form-control min-w-0 flex-1 font-mono"
+              [placeholder]="labels.comptePlaceholder"
+              [attr.aria-label]="compte.label"
+              [value]="value[compte.numero]"
+              [attr.aria-invalid]="!!errors[compte.numero]"
+              (input)="onText(compte.numero, $event)"
+              (blur)="facade.validateField(compte.numero)"
+            />
+            <input
+              type="text"
+              autocomplete="off"
+              inputmode="numeric"
+              maxlength="2"
+              class="form-control w-[58px] flex-none text-center font-mono"
+              placeholder="Clé"
+              [attr.aria-label]="'Clé ' + compte.label"
+              [value]="value[compte.cle]"
+              [attr.aria-invalid]="!!errors[compte.cle]"
+              (input)="onText(compte.cle, $event)"
+              (blur)="facade.validateField(compte.cle)"
+            />
+          </span>
         </app-form-field>
       }
 
@@ -109,32 +133,39 @@
         />
       </app-form-field>
 
-      @if (labels.showCompte) {
-        <app-form-field [label]="labels.compte + ' *'" [error]="errors['compte'] ?? ''">
+      @if (labels.showPrenom) {
+        <app-form-field
+          [label]="labels.prenom + (labels.identityRequired ? ' *' : '')"
+          [error]="errors['prenom'] ?? ''"
+        >
           <input
             type="text"
             autocomplete="off"
-            inputmode="numeric"
-            maxlength="11"
-            class="form-control font-mono"
-            [placeholder]="labels.comptePlaceholder"
-            [value]="value.compte"
-            [attr.aria-invalid]="!!errors['compte']"
-            (input)="onText('compte', $event)"
-            (blur)="facade.validateField('compte')"
+            class="form-control"
+            placeholder="Prénom"
+            [value]="value.prenom"
+            [attr.aria-invalid]="!!errors['prenom']"
+            (input)="onText('prenom', $event)"
+            (blur)="facade.validateField('prenom')"
           />
         </app-form-field>
       }
 
-      @if (labels.showProduit) {
-        <app-form-field [label]="labels.produit + ' *'">
-          <select class="form-control" (change)="onProduit($event)">
-            @for (produit of produits(); track produit) {
-              <option [value]="produit" [selected]="produit === value.produit">
-                {{ produit }}
-              </option>
-            }
-          </select>
+      @if (saisie().numeroClient) {
+        <app-form-field [label]="labels.client + ' *'" [error]="errors['client'] ?? ''">
+          <input
+            type="text"
+            [attr.inputmode]="labels.clientRule === 'digits12' ? 'numeric' : 'text'"
+            autocomplete="off"
+            class="form-control"
+            [class.font-mono]="labels.clientRule !== 'objet'"
+            [placeholder]="labels.clientPlaceholder"
+            [attr.maxlength]="labels.clientMax"
+            [value]="value.client"
+            [attr.aria-invalid]="!!errors['client']"
+            (input)="onText('client', $event)"
+            (blur)="facade.validateField('client')"
+          />
         </app-form-field>
       }
 
@@ -150,7 +181,11 @@
         </app-form-field>
       }
 
-      @for (field of facade.typeFields(); track field.key) {
+      @for (field of bodyFields(); track field.key) {
+        <ng-container *ngTemplateOutlet="extraField; context: { $implicit: field }" />
+      }
+
+      <ng-template #extraField let-field>
         <app-form-field
           class="animate-enter"
           [label]="extraLabel(field)"
@@ -183,11 +218,18 @@
             />
           }
         </app-form-field>
-      }
+      </ng-template>
     </div>
 
     <div class="flex flex-col gap-2">
-      <span class="text-[12.5px] font-medium text-ink-secondary">Pièces jointes (facultatif)</span>
+      @let fichierRequis = fichier();
+      <span class="text-[12.5px] font-medium text-ink-secondary">
+        {{
+          fichierRequis
+            ? fichierRequis.libelle + (fichierRequis.obligatoire ? ' *' : ' (facultatif)')
+            : 'Pièces jointes (facultatif)'
+        }}
+      </span>
       <label
         class="flex cursor-pointer items-center gap-3.5 rounded-brand border-[1.5px] border-dashed px-4 py-3.5 transition-colors hover:border-brand hover:bg-brand-tint-soft has-focus-visible:border-brand"
         [class]="dragging() ? 'border-brand bg-brand-tint' : 'border-line-strong bg-subtle'"
@@ -199,7 +241,7 @@
           type="file"
           multiple
           class="sr-only"
-          accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+          [attr.accept]="accept()"
           (change)="onFiles($event)"
         />
         <span
@@ -211,9 +253,7 @@
           <span class="text-[13.5px] font-medium text-ink">
             Glissez vos fichiers ici ou <span class="text-brand-ink underline">parcourez</span>
           </span>
-          <span class="text-[12px] text-ink-muted">
-            PDF, JPG, PNG, Word · 5 Mo max par fichier · 10 fichiers max
-          </span>
+          <span class="text-[12px] text-ink-muted">{{ pieceHint() }}</span>
         </span>
       </label>
 

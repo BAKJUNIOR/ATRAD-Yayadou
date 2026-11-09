@@ -11,8 +11,15 @@ import {
   formatNumber,
   montantFieldOf,
   produitsOf,
+  saisieOf,
 } from '../../dossiers/domain/dossier-catalog';
-import { Dossier, DossierData, PieceJointe } from '../../dossiers/domain/entities/dossier.entity';
+import {
+  CompteSaisi,
+  Dossier,
+  DossierData,
+  PieceJointe,
+  compteLabel,
+} from '../../dossiers/domain/entities/dossier.entity';
 
 export interface DossierFormValue {
   type: DossierType;
@@ -20,19 +27,32 @@ export interface DossierFormValue {
   prenom: string;
   nom: string;
   compte: string;
+  cle: string;
+  compte2: string;
+  cle2: string;
   produit: Produit;
   prio: Priorite;
   note: string;
   extra: Record<string, string>;
 }
 
-export type BaseFieldKey = 'client' | 'prenom' | 'nom' | 'compte';
+export type BaseFieldKey = 'client' | 'prenom' | 'nom' | 'compte' | 'cle' | 'compte2' | 'cle2';
 
-export const BASE_FIELD_KEYS: readonly BaseFieldKey[] = ['client', 'prenom', 'nom', 'compte'];
+export const BASE_FIELD_KEYS: readonly BaseFieldKey[] = [
+  'client',
+  'prenom',
+  'nom',
+  'compte',
+  'cle',
+  'compte2',
+  'cle2',
+];
 
 export const CLIENT_NUMBER_LENGTH = 12;
 
-export const ACCOUNT_NUMBER_LENGTH = 11;
+export const ACCOUNT_NUMBER_LENGTH = 9;
+
+export const ACCOUNT_KEY_LENGTH = 2;
 
 export function filterClientInput(raw: string): string {
   const { clientRule, clientMax } = DOSSIER_FORM;
@@ -41,8 +61,8 @@ export function filterClientInput(raw: string): string {
     : raw.slice(0, clientMax);
 }
 
-export function filterAccountInput(raw: string): string {
-  return raw.replace(/\D/g, '').slice(0, ACCOUNT_NUMBER_LENGTH);
+export function filterAccountInput(raw: string, length = ACCOUNT_NUMBER_LENGTH): string {
+  return raw.replace(/\D/g, '').slice(0, length);
 }
 
 export function emptyDossierForm(type: DossierType = DOSSIER_TYPES[0] ?? ''): DossierFormValue {
@@ -52,7 +72,10 @@ export function emptyDossierForm(type: DossierType = DOSSIER_TYPES[0] ?? ''): Do
     prenom: '',
     nom: '',
     compte: '',
-    produit: produitsOf(type)[0] ?? '',
+    cle: '',
+    compte2: '',
+    cle2: '',
+    produit: '',
     prio: PRIORITES[0],
     note: '',
     extra: {},
@@ -62,6 +85,24 @@ export function emptyDossierForm(type: DossierType = DOSSIER_TYPES[0] ?? ''): Do
 export function fieldError(key: string, raw: string, type: DossierType, todayIso: string): string {
   const value = (raw ?? '').trim();
   const form = DOSSIER_FORM;
+  const saisie = saisieOf(type);
+  if (key === 'produit') {
+    return produitsOf(type).length && !value ? 'Champ obligatoire.' : '';
+  }
+  if ((key === 'compte2' || key === 'cle2') && saisie.comptes.length < 2) {
+    return '';
+  }
+  if (key === 'client' && !saisie.numeroClient) {
+    return '';
+  }
+  if (key === 'cle' || key === 'cle2') {
+    if (!value) {
+      return 'Clé obligatoire.';
+    }
+    return new RegExp(`^\\d{${ACCOUNT_KEY_LENGTH}}$`).test(value)
+      ? ''
+      : `Clé : ${ACCOUNT_KEY_LENGTH} chiffres.`;
+  }
   if (form.clientRule === 'objet') {
     if (key === 'client') {
       return !value
@@ -101,11 +142,11 @@ export function fieldError(key: string, raw: string, type: DossierType, todayIso
       ? 'Lettres, espaces, tirets et apostrophes uniquement.'
       : '';
   }
-  if (key === 'compte') {
+  if (key === 'compte' || key === 'compte2') {
     if (!value) {
       return 'Champ obligatoire.';
     }
-    return /^\d{11}$/.test(value)
+    return new RegExp(`^\\d{${ACCOUNT_NUMBER_LENGTH}}$`).test(value)
       ? ''
       : `Exactement ${ACCOUNT_NUMBER_LENGTH} chiffres (${value.length}/${ACCOUNT_NUMBER_LENGTH}).`;
   }
@@ -134,6 +175,7 @@ export function allFieldErrors(value: DossierFormValue, todayIso: string): Recor
   for (const key of BASE_FIELD_KEYS) {
     errors[key] = fieldError(key, value[key], value.type, todayIso);
   }
+  errors['produit'] = fieldError('produit', value.produit, value.type, todayIso);
   for (const field of fieldsOf(value.type)) {
     errors[field.key] = fieldError(field.key, value.extra[field.key] ?? '', value.type, todayIso);
   }
@@ -164,14 +206,21 @@ export function buildDossierData(
   const montantField = fields.find((field) => field.key === montantFieldOf(value.type));
   const prenom = value.prenom.trim();
   const nom = value.nom.trim();
+  const saisie = saisieOf(value.type);
+  const comptes: CompteSaisi[] = saisie.comptes.map((role, index) => ({
+    role,
+    numero: (index ? value.compte2 : value.compte).trim(),
+    cle: (index ? value.cle2 : value.cle).trim(),
+  }));
 
   return {
     ok: true,
     data: {
-      num: value.client.trim().toUpperCase(),
+      num: saisie.numeroClient ? value.client.trim().toUpperCase() : '',
       prenom,
       nom,
-      compte: value.compte.trim().toUpperCase(),
+      compte: comptes[0] ? compteLabel(comptes[0]) : '',
+      comptes,
       client: [prenom, nom].filter(Boolean).join(' ') || 'Client non renseigné',
       type: value.type,
       produit: value.produit,
@@ -189,12 +238,18 @@ export function buildDossierData(
 }
 
 export function formValueOf(dossier: Dossier): DossierFormValue {
+  const roles = saisieOf(dossier.type).comptes;
+  const compteOf = (index: number): CompteSaisi | undefined =>
+    dossier.comptes.find((compte) => compte.role === roles[index]) ?? dossier.comptes[index];
   return {
     type: dossier.type,
     client: dossier.num,
     prenom: dossier.prenom,
     nom: dossier.nom,
-    compte: dossier.compte,
+    compte: compteOf(0)?.numero ?? '',
+    cle: compteOf(0)?.cle ?? '',
+    compte2: compteOf(1)?.numero ?? '',
+    cle2: compteOf(1)?.cle ?? '',
     produit: dossier.produit,
     prio: dossier.prio,
     note: dossier.note,
@@ -213,7 +268,11 @@ export function changedLabels(previous: DossierData, next: DossierData): string[
   compare('N° client', previous.num, next.num);
   compare('Prénom', previous.prenom, next.prenom);
   compare('Nom', previous.nom, next.nom);
-  compare('N° de compte', previous.compte, next.compte);
+  compare(
+    'N° de compte',
+    previous.comptes.map(compteLabel).join(','),
+    next.comptes.map(compteLabel).join(','),
+  );
   compare('Produit', previous.produit, next.produit);
   compare('Priorité', previous.prio, next.prio);
   compare('Observation', previous.note, next.note);
@@ -242,6 +301,9 @@ export function hasTypedContent(value: DossierFormValue): boolean {
     value.prenom,
     value.nom,
     value.compte,
+    value.cle,
+    value.compte2,
+    value.cle2,
     value.note,
     ...Object.values(value.extra),
   ].some((text) => text.trim());

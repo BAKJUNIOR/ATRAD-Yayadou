@@ -3,6 +3,7 @@ import {
   DossierType,
   ProduitOption,
   TypeField,
+  TypeSaisie,
   setDossierTypes,
   setTypeCatalog,
 } from './dossier-catalog';
@@ -54,6 +55,7 @@ export interface Referentiel {
   typeFields: Record<DossierType, TypeField[]>;
   typePieces: Record<DossierType, string[]>;
   typeOperations: Record<DossierType, ProduitOption[]>;
+  typeSaisies?: Record<DossierType, TypeSaisie>;
   motifsRetour: MotifOption[];
   typeCircuits: Record<DossierType, string>;
   workflows: Record<string, ApiTransition[]>;
@@ -79,6 +81,7 @@ export function emptyReferentiel(): Referentiel {
     typeFields: {},
     typePieces: {},
     typeOperations: {},
+    typeSaisies: {},
     motifsRetour: [],
     typeCircuits: {},
     workflows: {},
@@ -92,7 +95,12 @@ let current: Referentiel = emptyReferentiel();
 export function setReferentiel(referentiel: Referentiel): void {
   current = referentiel;
   setDossierTypes(referentiel.dossierTypes);
-  setTypeCatalog(referentiel.typeFields, referentiel.typePieces, referentiel.typeOperations);
+  setTypeCatalog(
+    referentiel.typeFields,
+    referentiel.typePieces,
+    referentiel.typeOperations,
+    referentiel.typeSaisies,
+  );
 }
 
 export function referentiel(): Referentiel {

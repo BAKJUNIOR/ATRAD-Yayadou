@@ -8,10 +8,11 @@ import {
   DossierType,
   fieldsOf,
   produitsOf,
+  saisieOf,
 } from '../../dossiers/domain/dossier-catalog';
 import { Dossier, PieceJointe } from '../../dossiers/domain/entities/dossier.entity';
 import { Etat } from '../../dossiers/domain/entities/etat.entity';
-import { screenPieces } from '../../dossiers/domain/piece.rules';
+import { missingRequiredFile, screenPieces } from '../../dossiers/domain/piece.rules';
 import {
   allowedTypes,
   currentEtatType,
@@ -26,6 +27,7 @@ import { ReferentielStore } from '../../dossiers/infrastructure/store/referentie
 import { BordereauService } from '../../dossiers/presentation/bordereau.service';
 import { BrouillonStore } from '../infrastructure/store/brouillon.store';
 import {
+  ACCOUNT_KEY_LENGTH,
   BASE_FIELD_KEYS,
   BaseFieldKey,
   DossierFormValue,
@@ -213,7 +215,13 @@ export class CreerEtatFacade {
 
   setText(key: TextFieldKey, raw: string): string {
     const text =
-      key === 'client' ? filterClientInput(raw) : key === 'compte' ? filterAccountInput(raw) : raw;
+      key === 'client'
+        ? filterClientInput(raw)
+        : key === 'compte' || key === 'compte2'
+          ? filterAccountInput(raw)
+          : key === 'cle' || key === 'cle2'
+            ? filterAccountInput(raw, ACCOUNT_KEY_LENGTH)
+            : raw;
     this.value.update((value) => ({ ...value, [key]: text }));
     this.formError.set('');
     this.revalidate(key, text);
@@ -228,6 +236,9 @@ export class CreerEtatFacade {
 
   patch(change: Partial<Pick<DossierFormValue, 'produit' | 'prio'>>): void {
     this.value.update((value) => ({ ...value, ...change }));
+    if (change.produit !== undefined) {
+      this.revalidate('produit', change.produit);
+    }
   }
 
   setTypeQuery(query: string): void {
@@ -261,13 +272,13 @@ export class CreerEtatFacade {
   }
 
   setType(type: DossierType): void {
-    // Le produit suit le type : il reste s'il est proposé pour le nouveau type, sinon le premier est retenu.
+    // La nature de l'opération reste si elle est proposée pour le nouveau type, sinon elle est à rechoisir.
     this.value.update((value) => {
       const produits = produitsOf(type);
       return {
         ...value,
         type,
-        produit: produits.includes(value.produit) ? value.produit : (produits[0] ?? ''),
+        produit: produits.includes(value.produit) ? value.produit : '',
       };
     });
     this.errors.update((errors) =>
@@ -281,9 +292,12 @@ export class CreerEtatFacade {
 
   validateField(key: string): void {
     const value = this.value();
-    const raw = BASE_FIELD_KEYS.includes(key as BaseFieldKey)
-      ? value[key as BaseFieldKey]
-      : (value.extra[key] ?? '');
+    const raw =
+      key === 'produit'
+        ? value.produit
+        : BASE_FIELD_KEYS.includes(key as BaseFieldKey)
+          ? value[key as BaseFieldKey]
+          : (value.extra[key] ?? '');
     this.errors.update((errors) => ({
       ...errors,
       [key]: fieldError(key, raw, value.type, todayIsoDate()),
@@ -299,7 +313,11 @@ export class CreerEtatFacade {
   }
 
   addPieces(fileList: FileList | null | undefined): void {
-    const { accepted, errors } = screenPieces(Array.from(fileList ?? []), this.pieces());
+    const { accepted, errors } = screenPieces(
+      Array.from(fileList ?? []),
+      this.pieces(),
+      saisieOf(this.value().type).fichier,
+    );
     if (!accepted.length) {
       this.pieceError.set(errors.join(' · '));
       return;
@@ -345,6 +363,9 @@ export class CreerEtatFacade {
       this.showInvalid(result.error, result.errors);
       return;
     }
+    if (!this.requiredFileOk()) {
+      return;
+    }
     const dossier = await this.run(() => this.store.add(result.data));
     if (!dossier) {
       return;
@@ -383,6 +404,9 @@ export class CreerEtatFacade {
     const result = buildDossierData(this.value(), this.pieces(), todayIsoDate());
     if (!result.ok) {
       this.showInvalid(result.error, result.errors);
+      return;
+    }
+    if (!this.requiredFileOk()) {
       return;
     }
 
@@ -563,6 +587,16 @@ export class CreerEtatFacade {
         [key]: fieldError(key, raw, this.value().type, todayIsoDate()),
       }));
     }
+  }
+
+  /** Pièce à joindre obligatoire du type (ex. Capture Delta) : au moins un fichier au bon format. */
+  private requiredFileOk(): boolean {
+    const missing = missingRequiredFile(saisieOf(this.value().type).fichier, this.pieces());
+    if (missing) {
+      this.pieceError.set(missing);
+      this.formError.set(missing);
+    }
+    return !missing;
   }
 
   private showInvalid(error: string, errors: Record<string, string>): void {

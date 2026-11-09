@@ -46,7 +46,7 @@ export function searchEtats(etats: readonly Etat[], criteria: EtatCriteria): Eta
   const ref = criteria.ref.trim().toLowerCase();
   const num = criteria.num.trim().toLowerCase();
   const prenom = criteria.prenom.trim().toLowerCase();
-  const compte = criteria.compte.trim().toLowerCase();
+  const compte = criteria.compte.replace(/\s/g, '').toLowerCase();
   return etats
     .filter((etat) => {
       if (ref && !etat.ref.toLowerCase().includes(ref)) {
@@ -60,7 +60,7 @@ export function searchEtats(etats: readonly Etat[], criteria: EtatCriteria): Eta
         !etat.dossiers.some(
           (dossier) =>
             (!prenom || (dossier.prenom || dossier.client).toLowerCase().includes(prenom)) &&
-            (!compte || dossier.compte.toLowerCase().includes(compte)),
+            (!compte || dossier.compte.replace(/\s/g, '').toLowerCase().includes(compte)),
         )
       ) {
         return false;

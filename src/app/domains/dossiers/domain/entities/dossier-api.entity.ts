@@ -13,6 +13,7 @@ import {
   Dossier,
   DossierData,
   DossierLog,
+  compteLabel,
   EtatDossier,
   PieceJointe,
   RoutedDossier,
@@ -113,7 +114,7 @@ export interface ApiDossierBrouillon {
   montant: number | null;
   donnees: Record<string, string>;
   note: string | null;
-  comptes: { role: ApiRoleCompte; numero: string }[];
+  comptes: { role: ApiRoleCompte; numero: string; cle: string }[];
 }
 
 const STATUS_OF_CODE: Record<string, Status> = {
@@ -200,7 +201,14 @@ export function dossierFromApi(api: ApiDossier, pieces: readonly ApiPieceJointe[
     num: api.tiersNumero ?? '',
     prenom,
     nom,
-    compte: api.comptes?.[0]?.numero ?? '',
+    compte: api.comptes?.[0]
+      ? compteLabel({ numero: api.comptes[0].numero, cle: api.comptes[0].cle ?? '' })
+      : '',
+    comptes: (api.comptes ?? []).map((compte) => ({
+      role: compte.role,
+      numero: compte.numero,
+      cle: compte.cle ?? '',
+    })),
     client: [prenom, nom].filter(Boolean).join(' ') || 'Client non renseigné',
     type,
     produit: produitLabelOf(type, api.operationId),
@@ -237,7 +245,7 @@ export function brouillonOf(data: DossierData): ApiDossierBrouillon {
     montant: Number.isFinite(montant) ? montant : null,
     donnees: { ...data.xraw },
     note: data.note || null,
-    comptes: data.compte ? [{ role: 'AUTRE', numero: data.compte }] : [],
+    comptes: data.comptes.map(({ role, numero, cle }) => ({ role, numero, cle })),
   };
 }
 

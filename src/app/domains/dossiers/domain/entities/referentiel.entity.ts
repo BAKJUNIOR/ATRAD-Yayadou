@@ -1,4 +1,4 @@
-import { DossierType, ProduitOption, TypeField } from '../dossier-catalog';
+import { DossierType, ProduitOption, RoleCompte, TypeField, TypeSaisie } from '../dossier-catalog';
 import { Circuit, Entite, EtatType, SaisieMode } from '../referentiel';
 import type { ApiTransition } from './dossier-api.entity';
 
@@ -35,6 +35,8 @@ export interface ApiTypeDossier {
   delaiTraitementJours: number | null;
   actif: boolean;
   rattache: boolean;
+  numeroClientRequis?: boolean;
+  comptes?: RoleCompte[];
 }
 
 export type ApiTypeDonnee = 'TEXTE' | 'NOMBRE' | 'DATE' | 'LISTE' | 'EMAIL' | 'BOOLEEN';
@@ -48,12 +50,20 @@ export interface ApiChamp {
   motifRegex: string | null;
   aide: string | null;
   valeurs: { code: string; libelle: string }[];
+  enTete?: boolean;
+}
+
+export interface ApiPieceAttendue {
+  libelle: string;
+  obligatoire: boolean;
+  formats?: string | null;
+  tailleMaxKo?: number | null;
 }
 
 export interface ApiFormulaire {
   typeDossier: ApiTypeDossier;
   champs: ApiChamp[];
-  pieces: { libelle: string; obligatoire: boolean }[];
+  pieces: ApiPieceAttendue[];
   operations: ApiOperation[];
 }
 
@@ -83,6 +93,7 @@ export interface ReferentielApiPart {
   typeFields: Record<DossierType, TypeField[]>;
   typePieces: Record<DossierType, string[]>;
   typeOperations: Record<DossierType, ProduitOption[]>;
+  typeSaisies: Record<DossierType, TypeSaisie>;
   motifsRetour: MotifOption[];
   typeCircuits: Record<DossierType, string>;
   workflows: Record<string, ApiTransition[]>;
@@ -146,6 +157,7 @@ export function referentielFromApi(api: ApiParametrage): ReferentielApiPart {
     typePieces: parType((type) =>
       (formulaireOf.get(type.id)?.pieces ?? []).map((piece) => piece.libelle),
     ),
+    typeSaisies: parType((type) => saisieFromApi(type, formulaireOf.get(type.id)?.pieces ?? [])),
     motifsRetour: api.motifsRetour.map((motif) => ({ id: motif.id, label: motif.libelle })),
     typeCircuits: parType((type) => type.circuit),
     workflows: Object.fromEntries(
@@ -157,6 +169,29 @@ export function referentielFromApi(api: ApiParametrage): ReferentielApiPart {
         label: operation.libelle,
       })),
     ),
+  };
+}
+
+export function formatsOf(piece: ApiPieceAttendue): string[] {
+  return (piece.formats ?? '')
+    .split(',')
+    .map((format) => format.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function saisieFromApi(type: ApiTypeDossier, pieces: readonly ApiPieceAttendue[]): TypeSaisie {
+  const fichier = pieces.find((piece) => formatsOf(piece).length);
+  return {
+    numeroClient: type.numeroClientRequis ?? true,
+    comptes: type.comptes?.length ? type.comptes : ['AUTRE'],
+    fichier: fichier
+      ? {
+          libelle: fichier.libelle,
+          formats: formatsOf(fichier),
+          tailleMaxKo: fichier.tailleMaxKo ?? null,
+          obligatoire: fichier.obligatoire,
+        }
+      : null,
   };
 }
 
@@ -180,5 +215,6 @@ function fieldOf(champ: ApiChamp): TypeField {
     // L'API accepte tout nombre positif ou nul.
     zeroOk: champ.typeDonnee === 'NOMBRE' ? true : undefined,
     unit,
+    enTete: champ.enTete || undefined,
   };
 }

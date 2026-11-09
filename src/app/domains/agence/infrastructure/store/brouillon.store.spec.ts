@@ -37,6 +37,7 @@ const DATA = {
   prenom: 'Patricia',
   nom: 'Kattou',
   compte: '',
+  comptes: [],
   client: 'Patricia Kattou',
   type: 'Ouverture de compte',
   produit: 'Compte courant',

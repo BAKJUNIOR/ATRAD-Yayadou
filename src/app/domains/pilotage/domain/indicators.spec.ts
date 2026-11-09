@@ -11,6 +11,7 @@ function dossier(ref: string, patch: Partial<RoutedDossier>): RoutedDossier {
     prenom: '',
     nom: '',
     compte: '',
+    comptes: [],
     client: 'Client',
     type: 'Demande de prêt',
     produit: 'Compte courant',
