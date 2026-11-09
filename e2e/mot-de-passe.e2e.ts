@@ -38,9 +38,13 @@ test('mot de passe oublié : lien reçu par e-mail, nouveau mot de passe, lien �
   await page.goto('/signin');
   await page.getByRole('link', { name: 'Mot de passe oublié ?' }).click();
   await page.getByLabel('Matricule').fill(MATRICULE);
+  await page.getByLabel('Adresse e-mail professionnelle').fill('autre@exemple.test');
+  await page.getByRole('button', { name: 'Recevoir le lien' }).click();
+  await expect(page.getByText('Aucun compte actif ne correspond')).toBeVisible();
+
   await page.getByLabel('Adresse e-mail professionnelle').fill(EMAIL);
   await page.getByRole('button', { name: 'Recevoir le lien' }).click();
-  await expect(page.getByText("un e-mail vient d'être envoyé")).toBeVisible();
+  await expect(page.getByText(`E-mail envoyé à ${EMAIL}`)).toBeVisible();
 
   const jeton = await lienRecu(request, depuis);
   await page.goto(`/reinitialiser-mot-de-passe?jeton=${jeton}`);

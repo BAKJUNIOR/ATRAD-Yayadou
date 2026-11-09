@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { apiErrorMessage } from '../../../../../core/utils/api-error.util';
 import { AuthPageLayoutComponent } from '../../../../../layout/auth-page-layout/auth-page-layout.component';
 import { ButtonComponent } from '../../../../../shared/ui/button/button.component';
+import { flashMessage } from '../../../../../shared/ui/flash-message';
 import { IconComponent } from '../../../../../shared/ui/icon/icon.component';
 import { EMAIL_PATTERN } from '../../../domain/password.rules';
 import { AuthApi } from '../../../infrastructure/api/auth.api';
@@ -18,9 +19,9 @@ export class ForgotPasswordComponent {
   private readonly auth = inject(AuthApi);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly error = signal('');
+  protected readonly error = flashMessage();
+  protected readonly success = flashMessage(8000);
   protected readonly pending = signal(false);
-  protected readonly sent = signal(false);
 
   private readonly request = signal({ matricule: '', email: '' });
   protected readonly requestForm = form(this.request);
@@ -33,14 +34,15 @@ export class ForgotPasswordComponent {
     const matricule = this.request().matricule.trim();
     const email = this.request().email.trim();
     if (!matricule || !email) {
-      this.error.set('Saisissez votre matricule et votre adresse e-mail professionnelle.');
+      this.error.show('Saisissez votre matricule et votre adresse e-mail professionnelle.');
       return;
     }
     if (!EMAIL_PATTERN.test(email)) {
-      this.error.set('Adresse e-mail invalide.');
+      this.error.show('Adresse e-mail invalide.');
       return;
     }
-    this.error.set('');
+    this.error.clear();
+    this.success.clear();
     this.pending.set(true);
     this.auth
       .forgotPassword(matricule, email)
@@ -48,11 +50,14 @@ export class ForgotPasswordComponent {
       .subscribe({
         next: () => {
           this.pending.set(false);
-          this.sent.set(true);
+          this.request.set({ matricule: '', email: '' });
+          this.success.show(
+            `E-mail envoyé à ${email}. Le lien est valable 15 minutes ; pensez à regarder dans les courriers indésirables.`,
+          );
         },
         error: (error: unknown) => {
           this.pending.set(false);
-          this.error.set(apiErrorMessage(error, 'Demande impossible. Veuillez réessayer.'));
+          this.error.show(apiErrorMessage(error, 'Demande impossible. Veuillez réessayer.'));
         },
       });
   }

@@ -6,6 +6,7 @@ import { SessionService } from '../../../../../core/services/session.service';
 import { apiErrorMessage } from '../../../../../core/utils/api-error.util';
 import { AuthPageLayoutComponent } from '../../../../../layout/auth-page-layout/auth-page-layout.component';
 import { ButtonComponent } from '../../../../../shared/ui/button/button.component';
+import { flashMessage } from '../../../../../shared/ui/flash-message';
 import { IconComponent } from '../../../../../shared/ui/icon/icon.component';
 import { ReferentielStore } from '../../../../dossiers/infrastructure/store/referentiel.store';
 import { AuthApi } from '../../../infrastructure/api/auth.api';
@@ -24,10 +25,16 @@ export class SignInComponent {
   private readonly referentiel = inject(ReferentielStore);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly reset = inject(ActivatedRoute).snapshot.queryParamMap.has('reinitialise');
-  protected readonly error = signal('');
+  protected readonly reset = flashMessage(6000);
+  protected readonly error = flashMessage();
   protected readonly pending = signal(false);
   protected readonly passwordShown = signal(false);
+
+  constructor() {
+    if (inject(ActivatedRoute).snapshot.queryParamMap.has('reinitialise')) {
+      this.reset.show('Mot de passe modifié : connectez-vous avec le nouveau.');
+    }
+  }
 
   private readonly credentials = signal({ ...rememberedIdent(), password: '' });
   protected readonly signInForm = form(this.credentials);
@@ -40,10 +47,10 @@ export class SignInComponent {
     const ident = this.credentials().ident.trim();
     const { password, remember } = this.credentials();
     if (!ident || !password) {
-      this.error.set('Saisissez votre matricule et votre mot de passe.');
+      this.error.show('Saisissez votre matricule et votre mot de passe.');
       return;
     }
-    this.error.set('');
+    this.error.clear();
     this.pending.set(true);
     this.auth
       .signIn(ident, password)
@@ -57,7 +64,7 @@ export class SignInComponent {
         },
         error: (error: unknown) => {
           this.pending.set(false);
-          this.error.set(apiErrorMessage(error, 'Connexion impossible. Veuillez réessayer.'));
+          this.error.show(apiErrorMessage(error, 'Connexion impossible. Veuillez réessayer.'));
         },
       });
   }

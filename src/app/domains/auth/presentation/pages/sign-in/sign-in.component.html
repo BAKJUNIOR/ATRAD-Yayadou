@@ -8,13 +8,13 @@
         <p class="text-[13.5px] text-ink-muted">Accédez à votre espace de traçabilité.</p>
       </header>
 
-      @if (reset) {
+      @if (reset.text()) {
         <p
           role="status"
           class="flex items-start gap-2.5 rounded-control border border-success-line bg-success-bg px-3 py-2.5 text-[12.5px] leading-[1.45] text-success"
         >
           <app-icon name="check-circle" [size]="16" class="mt-px" />
-          <span>Mot de passe modifié : connectez-vous avec le nouveau.</span>
+          <span>{{ reset.text() }}</span>
         </p>
       }
 
@@ -38,8 +38,8 @@
               placeholder="Votre matricule"
               class="h-11 w-full rounded-control border border-line-strong bg-card ps-10 pe-3 text-[14px] text-ink outline-none transition-shadow placeholder:text-ink-faint focus:border-brand focus:ring-3 focus:ring-brand/16"
               [formField]="signInForm.ident"
-              [attr.aria-invalid]="error() ? true : null"
-              [attr.aria-describedby]="error() ? 'signin-error' : null"
+              [attr.aria-invalid]="error.text() ? true : null"
+              [attr.aria-describedby]="error.text() ? 'signin-error' : null"
             />
           </div>
         </div>
@@ -61,8 +61,8 @@
               class="h-11 w-full rounded-control border border-line-strong bg-card ps-10 pe-12 text-[14px] text-ink outline-none transition-shadow placeholder:text-ink-faint focus:border-brand focus:ring-3 focus:ring-brand/16"
               [type]="passwordShown() ? 'text' : 'password'"
               [formField]="signInForm.password"
-              [attr.aria-invalid]="error() ? true : null"
-              [attr.aria-describedby]="error() ? 'signin-error' : null"
+              [attr.aria-invalid]="error.text() ? true : null"
+              [attr.aria-describedby]="error.text() ? 'signin-error' : null"
             />
             <button
               type="button"
@@ -100,14 +100,14 @@
           </a>
         </div>
 
-        @if (error()) {
+        @if (error.text()) {
           <p
             id="signin-error"
             role="alert"
             class="flex items-start gap-2.5 rounded-control border border-danger-line bg-danger-bg px-3 py-2.5 text-[12.5px] leading-[1.45] text-danger"
           >
             <app-icon name="alert" [size]="16" class="mt-px" />
-            <span>{{ error() }}</span>
+            <span>{{ error.text() }}</span>
           </p>
         }
 

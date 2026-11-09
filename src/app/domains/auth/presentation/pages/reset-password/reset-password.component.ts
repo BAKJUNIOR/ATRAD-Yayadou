@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiError, apiErrorMessage } from '../../../../../core/utils/api-error.util';
 import { AuthPageLayoutComponent } from '../../../../../layout/auth-page-layout/auth-page-layout.component';
 import { ButtonComponent } from '../../../../../shared/ui/button/button.component';
+import { flashMessage } from '../../../../../shared/ui/flash-message';
 import { IconComponent } from '../../../../../shared/ui/icon/icon.component';
 import { newPasswordError } from '../../../domain/password.rules';
 import { AuthApi } from '../../../infrastructure/api/auth.api';
@@ -20,7 +21,7 @@ export class ResetPasswordComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly jeton = inject(ActivatedRoute).snapshot.queryParamMap.get('jeton') ?? '';
-  protected readonly error = signal('');
+  protected readonly error = flashMessage();
   protected readonly expired = signal(!this.jeton);
   protected readonly pending = signal(false);
   protected readonly passwordShown = signal(false);
@@ -40,16 +41,16 @@ export class ResetPasswordComponent {
     const { password, confirmation } = this.passwords();
     const ruleError = newPasswordError(password);
     if (ruleError) {
-      this.error.set(
+      this.error.show(
         `Mot de passe trop faible : ${ruleError.charAt(0).toLowerCase()}${ruleError.slice(1)}`,
       );
       return;
     }
     if (password !== confirmation) {
-      this.error.set('La confirmation ne correspond pas au nouveau mot de passe.');
+      this.error.show('La confirmation ne correspond pas au nouveau mot de passe.');
       return;
     }
-    this.error.set('');
+    this.error.clear();
     this.pending.set(true);
     this.auth
       .resetPassword(this.jeton, password, confirmation)
@@ -62,7 +63,7 @@ export class ResetPasswordComponent {
             this.expired.set(true);
             return;
           }
-          this.error.set(apiErrorMessage(error, 'Modification impossible. Veuillez réessayer.'));
+          this.error.show(apiErrorMessage(error, 'Modification impossible. Veuillez réessayer.'));
         },
       });
   }
