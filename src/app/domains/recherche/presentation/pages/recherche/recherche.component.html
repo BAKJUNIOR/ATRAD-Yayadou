@@ -3,39 +3,34 @@
 
 <div class="flex animate-enter flex-col gap-5">
   <section class="panel overflow-hidden" aria-labelledby="recherche-title">
-    <header class="flex items-center gap-3 border-b border-line px-5 py-4">
-      <span
-        class="flex size-9 flex-none items-center justify-center rounded-[calc(var(--radius-brand)*0.9)] bg-brand-tint-soft text-brand-ink"
-      >
-        <app-icon name="search" [size]="17" [strokeWidth]="2" />
-      </span>
-      <div class="flex min-w-0 flex-col gap-0.5">
-        <h2 id="recherche-title" class="text-[15px] font-semibold text-ink">
-          Rechercher un état ou une attestation
-        </h2>
-        <p class="text-[12.5px] text-ink-muted">
-          Choisissez le type de recherche et saisissez la valeur.
-        </p>
-      </div>
+    <header class="border-b border-line px-6 py-4">
+      <h2 id="recherche-title" class="text-[15px] font-semibold text-ink">Critères de recherche</h2>
+      <p class="mt-0.5 text-[12.5px] text-ink-muted">
+        Choisissez le type de recherche et saisissez la valeur qui doit être prise en compte.
+      </p>
     </header>
 
-    <form class="flex flex-col gap-4 bg-subtle px-5 py-4" novalidate (submit)="rechercher($event)">
-      <fieldset class="flex flex-col gap-2">
-        <legend class="mb-2 text-[12.5px] font-medium text-ink-secondary">Recherche par</legend>
-        <div class="flex flex-wrap gap-2">
+    <form class="px-4 py-7 sm:px-6" novalidate (submit)="rechercher($event)">
+      <div
+        class="mx-auto flex max-w-[820px] flex-col gap-5 rounded-control border border-line bg-subtle px-5 py-5 sm:px-8"
+      >
+        <fieldset class="flex flex-wrap items-center gap-x-5 gap-y-2.5">
+          <legend class="float-left me-2 text-[13px] font-semibold text-ink">
+            Recherche par :
+          </legend>
           @for (critere of criteres; track critere.value) {
             <label
-              class="flex cursor-pointer items-center gap-2 rounded-full border px-3.5 py-2 text-[13px] transition-colors has-focus-visible:ring-3 has-focus-visible:ring-brand/16"
+              class="flex cursor-pointer items-center gap-2 text-[13px] transition-colors"
               [class]="
                 critere.value === this.critere()
-                  ? 'border-brand bg-brand-tint-soft font-semibold text-brand-ink'
-                  : 'border-line-strong bg-card font-medium text-ink-secondary hover:border-brand'
+                  ? 'font-semibold text-brand-ink'
+                  : 'font-medium text-ink-secondary hover:text-ink'
               "
             >
               <input
                 type="radio"
                 name="critere"
-                class="accent-brand"
+                class="size-4 accent-brand"
                 [value]="critere.value"
                 [checked]="critere.value === this.critere()"
                 (change)="pickCritere(critere.value)"
@@ -43,64 +38,69 @@
               {{ critere.label }}
             </label>
           }
-        </div>
-      </fieldset>
+        </fieldset>
 
-      <div class="flex flex-wrap items-end gap-3">
-        <label class="form-label min-w-[min(100%,280px)] flex-1 gap-[5px] sm:max-w-[420px]">
-          <span
-            >{{ option().field }} <span class="text-danger-solid" aria-hidden="true">*</span></span
+        <div class="flex flex-wrap items-start justify-center gap-x-4 gap-y-3">
+          <label
+            for="recherche-valeur"
+            class="pt-2.5 text-[13px] font-semibold whitespace-nowrap text-ink"
           >
-          <input
-            class="form-control text-[13px]"
-            [class.font-mono]="option().numeric"
-            [attr.inputmode]="option().numeric ? 'numeric' : null"
-            [placeholder]="option().placeholder"
-            [value]="valeur()"
-            required
-            [attr.aria-invalid]="!!erreur()"
-            [attr.aria-describedby]="erreur() ? 'recherche-erreur' : null"
-            (input)="onValeur($event)"
-          />
-        </label>
-        <button type="submit" class="btn-primary px-5 py-2.5">
-          <app-icon name="search" [size]="15" [strokeWidth]="2" />
-          Rechercher
-        </button>
+            {{ option().field }} <span class="text-danger-solid" aria-hidden="true">*</span> :
+          </label>
+          <div class="flex w-full max-w-[300px] flex-col gap-1.5">
+            <input
+              id="recherche-valeur"
+              class="form-control text-[13px]"
+              [class.font-mono]="option().numeric"
+              [attr.inputmode]="option().numeric ? 'numeric' : null"
+              autocomplete="off"
+              [value]="valeur()"
+              required
+              [attr.aria-invalid]="!!erreur()"
+              [attr.aria-describedby]="erreur() ? 'recherche-erreur' : null"
+              (input)="onValeur($event)"
+            />
+            @if (erreur()) {
+              <p id="recherche-erreur" class="form-error" role="alert">{{ erreur() }}</p>
+            }
+          </div>
+          <button type="submit" class="btn-primary px-6 py-2.5">
+            <app-icon name="search" [size]="15" [strokeWidth]="2" />
+            Rechercher
+          </button>
+        </div>
       </div>
-      @if (erreur()) {
-        <p id="recherche-erreur" class="form-error -mt-2" role="alert">{{ erreur() }}</p>
-      }
     </form>
   </section>
 
   @if (requete(); as requete) {
     <section class="panel overflow-hidden" aria-labelledby="resultats-title">
-      <header
-        class="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4"
-      >
-        <h2 id="resultats-title" class="text-[14px] text-ink-secondary" aria-live="polite">
-          Résultats pour {{ libelleCritere() }}
-          <strong class="font-mono font-semibold text-ink">« {{ requete.valeur }} »</strong> :
+      <header class="flex flex-col gap-3 border-b border-line px-6 pt-4">
+        <h2 id="resultats-title" class="text-[14.5px] font-semibold text-ink" aria-live="polite">
+          Résultats de la recherche pour :
           @if (etatsPage && attestationsPage) {
-            <strong class="font-semibold text-ink">{{ etatsPage.totalElements }}</strong> état(s) ·
-            <strong class="font-semibold text-ink">{{ attestationsPage.totalElements }}</strong>
-            attestation(s)
+            <span class="text-success">
+              {{ etatsPage.totalElements }} état(s) / {{ attestationsPage.totalElements }}
+              attestation(s)
+            </span>
           } @else {
-            recherche en cours…
+            <span class="font-normal text-ink-muted">recherche en cours…</span>
           }
+          <span class="block text-[12.5px] font-normal text-ink-muted">
+            {{ libelleCritere() }} : <span class="font-mono text-ink">{{ requete.valeur }}</span>
+          </span>
         </h2>
-        <div class="flex gap-1 rounded-control bg-soft p-1" role="tablist" aria-label="Résultats">
+        <div class="-mb-px flex gap-1" role="tablist" aria-label="Résultats">
           <button
             type="button"
             role="tab"
             id="onglet-etats"
             aria-controls="panneau-etats"
-            class="rounded-control px-4 py-1.5 text-[13px] whitespace-nowrap transition-colors"
+            class="border-b-2 px-4 py-2.5 text-[13px] whitespace-nowrap transition-colors"
             [class]="
               onglet() === 'etats'
-                ? 'bg-card font-semibold text-ink shadow-sm'
-                : 'font-medium text-ink-muted hover:text-ink'
+                ? 'border-brand font-semibold text-brand-ink'
+                : 'border-transparent font-medium text-ink-muted hover:text-ink'
             "
             [attr.aria-selected]="onglet() === 'etats'"
             (click)="onglet.set('etats')"
@@ -112,11 +112,11 @@
             role="tab"
             id="onglet-attestations"
             aria-controls="panneau-attestations"
-            class="rounded-control px-4 py-1.5 text-[13px] whitespace-nowrap transition-colors"
+            class="border-b-2 px-4 py-2.5 text-[13px] whitespace-nowrap transition-colors"
             [class]="
               onglet() === 'attestations'
-                ? 'bg-card font-semibold text-ink shadow-sm'
-                : 'font-medium text-ink-muted hover:text-ink'
+                ? 'border-brand font-semibold text-brand-ink'
+                : 'border-transparent font-medium text-ink-muted hover:text-ink'
             "
             [attr.aria-selected]="onglet() === 'attestations'"
             (click)="onglet.set('attestations')"

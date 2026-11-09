@@ -8,7 +8,6 @@ export interface CritereOption {
   value: CritereRecherche;
   label: string;
   field: string;
-  placeholder: string;
   numeric?: boolean;
 }
 
@@ -17,22 +16,19 @@ export const CRITERES: readonly CritereOption[] = [
     value: 'COMPTE',
     label: 'N° compte',
     field: 'Numéro de compte',
-    placeholder: '9 chiffres, clé facultative',
     numeric: true,
   },
   {
     value: 'CLIENT',
     label: 'Nom client',
     field: 'Nom ou prénom du client',
-    placeholder: 'Ex. Koffi',
   },
-  { value: 'ETAT', label: 'N° état', field: "Numéro de l'état", placeholder: 'Ex. ET-2026-0047' },
-  { value: 'AGENCE', label: 'Code agence', field: "Code de l'agence", placeholder: 'Ex. AG-014' },
+  { value: 'ETAT', label: 'N° état', field: "Numéro de l'état" },
+  { value: 'AGENCE', label: 'Code agence', field: "Code de l'agence" },
   {
     value: 'MATRICULE',
     label: 'Matricule',
     field: "Matricule de l'agent",
-    placeholder: 'Ex. a.diallo',
   },
 ];
 
