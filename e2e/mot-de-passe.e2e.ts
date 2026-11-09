@@ -37,9 +37,17 @@ test('mot de passe oublié : lien reçu par e-mail, nouveau mot de passe, lien �
   const depuis = Date.now() - 1000;
   await page.goto('/signin');
   await page.getByRole('link', { name: 'Mot de passe oublié ?' }).click();
+  // La page de connexion a aussi un champ « Matricule » : attendre la nouvelle page avant de saisir.
+  await page.waitForURL('**/mot-de-passe-oublie');
+  await expect(page.getByRole('heading', { name: 'Mot de passe oublié' })).toBeVisible();
   await page.getByLabel('Matricule').fill(MATRICULE);
   await page.getByLabel('Adresse e-mail professionnelle').fill('autre@exemple.test');
+  const refus = page.waitForResponse(
+    (reponse) =>
+      reponse.url().includes('/auth/mot-de-passe-oublie') && reponse.request().method() === 'POST',
+  );
   await page.getByRole('button', { name: 'Recevoir le lien' }).click();
+  expect((await refus).status()).toBe(400);
   await expect(page.getByText('Aucun compte actif ne correspond')).toBeVisible();
 
   await page.getByLabel('Adresse e-mail professionnelle').fill(EMAIL);
@@ -70,7 +78,7 @@ test('mot de passe oublié : lien reçu par e-mail, nouveau mot de passe, lien �
     headers: { Authorization: `Bearer ${jwt}` },
     data: { motDePasseActuel: TEMPORAIRE, nouveauMotDePasse: PASSWORD, confirmation: PASSWORD },
   });
-  expect(retour.ok()).toBe(true);
+  expect(retour.ok(), await retour.text()).toBe(true);
 
   await page.goto(`/reinitialiser-mot-de-passe?jeton=${jeton}`);
   await page.locator('#reset-password').fill(TEMPORAIRE);
