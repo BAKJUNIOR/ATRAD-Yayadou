@@ -2,6 +2,8 @@ export const endpoints = {
   auth: {
     login: 'api/v1/auth/login',
     logout: 'api/v1/auth/logout',
+    motDePasseOublie: 'api/v1/auth/mot-de-passe-oublie',
+    reinitialiserMotDePasse: 'api/v1/auth/reinitialiser-mot-de-passe',
   },
   moi: {
     base: 'api/v1/moi',

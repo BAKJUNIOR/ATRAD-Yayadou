@@ -8,6 +8,16 @@
         <p class="text-[13.5px] text-ink-muted">Accédez à votre espace de traçabilité.</p>
       </header>
 
+      @if (reset) {
+        <p
+          role="status"
+          class="flex items-start gap-2.5 rounded-control border border-success-line bg-success-bg px-3 py-2.5 text-[12.5px] leading-[1.45] text-success"
+        >
+          <app-icon name="check-circle" [size]="16" class="mt-px" />
+          <span>Mot de passe modifié : connectez-vous avec le nouveau.</span>
+        </p>
+      }
+
       <form class="flex flex-col gap-4" novalidate (submit)="submit($event)">
         <div class="flex flex-col gap-1.5">
           <label for="signin-ident" class="text-[12.5px] font-medium text-ink-secondary">
@@ -71,16 +81,24 @@
           </div>
         </div>
 
-        <label
-          class="flex w-fit cursor-pointer items-center gap-2.5 text-[13px] text-ink-secondary select-none"
-        >
-          <input
-            type="checkbox"
-            class="size-4 cursor-pointer rounded accent-brand"
-            [formField]="signInForm.remember"
-          />
-          Se souvenir de moi
-        </label>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <label
+            class="flex w-fit cursor-pointer items-center gap-2.5 text-[13px] text-ink-secondary select-none"
+          >
+            <input
+              type="checkbox"
+              class="size-4 cursor-pointer rounded accent-brand"
+              [formField]="signInForm.remember"
+            />
+            Se souvenir de moi
+          </label>
+          <a
+            routerLink="/mot-de-passe-oublie"
+            class="text-[13px] font-medium text-brand-ink hover:underline"
+          >
+            Mot de passe oublié ?
+          </a>
+        </div>
 
         @if (error()) {
           <p
@@ -114,9 +132,6 @@
       </form>
     </section>
 
-    <p class="text-center text-[12px] text-ink-muted">
-      Accès réservé aux utilisateurs habilités. En cas d'oubli du mot de passe, contactez votre
-      administrateur.
-    </p>
+    <p class="text-center text-[12px] text-ink-muted">Accès réservé aux utilisateurs habilités.</p>
   </div>
 </app-auth-page-layout>

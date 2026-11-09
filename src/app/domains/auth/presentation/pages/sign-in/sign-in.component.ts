@@ -1,7 +1,7 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormField, form } from '@angular/forms/signals';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { SessionService } from '../../../../../core/services/session.service';
 import { apiErrorMessage } from '../../../../../core/utils/api-error.util';
 import { AuthPageLayoutComponent } from '../../../../../layout/auth-page-layout/auth-page-layout.component';
@@ -14,7 +14,7 @@ const REMEMBERED_IDENT_KEY = 'atrad_identifiant_v1';
 
 @Component({
   selector: 'app-sign-in',
-  imports: [FormField, AuthPageLayoutComponent, ButtonComponent, IconComponent],
+  imports: [FormField, RouterLink, AuthPageLayoutComponent, ButtonComponent, IconComponent],
   templateUrl: './sign-in.component.html',
 })
 export class SignInComponent {
@@ -24,6 +24,7 @@ export class SignInComponent {
   private readonly referentiel = inject(ReferentielStore);
   private readonly destroyRef = inject(DestroyRef);
 
+  protected readonly reset = inject(ActivatedRoute).snapshot.queryParamMap.has('reinitialise');
   protected readonly error = signal('');
   protected readonly pending = signal(false);
   protected readonly passwordShown = signal(false);
