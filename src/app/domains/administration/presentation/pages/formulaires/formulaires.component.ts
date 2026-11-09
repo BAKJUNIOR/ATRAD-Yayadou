@@ -6,13 +6,18 @@ import { IconComponent } from '../../../../../shared/ui/icon/icon.component';
 import { ReferentielStore } from '../../../../dossiers/infrastructure/store/referentiel.store';
 import {
   CHAMP_KINDS,
+  COMPTES_CHOIX,
   ChampDraft,
   ChampKind,
+  FORMATS_PIECE,
   FormulaireDraft,
+  PieceDraft,
+  TAILLES_PIECE,
   UNITES,
   draftFromApi,
   formulaireErrors,
   newChamp,
+  newPiece,
   requestOf,
   sameFormulaire,
 } from '../../../domain/formulaire';
@@ -31,6 +36,9 @@ export class FormulairesComponent {
 
   protected readonly kinds = CHAMP_KINDS;
   protected readonly unites = UNITES;
+  protected readonly comptesChoix = COMPTES_CHOIX;
+  protected readonly formats = FORMATS_PIECE;
+  protected readonly tailles = TAILLES_PIECE;
 
   protected readonly types = computed(() =>
     Object.entries(this.referentiel.value().typeIds)
@@ -116,6 +124,20 @@ export class FormulairesComponent {
     this.updateChamp(champ.key, { obligatoire: (event.target as HTMLInputElement).checked });
   }
 
+  protected setEnTete(champ: ChampDraft, event: Event): void {
+    this.updateChamp(champ.key, { enTete: (event.target as HTMLInputElement).checked });
+  }
+
+  protected setNumeroClient(event: Event): void {
+    const numeroClient = (event.target as HTMLInputElement).checked;
+    this.draft.update((draft) => (draft ? { ...draft, numeroClient } : draft));
+  }
+
+  protected setComptes(event: Event): void {
+    const comptes = (event.target as HTMLSelectElement).value;
+    this.draft.update((draft) => (draft ? { ...draft, comptes } : draft));
+  }
+
   protected setValeurs(champ: ChampDraft, event: Event): void {
     this.updateChamp(champ.key, { valeurs: (event.target as HTMLTextAreaElement).value });
   }
@@ -147,15 +169,44 @@ export class FormulairesComponent {
     });
   }
 
-  protected setPiece(index: number, event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
+  private updatePiece(index: number, change: Partial<PieceDraft>): void {
     this.draft.update((draft) =>
-      draft ? { ...draft, pieces: draft.pieces.map((p, i) => (i === index ? value : p)) } : draft,
+      draft
+        ? {
+            ...draft,
+            pieces: draft.pieces.map((piece, i) => (i === index ? { ...piece, ...change } : piece)),
+          }
+        : draft,
     );
   }
 
+  protected setPiece(index: number, event: Event): void {
+    this.updatePiece(index, { libelle: (event.target as HTMLInputElement).value });
+  }
+
+  protected setPieceObligatoire(index: number, event: Event): void {
+    this.updatePiece(index, { obligatoire: (event.target as HTMLInputElement).checked });
+  }
+
+  protected setPieceAJoindre(index: number, event: Event): void {
+    this.updatePiece(index, { aJoindre: (event.target as HTMLInputElement).checked });
+  }
+
+  protected togglePieceFormat(index: number, piece: PieceDraft, format: string): void {
+    const formats = piece.formats.includes(format)
+      ? piece.formats.filter((candidate) => candidate !== format)
+      : [...piece.formats, format];
+    this.updatePiece(index, { formats });
+  }
+
+  protected setPieceTaille(index: number, event: Event): void {
+    this.updatePiece(index, { tailleMaxKo: Number((event.target as HTMLSelectElement).value) });
+  }
+
   protected addPiece(): void {
-    this.draft.update((draft) => (draft ? { ...draft, pieces: [...draft.pieces, ''] } : draft));
+    this.draft.update((draft) =>
+      draft ? { ...draft, pieces: [...draft.pieces, newPiece()] } : draft,
+    );
   }
 
   protected removePiece(index: number): void {

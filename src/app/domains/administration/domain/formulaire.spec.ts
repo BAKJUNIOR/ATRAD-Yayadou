@@ -1,8 +1,18 @@
 import { ApiFormulaire } from '../../dossiers/domain/entities/referentiel.entity';
-import { draftFromApi, formulaireErrors, newChamp, requestOf, sameFormulaire } from './formulaire';
+import {
+  draftFromApi,
+  formulaireErrors,
+  newChamp,
+  newPiece,
+  requestOf,
+  sameFormulaire,
+} from './formulaire';
 
 const API: ApiFormulaire = {
-  typeDossier: {} as ApiFormulaire['typeDossier'],
+  typeDossier: {
+    numeroClientRequis: false,
+    comptes: ['COMPTE_CHEQUE', 'COMPTE_PRODUIT'],
+  } as ApiFormulaire['typeDossier'],
   champs: [
     {
       code: 'objet',
@@ -18,7 +28,10 @@ const API: ApiFormulaire = {
       ],
     },
   ],
-  pieces: [{ libelle: 'Relevé de compte', obligatoire: true }],
+  pieces: [
+    { libelle: 'Relevé de compte', obligatoire: true },
+    { libelle: 'Capture Delta', obligatoire: true, formats: 'doc,docx', tailleMaxKo: 1024 },
+  ],
   operations: [],
 };
 
@@ -35,9 +48,15 @@ describe('formulaire des types de dossier', () => {
           obligatoire: true,
           unite: null,
           valeurs: ['Carte bloquée', 'Autre'],
+          enTete: false,
         },
       ],
-      pieces: ['Relevé de compte'],
+      pieces: [
+        { libelle: 'Relevé de compte', obligatoire: true, formats: null, tailleMaxKo: null },
+        { libelle: 'Capture Delta', obligatoire: true, formats: 'doc,docx', tailleMaxKo: 1024 },
+      ],
+      numeroClientRequis: false,
+      comptes: ['COMPTE_CHEQUE', 'COMPTE_PRODUIT'],
     });
     expect(sameFormulaire(draft, draftFromApi(API))).toBe(true);
   });
@@ -58,8 +77,22 @@ describe('formulaire des types de dossier', () => {
   it('ne garde une unité que pour un nombre', () => {
     const texte = { ...newChamp(), libelle: 'Référence', unite: 'FCFA' };
     const nombre = { ...newChamp(), libelle: 'Montant', kind: 'NOMBRE' as const, unite: 'FCFA' };
-    const request = requestOf({ champs: [texte, nombre], pieces: [' ', 'RIB'] });
+    const request = requestOf({
+      numeroClient: true,
+      comptes: 'AUTRE',
+      champs: [texte, nombre],
+      pieces: [newPiece(), { ...newPiece(), libelle: 'RIB' }],
+    });
     expect(request.champs.map((champ) => champ.unite)).toEqual([null, 'FCFA']);
-    expect(request.pieces).toEqual(['RIB']);
+    expect(request.pieces.map((piece) => piece.libelle)).toEqual(['RIB']);
+    expect(request.comptes).toEqual(['AUTRE']);
+  });
+
+  it('demande au moins un format pour une pièce à joindre à la saisie', () => {
+    const draft = draftFromApi(API);
+    const capture = { ...newPiece(), libelle: 'Scan', aJoindre: true, formats: [] };
+    expect(formulaireErrors({ ...draft, pieces: [capture] })).toEqual([
+      'Scan : cochez au moins un format.',
+    ]);
   });
 });

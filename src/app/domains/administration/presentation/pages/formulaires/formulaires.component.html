@@ -8,7 +8,8 @@
       </h2>
       <span class="text-[12.5px] text-ink-muted">
         Les champs et les pièces attendues s'affichent à l'agence quand elle saisit ce type de
-        dossier. Le numéro client, le nom, le prénom et le n° de compte sont toujours demandés.
+        dossier. Le nom et le prénom sont toujours demandés ; le numéro client et les comptes se
+        règlent ci-dessous.
       </span>
     </div>
     <label class="form-label max-w-[420px] gap-[5px]">
@@ -27,6 +28,36 @@
   }
 
   @if (draft && selected(); as type) {
+    <section class="panel flex flex-col gap-3 px-5 py-4" aria-labelledby="fixes-title">
+      <div class="flex flex-col gap-[3px]">
+        <h2 id="fixes-title" class="text-[14.5px] font-semibold text-ink">Champs fixes</h2>
+        <span class="text-[12.5px] text-ink-muted">
+          Chaque compte se saisit en 9 chiffres et une clé de 2 chiffres.
+        </span>
+      </div>
+      <div class="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] items-end gap-3">
+        <label class="form-label gap-[5px]">
+          Comptes demandés
+          <select class="form-control" (change)="setComptes($event)">
+            @for (choix of comptesChoix; track choix.id) {
+              <option [value]="choix.id" [selected]="choix.id === draft.comptes">
+                {{ choix.label }}
+              </option>
+            }
+          </select>
+        </label>
+        <label class="flex items-center gap-2 pb-2.5 text-[13px] text-ink">
+          <input
+            type="checkbox"
+            class="size-4 accent-brand"
+            [checked]="draft.numeroClient"
+            (change)="setNumeroClient($event)"
+          />
+          Numéro client demandé
+        </label>
+      </div>
+    </section>
+
     <section class="panel flex flex-col gap-3 px-5 py-4" aria-labelledby="champs-title">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex flex-col gap-[3px]">
@@ -99,6 +130,18 @@
                 />
                 Obligatoire
               </label>
+              <label
+                class="flex items-center gap-2 pb-2.5 text-[13px] text-ink"
+                title="Affiché juste après le type, avant les comptes (ex. Type attestation)"
+              >
+                <input
+                  type="checkbox"
+                  class="size-4 accent-brand"
+                  [checked]="champ.enTete"
+                  (change)="setEnTete(champ, $event)"
+                />
+                En tête du formulaire
+              </label>
             </div>
             @if (champ.kind === 'LISTE') {
               <label class="form-label gap-[5px]">
@@ -165,24 +208,73 @@
       }
       <ul class="flex flex-col gap-2">
         @for (piece of draft.pieces; track $index; let i = $index) {
-          <li class="flex items-center gap-2">
-            <input
-              type="text"
-              class="form-control flex-1"
-              maxlength="200"
-              placeholder="Ex. Pièce d'identité"
-              [attr.aria-label]="'Pièce attendue n° ' + (i + 1)"
-              [value]="piece"
-              (input)="setPiece(i, $event)"
-            />
-            <button
-              type="button"
-              class="rounded-control p-2 text-danger hover:bg-danger-bg"
-              [attr.aria-label]="'Retirer la pièce ' + (piece || i + 1)"
-              (click)="removePiece(i)"
-            >
-              <app-icon name="trash" [size]="15" />
-            </button>
+          <li class="flex flex-col gap-2.5 rounded-brand border border-line bg-card px-4 py-3">
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <input
+                type="text"
+                class="form-control min-w-[200px] flex-1"
+                maxlength="200"
+                placeholder="Ex. Pièce d'identité"
+                [attr.aria-label]="'Pièce attendue n° ' + (i + 1)"
+                [value]="piece.libelle"
+                (input)="setPiece(i, $event)"
+              />
+              <label class="flex items-center gap-2 text-[13px] text-ink">
+                <input
+                  type="checkbox"
+                  class="size-4 accent-brand"
+                  [checked]="piece.obligatoire"
+                  (change)="setPieceObligatoire(i, $event)"
+                />
+                Obligatoire
+              </label>
+              <label
+                class="flex items-center gap-2 text-[13px] text-ink"
+                title="L'agence joint ce fichier dans le formulaire de saisie (ex. Capture Delta)"
+              >
+                <input
+                  type="checkbox"
+                  class="size-4 accent-brand"
+                  [checked]="piece.aJoindre"
+                  (change)="setPieceAJoindre(i, $event)"
+                />
+                À joindre à la saisie
+              </label>
+              <button
+                type="button"
+                class="ms-auto rounded-control p-2 text-danger hover:bg-danger-bg"
+                [attr.aria-label]="'Retirer la pièce ' + (piece.libelle || i + 1)"
+                (click)="removePiece(i)"
+              >
+                <app-icon name="trash" [size]="15" />
+              </button>
+            </div>
+            @if (piece.aJoindre) {
+              <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-ink">
+                <span class="text-ink-muted">Formats :</span>
+                @for (format of formats; track format) {
+                  <label class="flex items-center gap-1.5 uppercase">
+                    <input
+                      type="checkbox"
+                      class="size-4 accent-brand"
+                      [checked]="piece.formats.includes(format)"
+                      (change)="togglePieceFormat(i, piece, format)"
+                    />
+                    {{ format }}
+                  </label>
+                }
+                <label class="ms-auto flex items-center gap-2">
+                  <span class="text-ink-muted">Taille max</span>
+                  <select class="form-control w-auto py-1.5" (change)="setPieceTaille(i, $event)">
+                    @for (taille of tailles; track taille.ko) {
+                      <option [value]="taille.ko" [selected]="taille.ko === piece.tailleMaxKo">
+                        {{ taille.label }}
+                      </option>
+                    }
+                  </select>
+                </label>
+              </div>
+            }
           </li>
         }
       </ul>
