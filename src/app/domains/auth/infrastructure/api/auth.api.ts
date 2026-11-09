@@ -37,6 +37,23 @@ export class AuthApi {
         ),
       );
   }
+
+  /** L'API répond de la même façon que le compte existe ou non. */
+  forgotPassword(matricule: string, email: string): Observable<void> {
+    return this.baseService.create<void>(
+      this.authEndpoints.motDePasseOublie,
+      { matricule, email },
+      { withoutToken: true, silentErrors: true },
+    );
+  }
+
+  resetPassword(jeton: string, nouveauMotDePasse: string, confirmation: string): Observable<void> {
+    return this.baseService.create<void>(
+      this.authEndpoints.reinitialiserMotDePasse,
+      { jeton, nouveauMotDePasse, confirmation },
+      { withoutToken: true, silentErrors: true },
+    );
+  }
 }
 
 function accountOf(utilisateur: Utilisateur): Account {

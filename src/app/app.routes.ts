@@ -73,6 +73,24 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'mot-de-passe-oublie',
+    canActivate: [guestGuard],
+    title: 'Mot de passe oublié',
+    loadComponent: () =>
+      import('./domains/auth/presentation/pages/forgot-password/forgot-password.component').then(
+        (m) => m.ForgotPasswordComponent,
+      ),
+  },
+  {
+    path: 'reinitialiser-mot-de-passe',
+    canActivate: [guestGuard],
+    title: 'Nouveau mot de passe',
+    loadComponent: () =>
+      import('./domains/auth/presentation/pages/reset-password/reset-password.component').then(
+        (m) => m.ResetPasswordComponent,
+      ),
+  },
+  {
     path: '**',
     title: 'Page introuvable',
     loadComponent: () =>

@@ -9,14 +9,14 @@ import { BrandService } from '../../../core/services/brand.service';
     @if (brand.logoFull && !compact()) {
       <img
         class="flex-none object-contain object-left"
-        [class]="large() ? 'h-[50px] w-[270px]' : 'h-[42px] w-[225px]'"
+        [class]="large() ? 'h-[47px] w-[250px]' : 'h-[42px] w-[225px]'"
         [src]="brand.logoFull"
         [alt]="service.appName()"
       />
     } @else {
       <span
         class="flex flex-none items-center justify-center overflow-hidden rounded-control bg-brand-mid font-bold text-brand-on-mid"
-        [class]="large() ? 'size-13 text-[17px]' : 'size-11 text-[15px]'"
+        [class]="large() ? 'size-12 text-[16px]' : 'size-11 text-[15px]'"
         aria-hidden="true"
       >
         @if (brand.logoIcon) {
@@ -29,14 +29,14 @@ import { BrandService } from '../../../core/services/brand.service';
         <span class="flex min-w-0 flex-col">
           <span
             class="truncate font-semibold tracking-[0.06em] text-white"
-            [class]="large() ? 'text-[20px]' : 'text-[16.5px]'"
+            [class]="large() ? 'text-[18px]' : 'text-[16.5px]'"
           >
             {{ service.appName() }}
           </span>
           @if (brand.org) {
             <span
               class="truncate tracking-[0.12em] text-side-muted uppercase"
-              [class]="large() ? 'text-[12.5px]' : 'text-[11px]'"
+              [class]="large() ? 'text-[11.5px]' : 'text-[11px]'"
             >
               {{ brand.org }}
             </span>
