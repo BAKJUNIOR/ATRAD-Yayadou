@@ -14,8 +14,8 @@
   appearance: none;
   display: inline-grid;
   place-content: center;
-  width: 15px;
-  height: 15px;
+  width: 17px;
+  height: 17px;
   flex: none;
   margin: 0;
   border: 1.5px solid currentColor;
@@ -26,8 +26,8 @@
 
 .choix-radio::before {
   content: '';
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 999px;
   background: currentColor;
   transform: scale(0);
